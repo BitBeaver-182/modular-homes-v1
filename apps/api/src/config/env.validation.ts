@@ -29,7 +29,9 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
   };
 }
 
-function buildDatabaseUrlFromParts(config: Record<string, unknown>): string {
+export function buildDatabaseUrlFromParts(
+  config: Record<string, unknown>,
+): string {
   const type = getRequiredString(config.DATABASE_TYPE, 'DATABASE_TYPE');
   const user = getRequiredString(config.DATABASE_USER, 'DATABASE_USER');
   const password = getRequiredString(
