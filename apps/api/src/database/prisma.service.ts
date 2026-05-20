@@ -7,6 +7,7 @@ import {
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { AppConfigService } from '../config/app-config.service';
+import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService
@@ -21,7 +22,14 @@ export class PrismaService
       throw new Error('DATABASE_URL is required to initialize PrismaService');
     }
 
-    const adapter = new PrismaPg({ connectionString });
+    const pool = new Pool({
+      connectionString,
+      max: 10, // Maximum number of clients in the pool
+      idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+      connectionTimeoutMillis: 5000, // Return an error if connection takes longer than 5 seconds
+    });
+
+    const adapter = new PrismaPg(pool);
     super({ adapter });
   }
 

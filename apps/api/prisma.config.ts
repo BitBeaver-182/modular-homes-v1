@@ -2,8 +2,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { defineConfig } from 'prisma/config';
-import { buildDatabaseUrlFromParts } from './src/config/env.validation.js';
+import { defineConfig, PrismaConfig } from 'prisma/config';
+import { resolveMigrationDatabaseUrl } from './src/config/env.validation.js';
 
 const configDirectory = process.cwd();
 
@@ -15,9 +15,9 @@ export default defineConfig({
     path: './prisma/migrations',
   },
   datasource: {
-    url: resolveDatabaseUrl(),
+    url: resolveMigrationDatabaseUrl(process.env),
   },
-});
+}) satisfies PrismaConfig;
 
 function loadEnvFiles(): void {
   const nodeEnv = process.env.NODE_ENV;
@@ -41,12 +41,4 @@ function loadEnvFiles(): void {
 
     process.loadEnvFile(absolutePath);
   }
-}
-
-function resolveDatabaseUrl(): string {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL;
-  }
-
-  return buildDatabaseUrlFromParts(process.env);
 }

@@ -1,14 +1,23 @@
 import { PrismaService } from './prisma.service';
 
 const mockPrismaPg = jest.fn();
+const mockPool = jest.fn();
 const mockConnect = jest.fn();
 const mockDisconnect = jest.fn();
 const mockLoggerLog = jest.fn();
+const mockPoolInstance = { __pool: true };
 
 jest.mock('@prisma/adapter-pg', () => ({
   PrismaPg: function PrismaPgMock(options: unknown) {
     mockPrismaPg(options);
     return { __adapter: true };
+  },
+}));
+
+jest.mock('pg', () => ({
+  Pool: function PoolMock(options: unknown) {
+    mockPool(options);
+    return mockPoolInstance;
   },
 }));
 
@@ -49,9 +58,13 @@ describe('PrismaService', () => {
 
     void new PrismaService(config as never);
 
-    expect(mockPrismaPg).toHaveBeenCalledWith({
+    expect(mockPool).toHaveBeenCalledWith({
       connectionString: config.databaseUrl,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
     });
+    expect(mockPrismaPg).toHaveBeenCalledWith(mockPoolInstance);
   });
 
   it('connects and logs on module init', async () => {
