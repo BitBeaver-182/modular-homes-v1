@@ -18,16 +18,11 @@ model User {
   name      String?
   avatarUrl String?
 
-  // Keep both flags for now: `isActive` handles explicit account suspension,
-  // while `deletedAt` is reserved for soft deletion/audit.
-  isActive  Boolean  @default(true)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
   memberships      Membership[]
-  externalAccounts ExternalAccount[]
 
   @@index([deletedAt])
 }
@@ -37,16 +32,11 @@ model Organization {
   name      String
   slug      String   @unique
 
-  // Keep both flags for now: `isActive` handles explicit suspension,
-  // while `deletedAt` is reserved for soft deletion/audit.
-  isActive  Boolean  @default(true)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
   memberships      Membership[]
-  connections      OrganizationConnection[]
 
   @@index([deletedAt])
 }
@@ -75,40 +65,4 @@ enum MembershipRole {
   owner
   admin
   member
-}
-
-model ExternalAccount {
-  // Planned for upcoming provider-auth integration.
-  id             BigInt   @id @default(autoincrement())
-  userId         BigInt
-  provider       String
-  externalUserId String
-  metadata       Json?
-  rawProfile     Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user           User     @relation(fields: [userId], references: [id])
-
-  @@unique([provider, externalUserId])
-  @@index([provider, externalUserId])
-  @@index([userId])
-}
-
-model OrganizationConnection {
-  // Planned for upcoming external org-provider integration.
-  id             BigInt   @id @default(autoincrement())
-  organizationId BigInt
-  provider       String
-  externalOrgId  String
-  type           String
-  metadata       Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  @@unique([provider, externalOrgId])
-  @@index([organizationId])
-  @@index([provider, externalOrgId])
 }
