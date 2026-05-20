@@ -4,6 +4,7 @@ export type DatabaseType = 'postgresql' | 'mysql' | 'mongodb';
 export interface AppEnv {
   NODE_ENV: NodeEnv;
   DATABASE_URL: string;
+  DIRECT_URL: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): AppEnv {
@@ -21,30 +22,20 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     throw new Error('NODE_ENV must be one of: development, test, production');
   }
 
-  const resolvedDatabaseUrl = buildDatabaseUrlFromParts(config);
+  const databaseUrl = getRequiredString(config.DATABASE_URL, 'DATABASE_URL');
+  const directUrl = getRequiredString(config.DIRECT_URL, 'DIRECT_URL');
 
   return {
     NODE_ENV: rawNodeEnv,
-    DATABASE_URL: resolvedDatabaseUrl,
+    DATABASE_URL: databaseUrl,
+    DIRECT_URL: directUrl,
   };
 }
 
-export function buildDatabaseUrlFromParts(
+export function resolveMigrationDatabaseUrl(
   config: Record<string, unknown>,
 ): string {
-  const type = getRequiredString(config.DATABASE_TYPE, 'DATABASE_TYPE');
-  const user = getRequiredString(config.DATABASE_USER, 'DATABASE_USER');
-  const password = getRequiredString(
-    config.DATABASE_PASSWORD,
-    'DATABASE_PASSWORD',
-  );
-  const host = getRequiredString(config.DATABASE_HOST, 'DATABASE_HOST');
-  const database = getRequiredString(config.DATABASE_NAME, 'DATABASE_NAME');
-  const port = getRequiredString(config.DATABASE_PORT, 'DATABASE_PORT');
-  const encodedUser = encodeURIComponent(user);
-  const encodedPassword = encodeURIComponent(password);
-
-  return `${type}://${encodedUser}:${encodedPassword}@${host}:${port}/${database}`;
+  return getRequiredString(config.DIRECT_URL, 'DIRECT_URL');
 }
 
 function getRequiredString(rawValue: unknown, keyName: string): string {
