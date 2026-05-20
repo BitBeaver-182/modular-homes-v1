@@ -176,16 +176,12 @@ describe('MembershipsService', () => {
     prisma.organization.findFirst.mockResolvedValue({ id: 2n });
     prisma.user.findFirst.mockResolvedValue(null);
 
-    await expect(service.attachUser(2n, 9n)).rejects.toThrow(
-      NotFoundException
-    );
+    await expect(service.attachUser(2n, 9n)).rejects.toThrow(NotFoundException);
   });
 
   it('does not create membership for deleted organization', async () => {
     prisma.organization.findFirst.mockResolvedValue(null);
 
-    await expect(service.attachUser(2n, 9n)).rejects.toThrow(
-      NotFoundException
-    );
+    await expect(service.attachUser(2n, 9n)).rejects.toThrow(NotFoundException);
   });
 });

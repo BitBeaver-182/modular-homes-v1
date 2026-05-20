@@ -11,7 +11,7 @@ type MembershipRole = 'owner' | 'admin' | 'member';
 
 @Injectable()
 export class MembershipsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async createUserWithMembership(createUserDto: CreateUserDto) {
     if (createUserDto.organizationId == null) {

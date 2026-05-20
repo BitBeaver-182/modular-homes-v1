@@ -21,12 +21,25 @@ describe('UsersController', () => {
     usersService.findOne.mockResolvedValue({ id: 1n });
     usersService.update.mockResolvedValue({ id: 1n, name: 'updated' });
 
+    const createDto = { email: 'user@example.com', organizationId: '1' };
+    await controller.create(createDto);
+    await controller.findAll();
     await controller.findOne('1');
     await controller.update('1', { name: 'updated' });
     await controller.remove('1');
 
+    expect(usersService.create).toHaveBeenCalledWith(createDto);
+    expect(usersService.findAll).toHaveBeenCalledTimes(1);
     expect(usersService.findOne).toHaveBeenCalledWith(1n);
     expect(usersService.update).toHaveBeenCalledWith(1n, { name: 'updated' });
     expect(usersService.remove).toHaveBeenCalledWith(1n);
+  });
+
+  it('rejects malformed user id before hitting service', () => {
+    expect(() => controller.findOne('abc')).toThrow();
+    expect(() => controller.update('abc', { name: 'x' })).toThrow();
+
+    expect(usersService.findOne).not.toHaveBeenCalled();
+    expect(usersService.update).not.toHaveBeenCalled();
   });
 });
