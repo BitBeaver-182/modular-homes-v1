@@ -5,6 +5,8 @@
   "description": "Moduflow backend workspace",
   "packageManager": "pnpm@10.29.1",
   "scripts": {
+    "build": "pnpm build:api",
+    "start": "pnpm start:api",
     "lint": "pnpm --filter api lint",
     "typecheck": "pnpm --filter api typecheck",
     "test": "pnpm --filter api test --runInBand",
