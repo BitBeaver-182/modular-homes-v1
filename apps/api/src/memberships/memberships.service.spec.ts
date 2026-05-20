@@ -177,7 +177,7 @@ describe('MembershipsService', () => {
     prisma.user.findFirst.mockResolvedValue(null);
 
     await expect(service.attachUser(2n, 9n)).rejects.toThrow(
-      'User is not active',
+      NotFoundException
     );
   });
 
@@ -185,7 +185,7 @@ describe('MembershipsService', () => {
     prisma.organization.findFirst.mockResolvedValue(null);
 
     await expect(service.attachUser(2n, 9n)).rejects.toThrow(
-      'Organization is not active',
+      NotFoundException
     );
   });
 });

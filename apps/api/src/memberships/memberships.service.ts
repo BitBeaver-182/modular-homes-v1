@@ -11,7 +11,7 @@ type MembershipRole = 'owner' | 'admin' | 'member';
 
 @Injectable()
 export class MembershipsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async createUserWithMembership(createUserDto: CreateUserDto) {
     if (createUserDto.organizationId == null) {
@@ -29,7 +29,7 @@ export class MembershipsService {
         select: { id: true },
       });
       if (!organization) {
-        throw new BadRequestException('Organization is not active');
+        throw new NotFoundException('Organization not found');
       }
 
       const user = await tx.user.create({
@@ -62,7 +62,7 @@ export class MembershipsService {
           select: { id: true },
         });
         if (!organization) {
-          throw new BadRequestException('Organization is not active');
+          throw new NotFoundException('Organization not found');
         }
 
         const user = await tx.user.findFirst({
@@ -70,7 +70,7 @@ export class MembershipsService {
           select: { id: true },
         });
         if (!user) {
-          throw new BadRequestException('User is not active');
+          throw new NotFoundException('User not found');
         }
 
         const existing = await tx.membership.findFirst({
@@ -106,7 +106,7 @@ export class MembershipsService {
         select: { id: true },
       });
       if (!membership) {
-        throw new NotFoundException('Membership not found');
+        throw new NotFoundException('User or Organization not found');
       }
 
       const activeMembershipCount = await tx.membership.count({
@@ -135,7 +135,7 @@ export class MembershipsService {
       select: { id: true },
     });
     if (!membership) {
-      throw new NotFoundException('Membership not found');
+      throw new NotFoundException('User or Organization not found');
     }
 
     return this.prisma.membership.update({
