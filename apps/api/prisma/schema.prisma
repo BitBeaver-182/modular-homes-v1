@@ -33,7 +33,7 @@ model User {
 model Organization {
   id        BigInt   @id @default(autoincrement())
   name      String
-  slug      String?  @unique
+  slug      String   @unique
 
   isActive  Boolean  @default(true)
 
@@ -42,7 +42,7 @@ model Organization {
   deletedAt DateTime?
 
   memberships      Membership[]
-  externalAccounts ExternalAccount[]
+  connections      OrganizationConnection[]
 
   @@index([deletedAt])
 }
@@ -53,7 +53,7 @@ model Membership {
   userId         BigInt
   organizationId BigInt
 
-  role           String   @default("member")
+  role           MembershipRole @default(member)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -62,25 +62,47 @@ model Membership {
   user           User         @relation(fields: [userId], references: [id])
   organization   Organization @relation(fields: [organizationId], references: [id])
 
-  @@unique([userId, organizationId])
   @@index([userId])
   @@index([organizationId])
   @@index([deletedAt])
 }
 
+enum MembershipRole {
+  owner
+  admin
+  member
+}
+
 model ExternalAccount {
-  id             BigInt        @id @default(autoincrement())
-  userId         BigInt?
-  organizationId BigInt?
+  id             BigInt   @id @default(autoincrement())
+  userId         BigInt
   provider       String
-  providerId     String
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  externalUserId String
+  metadata       Json?
+  rawProfile     Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  user           User?         @relation(fields: [userId], references: [id])
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
 
-  @@unique([provider, providerId])
+  @@unique([provider, externalUserId])
+  @@index([provider, externalUserId])
   @@index([userId])
+}
+
+model OrganizationConnection {
+  id             BigInt   @id @default(autoincrement())
+  organizationId BigInt
+  provider       String
+  externalOrgId  String
+  type           String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([provider, externalOrgId])
   @@index([organizationId])
+  @@index([provider, externalOrgId])
 }
