@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.29.1",
   "scripts": {
     "build": "pnpm --filter api build",
-    "start": "pnpm --filter api start",
+    "start": "pnpm --filter api prisma:deploy && pnpm --filter api start",
     "lint": "pnpm --filter api lint",
     "typecheck": "pnpm --filter api typecheck",
     "test": "pnpm --filter api test --runInBand"
