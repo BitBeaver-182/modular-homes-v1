@@ -7,11 +7,17 @@ import { PrismaService } from '../database/prisma.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { parseBigIntId } from '../common/ids/parse-bigint-id';
 
+type MembershipRole = 'owner' | 'admin' | 'member';
+
 @Injectable()
 export class MembershipsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createUserWithMembership(createUserDto: CreateUserDto) {
+    if (createUserDto.organizationId == null) {
+      throw new BadRequestException('User must belong to an organization');
+    }
+
     const organizationId = parseBigIntId(
       createUserDto.organizationId,
       'organizationId',
@@ -23,7 +29,7 @@ export class MembershipsService {
         select: { id: true },
       });
       if (!organization) {
-        throw new NotFoundException('Organization not found');
+        throw new BadRequestException('Organization is not active');
       }
 
       const user = await tx.user.create({
@@ -56,7 +62,7 @@ export class MembershipsService {
           select: { id: true },
         });
         if (!organization) {
-          throw new NotFoundException('Organization not found');
+          throw new BadRequestException('Organization is not active');
         }
 
         const user = await tx.user.findFirst({
@@ -64,17 +70,21 @@ export class MembershipsService {
           select: { id: true },
         });
         if (!user) {
-          throw new NotFoundException('User not found');
+          throw new BadRequestException('User is not active');
         }
 
         const existing = await tx.membership.findFirst({
-          where: { organizationId, userId, deletedAt: null },
-          select: { id: true },
+          where: { organizationId, userId },
+          select: { id: true, deletedAt: true },
         });
         if (existing) {
-          throw new BadRequestException(
-            'User is already a member of this organization',
-          );
+          if (existing.deletedAt) {
+            return tx.membership.update({
+              where: { id: existing.id },
+              data: { deletedAt: null },
+            });
+          }
+          throw new BadRequestException('Already a member');
         }
 
         return tx.membership.create({
@@ -83,9 +93,7 @@ export class MembershipsService {
       });
     } catch (error) {
       if (isUniqueConstraintError(error)) {
-        throw new BadRequestException(
-          'User is already a member of this organization',
-        );
+        throw new BadRequestException('Already a member');
       }
       throw error;
     }
@@ -114,6 +122,25 @@ export class MembershipsService {
         where: { id: membership.id },
         data: { deletedAt: new Date() },
       });
+    });
+  }
+
+  async changeRole(
+    organizationId: bigint,
+    userId: bigint,
+    role: MembershipRole,
+  ) {
+    const membership = await this.prisma.membership.findFirst({
+      where: { organizationId, userId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!membership) {
+      throw new NotFoundException('Membership not found');
+    }
+
+    return this.prisma.membership.update({
+      where: { id: membership.id },
+      data: { role },
     });
   }
 }

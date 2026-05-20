@@ -8,6 +8,8 @@ describe('MembershipsService', () => {
     },
     user: {
       findFirst: jest.fn(),
+      create: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
     },
     membership: {
       findFirst: jest.fn(),
@@ -35,6 +37,46 @@ describe('MembershipsService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('creates user with initial organization membership', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.create = jest
+      .fn()
+      .mockResolvedValue({ id: 9n, email: 'john@acme.com' });
+    prisma.membership.create.mockResolvedValue({
+      id: 1n,
+      organizationId: 2n,
+      userId: 9n,
+    });
+    prisma.user.findUniqueOrThrow = jest.fn().mockResolvedValue({
+      id: 9n,
+      email: 'john@acme.com',
+      memberships: [{ id: 1n, organizationId: 2n }],
+    });
+
+    const user = await service.createUserWithMembership({
+      email: 'john@acme.com',
+      organizationId: '2',
+      name: 'John',
+    });
+
+    expect(user).toBeDefined();
+    expect(prisma.membership.create).toHaveBeenCalledWith({
+      data: { userId: 9n, organizationId: 2n },
+    });
+  });
+
+  it('fails creating user when duplicate email exists', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.create = jest.fn().mockRejectedValue(new Error('P2002'));
+
+    await expect(
+      service.createUserWithMembership({
+        email: 'john@acme.com',
+        organizationId: '2',
+      }),
+    ).rejects.toThrow();
+  });
+
   it('attaches user to organization', async () => {
     prisma.organization.findFirst.mockResolvedValue({ id: 2n });
     prisma.user.findFirst.mockResolvedValue({ id: 9n });
@@ -47,6 +89,42 @@ describe('MembershipsService', () => {
 
     const result = await service.attachUser(2n, 9n);
     expect(result.organizationId).toBe(2n);
+  });
+
+  it('does not allow duplicate active membership', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findFirst.mockResolvedValue({ id: 9n });
+    prisma.membership.findFirst.mockResolvedValue({
+      id: 1n,
+      deletedAt: null,
+    });
+
+    await expect(service.attachUser(2n, 9n)).rejects.toThrow(
+      'Already a member',
+    );
+  });
+
+  it('reactivates a soft deleted membership', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findFirst.mockResolvedValue({ id: 9n });
+    prisma.membership.findFirst.mockResolvedValue({
+      id: 1n,
+      deletedAt: new Date().toISOString(),
+    });
+    prisma.membership.update.mockResolvedValue({
+      id: 1n,
+      organizationId: 2n,
+      userId: 9n,
+      deletedAt: null,
+    });
+
+    const result = await service.attachUser(2n, 9n);
+
+    expect(prisma.membership.update).toHaveBeenCalledWith({
+      where: { id: 1n },
+      data: { deletedAt: null },
+    });
+    expect(result.deletedAt).toBeNull();
   });
 
   it('maps unique constraint races to duplicate membership errors', async () => {
@@ -76,5 +154,38 @@ describe('MembershipsService', () => {
   it('throws not found when membership does not exist', async () => {
     prisma.membership.findFirst.mockResolvedValue(null);
     await expect(service.detachUser(2n, 9n)).rejects.toThrow(NotFoundException);
+  });
+
+  it('changes role for active membership', async () => {
+    prisma.membership.findFirst.mockResolvedValue({ id: 1n });
+    prisma.membership.update.mockResolvedValue({
+      id: 1n,
+      role: 'admin',
+    });
+
+    const result = await service.changeRole(2n, 9n, 'admin');
+
+    expect(prisma.membership.update).toHaveBeenCalledWith({
+      where: { id: 1n },
+      data: { role: 'admin' },
+    });
+    expect(result.role).toBe('admin');
+  });
+
+  it('does not create membership for deleted user', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findFirst.mockResolvedValue(null);
+
+    await expect(service.attachUser(2n, 9n)).rejects.toThrow(
+      'User is not active',
+    );
+  });
+
+  it('does not create membership for deleted organization', async () => {
+    prisma.organization.findFirst.mockResolvedValue(null);
+
+    await expect(service.attachUser(2n, 9n)).rejects.toThrow(
+      'Organization is not active',
+    );
   });
 });

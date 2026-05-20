@@ -43,4 +43,40 @@ describe('OrganizationsService', () => {
 
     expect(membershipsService.detachUser).toHaveBeenCalledWith(2n, 9n);
   });
+
+  it('does not allow duplicate organization slug', async () => {
+    prisma.organization.create.mockRejectedValue(new Error('Unique failed'));
+
+    await expect(
+      service.create({ name: 'Acme 2', slug: 'acme' }),
+    ).rejects.toThrow();
+  });
+
+  it('soft deletes organization by setting deletedAt', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.organization.update.mockResolvedValue({
+      id: 2n,
+      deletedAt: new Date().toISOString(),
+    });
+
+    const result = await service.remove(2n);
+
+    const updateMock = prisma.organization.update;
+    const [updateArgs] = updateMock.mock.calls[0] as [
+      { where: { id: bigint }; data: { deletedAt: Date } },
+    ];
+    expect(updateArgs.where.id).toBe(2n);
+    expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
+    expect(result.deletedAt).toBeDefined();
+  });
+
+  it('does not allow adding user to deleted organization', async () => {
+    membershipsService.attachUser.mockRejectedValue(
+      new Error('Organization is not active'),
+    );
+
+    await expect(service.attachUser(2n, 9n)).rejects.toThrow(
+      'Organization is not active',
+    );
+  });
 });
