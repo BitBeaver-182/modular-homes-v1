@@ -4,27 +4,30 @@ describe('validateEnv', () => {
   it('returns normalized values for valid input', () => {
     const result = validateEnv({
       NODE_ENV: 'test',
-      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/postgres',
+      DATABASE_TYPE: "postgresql",
+      DATABASE_USER: "username",
+      DATABASE_PASSWORD: "password",
+      DATABASE_HOST: "locohost",
+      DATABASE_PORT: "5434",
+      DATABASE_NAME: "testdb"
     });
 
     expect(result).toEqual({
       NODE_ENV: 'test',
-      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/postgres',
+      DATABASE_URL: 'postgresql://username:password@locohost:5434/testdb',
     });
   });
 
-  it('throws when DATABASE_URL and db parts are missing', () => {
-    expect(() =>
-      validateEnv({
-        NODE_ENV: 'test',
-      }),
-    ).toThrow('DATABASE_TYPE must be one of: postgresql, mysql, mongodb');
-  });
 
   it('throws when NODE_ENV is missing', () => {
     expect(() =>
       validateEnv({
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/postgres',
+        DATABASE_TYPE: "postgresql",
+        DATABASE_USER: "username",
+        DATABASE_PASSWORD: "password",
+        DATABASE_HOST: "locohost",
+        DATABASE_PORT: "5434",
+        DATABASE_NAME: "testdb"
       }),
     ).toThrow('NODE_ENV is required');
   });
@@ -68,12 +71,37 @@ describe('validateEnv', () => {
     ).toThrow('DATABASE_PASSWORD is required');
   });
 
-  it('throws when DATABASE_TYPE is invalid', () => {
+  it('throws when any required db part is missing while DATABASE_URL is absent', () => {
+    const baseConfig = {
+      NODE_ENV: 'test' as const,
+      DATABASE_TYPE: 'postgresql',
+      DATABASE_HOST: '127.0.0.1',
+      DATABASE_PORT: '5432',
+      DATABASE_NAME: 'moduflow',
+      DATABASE_USER: 'postgres',
+      DATABASE_PASSWORD: 'postgres',
+    };
+
+    const cases: Array<[keyof typeof baseConfig, string]> = [
+      ['DATABASE_TYPE', 'DATABASE_TYPE is required'],
+      ['DATABASE_USER', 'DATABASE_USER is required'],
+      ['DATABASE_PASSWORD', 'DATABASE_PASSWORD is required'],
+      ['DATABASE_HOST', 'DATABASE_HOST is required'],
+      ['DATABASE_NAME', 'DATABASE_NAME is required'],
+      ['DATABASE_PORT', 'DATABASE_PORT is required'],
+    ];
+
+    for (const [key, expectedMessage] of cases) {
+      const { [key]: _, ...partialConfig } = baseConfig;
+      expect(() => validateEnv(partialConfig)).toThrow(expectedMessage);
+    }
+  });
+
+  it('throws when DATABASE_TYPE is missing', () => {
     expect(() =>
       validateEnv({
         NODE_ENV: 'test',
-        DATABASE_TYPE: 'sqlite',
       }),
-    ).toThrow('DATABASE_TYPE must be one of: postgresql, mysql, mongodb');
+    ).toThrow('DATABASE_TYPE is required');
   });
 });

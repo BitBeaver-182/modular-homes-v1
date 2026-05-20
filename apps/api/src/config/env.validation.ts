@@ -9,7 +9,6 @@ export interface AppEnv {
 
 export function validateEnv(config: Record<string, unknown>): AppEnv {
   const rawNodeEnv = config.NODE_ENV;
-  const dbUrl = config.DATABASE_URL;
 
   if (typeof rawNodeEnv !== 'string' || rawNodeEnv.length === 0) {
     throw new Error('NODE_ENV is required');
@@ -23,10 +22,7 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     throw new Error('NODE_ENV must be one of: development, test, production');
   }
 
-  const resolvedDatabaseUrl =
-    typeof dbUrl === 'string' && dbUrl.length > 0
-      ? dbUrl
-      : buildDatabaseUrlFromParts(config);
+  const resolvedDatabaseUrl = buildDatabaseUrlFromParts(config);
 
   return {
     NODE_ENV: rawNodeEnv,
@@ -35,7 +31,7 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
 }
 
 function buildDatabaseUrlFromParts(config: Record<string, unknown>): string {
-  const type = resolveDatabaseType(config.DATABASE_TYPE);
+  const type = getRequiredString(config.DATABASE_TYPE, 'DATABASE_TYPE');
   const user = getRequiredString(config.DATABASE_USER, 'DATABASE_USER');
   const password = getRequiredString(config.DATABASE_PASSWORD, 'DATABASE_PASSWORD');
   const host = getRequiredString(config.DATABASE_HOST, 'DATABASE_HOST');
@@ -45,18 +41,6 @@ function buildDatabaseUrlFromParts(config: Record<string, unknown>): string {
   const encodedPassword = encodeURIComponent(password);
 
   return `${type}://${encodedUser}:${encodedPassword}@${host}:${port}/${database}`;
-}
-
-function resolveDatabaseType(rawValue: unknown): DatabaseType {
-  if (
-    rawValue === 'postgresql' ||
-    rawValue === 'mysql' ||
-    rawValue === 'mongodb'
-  ) {
-    return rawValue;
-  }
-
-  throw new Error('DATABASE_TYPE must be one of: postgresql, mysql, mongodb');
 }
 
 function getRequiredString(rawValue: unknown, keyName: string): string {
