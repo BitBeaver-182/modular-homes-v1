@@ -23,10 +23,10 @@ describe('Membership lifecycle (e2e)', () => {
   };
 
   const organizationsServiceMock = {
-    create: jest.fn(() => ({ id: 2n, name: 'Acme' })),
-    findAll: jest.fn(() => [{ id: 2n, name: 'Acme' }]),
-    findOne: jest.fn(() => ({ id: 2n, name: 'Acme' })),
-    update: jest.fn(() => ({ id: 2n, name: 'Acme Updated' })),
+    create: jest.fn(() => ({ id: 2n, name: 'Acme', slug: 'acme' })),
+    findAll: jest.fn(() => [{ id: 2n, name: 'Acme', slug: 'acme' }]),
+    findOne: jest.fn(() => ({ id: 2n, name: 'Acme', slug: 'acme' })),
+    update: jest.fn(() => ({ id: 2n, name: 'Acme Updated', slug: 'acme' })),
     remove: jest.fn(() => ({
       id: 2n,
       deletedAt: new Date().toISOString(),
@@ -71,7 +71,7 @@ describe('Membership lifecycle (e2e)', () => {
   it('supports user-org membership lifecycle with last-membership guard', async () => {
     await request(httpServer)
       .post('/organizations')
-      .send({ name: 'Acme' })
+      .send({ name: 'Acme', slug: 'acme' })
       .expect(201);
     await request(httpServer)
       .post('/users')
@@ -100,5 +100,14 @@ describe('Membership lifecycle (e2e)', () => {
       .expect(400);
 
     expect(organizationsServiceMock.attachUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid user payloads at the validation layer', async () => {
+    await request(httpServer)
+      .post('/users')
+      .send({ email: 'not-an-email', organizationId: '2' })
+      .expect(400);
+
+    expect(usersServiceMock.create).not.toHaveBeenCalled();
   });
 });

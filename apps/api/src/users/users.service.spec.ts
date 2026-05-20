@@ -26,11 +26,11 @@ describe('UsersService', () => {
       email: 'user@example.com',
     });
 
-    await service.create({ email: 'user@example.com', organizationId: 2n });
+    await service.create({ email: 'user@example.com', organizationId: '2' });
 
     expect(membershipsService.createUserWithMembership).toHaveBeenCalledWith({
       email: 'user@example.com',
-      organizationId: 2n,
+      organizationId: '2',
     });
   });
 

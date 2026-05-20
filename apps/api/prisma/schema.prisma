@@ -18,6 +18,8 @@ model User {
   name      String?
   avatarUrl String?
 
+  // Keep both flags for now: `isActive` handles explicit account suspension,
+  // while `deletedAt` is reserved for soft deletion/audit.
   isActive  Boolean  @default(true)
 
   createdAt DateTime @default(now())
@@ -35,6 +37,8 @@ model Organization {
   name      String
   slug      String   @unique
 
+  // Keep both flags for now: `isActive` handles explicit suspension,
+  // while `deletedAt` is reserved for soft deletion/audit.
   isActive  Boolean  @default(true)
 
   createdAt DateTime @default(now())
@@ -74,6 +78,7 @@ enum MembershipRole {
 }
 
 model ExternalAccount {
+  // Planned for upcoming provider-auth integration.
   id             BigInt   @id @default(autoincrement())
   userId         BigInt
   provider       String
@@ -91,6 +96,7 @@ model ExternalAccount {
 }
 
 model OrganizationConnection {
+  // Planned for upcoming external org-provider integration.
   id             BigInt   @id @default(autoincrement())
   organizationId BigInt
   provider       String

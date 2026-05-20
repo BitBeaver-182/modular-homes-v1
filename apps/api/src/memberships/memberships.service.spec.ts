@@ -31,7 +31,7 @@ describe('MembershipsService', () => {
 
   it('fails to create user without organizationId', async () => {
     await expect(
-      service.createUserWithMembership({ email: 'x@example.com' }),
+      service.createUserWithMembership({ email: 'x@example.com' } as never),
     ).rejects.toThrow(BadRequestException);
   });
 
