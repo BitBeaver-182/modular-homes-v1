@@ -4,12 +4,12 @@ describe('validateEnv', () => {
   it('returns normalized values for valid input', () => {
     const result = validateEnv({
       NODE_ENV: 'test',
-      DATABASE_TYPE: "postgresql",
-      DATABASE_USER: "username",
-      DATABASE_PASSWORD: "password",
-      DATABASE_HOST: "locohost",
-      DATABASE_PORT: "5434",
-      DATABASE_NAME: "testdb"
+      DATABASE_TYPE: 'postgresql',
+      DATABASE_USER: 'username',
+      DATABASE_PASSWORD: 'password',
+      DATABASE_HOST: 'locohost',
+      DATABASE_PORT: '5434',
+      DATABASE_NAME: 'testdb',
     });
 
     expect(result).toEqual({
@@ -18,16 +18,15 @@ describe('validateEnv', () => {
     });
   });
 
-
   it('throws when NODE_ENV is missing', () => {
     expect(() =>
       validateEnv({
-        DATABASE_TYPE: "postgresql",
-        DATABASE_USER: "username",
-        DATABASE_PASSWORD: "password",
-        DATABASE_HOST: "locohost",
-        DATABASE_PORT: "5434",
-        DATABASE_NAME: "testdb"
+        DATABASE_TYPE: 'postgresql',
+        DATABASE_USER: 'username',
+        DATABASE_PASSWORD: 'password',
+        DATABASE_HOST: 'locohost',
+        DATABASE_PORT: '5434',
+        DATABASE_NAME: 'testdb',
       }),
     ).toThrow('NODE_ENV is required');
   });
@@ -92,7 +91,8 @@ describe('validateEnv', () => {
     ];
 
     for (const [key, expectedMessage] of cases) {
-      const { [key]: _, ...partialConfig } = baseConfig;
+      const partialConfig = { ...baseConfig };
+      delete partialConfig[key];
       expect(() => validateEnv(partialConfig)).toThrow(expectedMessage);
     }
   });

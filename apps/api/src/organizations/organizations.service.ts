@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
@@ -44,7 +48,10 @@ export class OrganizationsService {
     });
   }
 
-  async assertUserBelongsToOrganization(organizationId: bigint, userId: bigint) {
+  async assertUserBelongsToOrganization(
+    organizationId: bigint,
+    userId: bigint,
+  ) {
     const membership = await this.prisma.membership.findFirst({
       where: { organizationId, userId, deletedAt: null },
       select: { id: true },
@@ -70,7 +77,9 @@ export class OrganizationsService {
       select: { id: true },
     });
     if (existing) {
-      throw new BadRequestException('User is already a member of this organization');
+      throw new BadRequestException(
+        'User is already a member of this organization',
+      );
     }
 
     return this.prisma.membership.create({
@@ -91,7 +100,9 @@ export class OrganizationsService {
       where: { userId, deletedAt: null },
     });
     if (activeMembershipCount <= 1) {
-      throw new BadRequestException('User must belong to at least one organization');
+      throw new BadRequestException(
+        'User must belong to at least one organization',
+      );
     }
 
     return this.prisma.membership.update({

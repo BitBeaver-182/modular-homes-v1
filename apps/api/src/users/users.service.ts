@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -99,7 +103,9 @@ export class UsersService {
       where: { userId, deletedAt: null },
     });
     if (activeMembershipCount <= 1) {
-      throw new BadRequestException('User must belong to at least one organization');
+      throw new BadRequestException(
+        'User must belong to at least one organization',
+      );
     }
 
     return this.prisma.membership.update({

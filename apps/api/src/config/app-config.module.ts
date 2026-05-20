@@ -3,7 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './env.validation';
 import { AppConfigService } from './app-config.service';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -12,9 +11,7 @@ import { AppConfigService } from './app-config.service';
       validate: validateEnv,
     }),
   ],
-  providers: [
-    AppConfigService,
-  ],
+  providers: [AppConfigService],
   exports: [AppConfigService],
 })
-export class AppConfigModule { }
+export class AppConfigModule {}

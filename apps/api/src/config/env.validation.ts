@@ -1,4 +1,3 @@
-
 export type NodeEnv = 'development' | 'test' | 'production';
 export type DatabaseType = 'postgresql' | 'mysql' | 'mongodb';
 
@@ -33,7 +32,10 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
 function buildDatabaseUrlFromParts(config: Record<string, unknown>): string {
   const type = getRequiredString(config.DATABASE_TYPE, 'DATABASE_TYPE');
   const user = getRequiredString(config.DATABASE_USER, 'DATABASE_USER');
-  const password = getRequiredString(config.DATABASE_PASSWORD, 'DATABASE_PASSWORD');
+  const password = getRequiredString(
+    config.DATABASE_PASSWORD,
+    'DATABASE_PASSWORD',
+  );
   const host = getRequiredString(config.DATABASE_HOST, 'DATABASE_HOST');
   const database = getRequiredString(config.DATABASE_NAME, 'DATABASE_NAME');
   const port = getRequiredString(config.DATABASE_PORT, 'DATABASE_PORT');

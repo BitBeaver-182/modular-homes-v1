@@ -57,6 +57,17 @@ $ pnpm run test:e2e
 $ pnpm run test:cov
 ```
 
+## API notes
+
+- Users must always belong to at least one organization.
+- User creation requires an organization context via `organizationId`.
+- Memberships are managed through organization routes (no memberships controller):
+  - `POST /organizations/:id/users` with body `{ "userId": "<id>" }`
+  - `DELETE /organizations/:id/users/:userId`
+- Global user CRUD is also available:
+  - `POST /users`, `GET /users`, `GET /users/:id`, `PATCH /users/:id`, `DELETE /users/:id`
+- Users and organizations use soft delete semantics via `deletedAt`.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
