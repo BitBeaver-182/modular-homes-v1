@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    // "module": "commonjs",
+    "module": "Node16",
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,
@@ -19,8 +19,9 @@
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node16",
+    "rootDir": "./src",
     "strict": true
-  }
+  },
+  "include": ["src/**/*.ts"]
 }

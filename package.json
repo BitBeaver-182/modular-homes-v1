@@ -5,12 +5,10 @@
   "description": "Moduflow backend workspace",
   "packageManager": "pnpm@10.29.1",
   "scripts": {
-    "build": "pnpm build:api",
-    "start": "pnpm start:api",
+    "build": "pnpm --filter api build",
+    "start": "pnpm --filter api start",
     "lint": "pnpm --filter api lint",
     "typecheck": "pnpm --filter api typecheck",
-    "test": "pnpm --filter api test --runInBand",
-    "build:api": "pnpm --filter api build",
-    "start:api": "pnpm --filter api start:prod"
+    "test": "pnpm --filter api test --runInBand"
   }
 }

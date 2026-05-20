@@ -1,9 +1,11 @@
-import fs from 'node:fs';
-import path from 'node:path';
+/// <reference types="node" />
+
+import * as fs from 'fs';
+import * as path from 'path';
 import { defineConfig } from 'prisma/config';
 import { buildDatabaseUrlFromParts } from './src/config/env.validation.js';
 
-const configDirectory = import.meta.dirname;
+const configDirectory = process.cwd();
 
 loadEnvFiles();
 
