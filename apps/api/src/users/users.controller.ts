@@ -10,6 +10,7 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { parseBigIntId } from '../common/ids/parse-bigint-id';
 
 @Controller('users')
 export class UsersController {
@@ -27,16 +28,16 @@ export class UsersController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(BigInt(id));
+    return this.usersService.findOne(parseBigIntId(id));
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(BigInt(id), updateUserDto);
+    return this.usersService.update(parseBigIntId(id), updateUserDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.usersService.remove(BigInt(id));
+    return this.usersService.remove(parseBigIntId(id));
   }
 }

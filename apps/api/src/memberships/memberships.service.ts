@@ -5,19 +5,21 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { parseBigIntId } from '../common/ids/parse-bigint-id';
 
 @Injectable()
 export class MembershipsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createUserWithMembership(createUserDto: CreateUserDto) {
-    if (!createUserDto.organizationId) {
-      throw new BadRequestException('organizationId is required');
-    }
+    const organizationId = parseBigIntId(
+      createUserDto.organizationId,
+      'organizationId',
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const organization = await tx.organization.findFirst({
-        where: { id: createUserDto.organizationId, deletedAt: null },
+        where: { id: organizationId, deletedAt: null },
         select: { id: true },
       });
       if (!organization) {
@@ -35,7 +37,7 @@ export class MembershipsService {
       await tx.membership.create({
         data: {
           userId: user.id,
-          organizationId: createUserDto.organizationId!,
+          organizationId,
         },
       });
 

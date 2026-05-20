@@ -10,6 +10,7 @@ import {
 import { OrganizationsService } from './organizations.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { parseBigIntId } from '../common/ids/parse-bigint-id';
 
 @Controller('organizations')
 export class OrganizationsController {
@@ -27,7 +28,7 @@ export class OrganizationsController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.organizationsService.findOne(BigInt(id));
+    return this.organizationsService.findOne(parseBigIntId(id));
   }
 
   @Patch(':id')
@@ -35,12 +36,15 @@ export class OrganizationsController {
     @Param('id') id: string,
     @Body() updateOrganizationDto: UpdateOrganizationDto,
   ) {
-    return this.organizationsService.update(BigInt(id), updateOrganizationDto);
+    return this.organizationsService.update(
+      parseBigIntId(id),
+      updateOrganizationDto,
+    );
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.organizationsService.remove(BigInt(id));
+    return this.organizationsService.remove(parseBigIntId(id));
   }
 
   @Post(':id/users')
@@ -48,7 +52,10 @@ export class OrganizationsController {
     @Param('id') id: string,
     @Body('userId') userId: string,
   ) {
-    return this.organizationsService.attachUser(BigInt(id), BigInt(userId));
+    return this.organizationsService.attachUser(
+      parseBigIntId(id),
+      parseBigIntId(userId, 'userId'),
+    );
   }
 
   @Delete(':id/users/:userId')
@@ -56,6 +63,9 @@ export class OrganizationsController {
     @Param('id') id: string,
     @Param('userId') userId: string,
   ) {
-    return this.organizationsService.detachUser(BigInt(id), BigInt(userId));
+    return this.organizationsService.detachUser(
+      parseBigIntId(id),
+      parseBigIntId(userId, 'userId'),
+    );
   }
 }
