@@ -17,11 +17,15 @@ describe('MembershipsService', () => {
     },
     $transaction: jest.fn(),
   };
+  type TransactionCallback = (client: typeof prisma) => unknown;
 
   let service: MembershipsService;
 
   beforeEach(() => {
     jest.resetAllMocks();
+    prisma.$transaction.mockImplementation((callback: TransactionCallback) =>
+      Promise.resolve(callback(prisma)),
+    );
     service = new MembershipsService(prisma as never);
   });
 
@@ -43,6 +47,17 @@ describe('MembershipsService', () => {
 
     const result = await service.attachUser(2n, 9n);
     expect(result.organizationId).toBe(2n);
+  });
+
+  it('maps unique constraint races to duplicate membership errors', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findFirst.mockResolvedValue({ id: 9n });
+    prisma.membership.findFirst.mockResolvedValue(null);
+    prisma.membership.create.mockRejectedValue({ code: 'P2002' });
+
+    await expect(service.attachUser(2n, 9n)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('blocks detaching last membership', async () => {

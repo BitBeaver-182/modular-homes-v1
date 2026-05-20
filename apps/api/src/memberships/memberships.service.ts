@@ -49,58 +49,80 @@ export class MembershipsService {
   }
 
   async attachUser(organizationId: bigint, userId: bigint) {
-    const organization = await this.prisma.organization.findFirst({
-      where: { id: organizationId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!organization) {
-      throw new NotFoundException('Organization not found');
-    }
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const organization = await tx.organization.findFirst({
+          where: { id: organizationId, deletedAt: null },
+          select: { id: true },
+        });
+        if (!organization) {
+          throw new NotFoundException('Organization not found');
+        }
 
-    const user = await this.prisma.user.findFirst({
-      where: { id: userId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+        const user = await tx.user.findFirst({
+          where: { id: userId, deletedAt: null },
+          select: { id: true },
+        });
+        if (!user) {
+          throw new NotFoundException('User not found');
+        }
 
-    const existing = await this.prisma.membership.findFirst({
-      where: { organizationId, userId, deletedAt: null },
-      select: { id: true },
-    });
-    if (existing) {
-      throw new BadRequestException(
-        'User is already a member of this organization',
-      );
-    }
+        const existing = await tx.membership.findFirst({
+          where: { organizationId, userId, deletedAt: null },
+          select: { id: true },
+        });
+        if (existing) {
+          throw new BadRequestException(
+            'User is already a member of this organization',
+          );
+        }
 
-    return this.prisma.membership.create({
-      data: { organizationId, userId },
-    });
+        return tx.membership.create({
+          data: { organizationId, userId },
+        });
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new BadRequestException(
+          'User is already a member of this organization',
+        );
+      }
+      throw error;
+    }
   }
 
   async detachUser(organizationId: bigint, userId: bigint) {
-    const membership = await this.prisma.membership.findFirst({
-      where: { organizationId, userId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!membership) {
-      throw new NotFoundException('Membership not found');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const membership = await tx.membership.findFirst({
+        where: { organizationId, userId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!membership) {
+        throw new NotFoundException('Membership not found');
+      }
 
-    const activeMembershipCount = await this.prisma.membership.count({
-      where: { userId, deletedAt: null },
-    });
-    if (activeMembershipCount <= 1) {
-      throw new BadRequestException(
-        'User must belong to at least one organization',
-      );
-    }
+      const activeMembershipCount = await tx.membership.count({
+        where: { userId, deletedAt: null },
+      });
+      if (activeMembershipCount <= 1) {
+        throw new BadRequestException(
+          'User must belong to at least one organization',
+        );
+      }
 
-    return this.prisma.membership.update({
-      where: { id: membership.id },
-      data: { deletedAt: new Date() },
+      return tx.membership.update({
+        where: { id: membership.id },
+        data: { deletedAt: new Date() },
+      });
     });
   }
+}
+
+function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  );
 }
