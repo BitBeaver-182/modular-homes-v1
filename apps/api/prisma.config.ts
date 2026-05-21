@@ -4,9 +4,7 @@ import { defineConfig, PrismaConfig } from 'prisma/config';
 import { loadResolvedEnvFiles } from './src/config/env-files.js';
 import { resolveMigrationDatabaseUrl } from './src/config/env.validation.js';
 
-const configDirectory = process.cwd();
-
-loadResolvedEnvFiles(configDirectory);
+loadResolvedEnvFiles(process.cwd());
 
 export default defineConfig({
   schema: './prisma/schema.prisma',

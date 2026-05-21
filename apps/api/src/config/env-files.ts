@@ -9,13 +9,8 @@ export function resolveEnvFilePaths(
   runtimeNodeEnv = process.env.NODE_ENV,
 ): string[] {
   const nodeEnv = runtimeNodeEnv ?? readNodeEnvFromBaseEnvFile(configDirectory);
-  const includeSharedLocalEnv = nodeEnv !== 'test';
 
   return [
-    nodeEnv
-      ? path.join(configDirectory, `${ENV_FILE_NAME}.${nodeEnv}.local`)
-      : null,
-    includeSharedLocalEnv ? path.join(configDirectory, `${ENV_FILE_NAME}.local`) : null,
     nodeEnv ? path.join(configDirectory, `${ENV_FILE_NAME}.${nodeEnv}`) : null,
     path.join(configDirectory, ENV_FILE_NAME),
   ].filter((value): value is string => value !== null);
