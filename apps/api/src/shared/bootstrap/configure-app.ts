@@ -7,10 +7,10 @@ type ConfigureAppOptions = {
   quietLogger?: boolean;
 };
 
-export async function configureApp(
+export function configureApp(
   app: INestApplication,
   options: ConfigureAppOptions,
-): Promise<void> {
+): void {
   const configurator = new AppConfigurator(app);
 
   if (options.quietLogger) {

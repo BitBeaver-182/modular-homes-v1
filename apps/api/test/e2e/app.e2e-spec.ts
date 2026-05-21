@@ -11,6 +11,28 @@ type EntityReference = {
   id: string;
 };
 
+type OrganizationResponse = EntityReference & {
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+type MembershipResponse = EntityReference & {
+  organizationId: string;
+  userId: string;
+  deletedAt: string | null;
+};
+
+type UserResponse = EntityReference & {
+  email: string;
+  name?: string;
+  avatarUrl?: string;
+  deletedAt: string | null;
+  memberships: MembershipResponse[];
+};
+
 type HealthResponse = {
   status: 'ok';
   service: 'api';
@@ -43,12 +65,11 @@ describe('API (e2e)', () => {
     const healthResponse = await request(httpServer)
       .get('/api/health')
       .expect(200);
+    const body = healthResponse.body as HealthResponse;
 
-    expect(healthResponse.body).toEqual({
-      status: 'ok',
-      service: 'api',
-      timestamp: expect.any(String),
-    } satisfies HealthResponse);
+    expect(body.status).toBe('ok');
+    expect(body.service).toBe('api');
+    expect(body.timestamp).toEqual(expect.any(String));
   });
 
   it('creates, reads, updates, and soft deletes organizations through HTTP', async () => {
@@ -83,8 +104,10 @@ describe('API (e2e)', () => {
       .patch(`/api/organizations/${organization.id}`)
       .send({ name: 'Acme Homes Europe' })
       .expect(200);
+    const updatedOrganizationResponse =
+      updateResponse.body as OrganizationResponse;
 
-    expect(updateResponse.body.name).toBe('Acme Homes Europe');
+    expect(updatedOrganizationResponse.name).toBe('Acme Homes Europe');
 
     const updatedOrganization = await prisma.organization.findUniqueOrThrow({
       where: { id: BigInt(organization.id) },
@@ -123,15 +146,16 @@ describe('API (e2e)', () => {
         organizationId: firstOrganization.id,
       })
       .expect(201);
+    const createdUser = userResponse.body as UserResponse;
 
-    expect(userResponse.body.id).toEqual(expect.any(String));
-    expect(userResponse.body.memberships).toHaveLength(1);
-    expect(userResponse.body.memberships[0]).toMatchObject({
+    expect(createdUser.id).toEqual(expect.any(String));
+    expect(createdUser.memberships).toHaveLength(1);
+    expect(createdUser.memberships[0]).toMatchObject({
       organizationId: firstOrganization.id,
       deletedAt: null,
     });
 
-    const user = userResponse.body as EntityReference;
+    const user: EntityReference = { id: createdUser.id };
 
     const persistedUser = await prisma.user.findUniqueOrThrow({
       where: { id: BigInt(user.id) },
@@ -144,13 +168,15 @@ describe('API (e2e)', () => {
       .get(`/api/users/${user.id}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toMatchObject({
+        const fetchedUser = response.body as UserResponse;
+
+        expect(fetchedUser).toMatchObject({
           id: user.id,
           email: 'user@example.com',
           name: 'Initial User',
           deletedAt: null,
         });
-        expect(response.body.memberships).toHaveLength(1);
+        expect(fetchedUser.memberships).toHaveLength(1);
       });
 
     const updateResponse = await request(httpServer)
@@ -160,9 +186,10 @@ describe('API (e2e)', () => {
         avatarUrl: 'https://example.com/avatar.png',
       })
       .expect(200);
+    const updatedUserResponse = updateResponse.body as UserResponse;
 
-    expect(updateResponse.body.name).toBe('Updated User');
-    expect(updateResponse.body.avatarUrl).toBe(
+    expect(updatedUserResponse.name).toBe('Updated User');
+    expect(updatedUserResponse.avatarUrl).toBe(
       'https://example.com/avatar.png',
     );
 
@@ -212,8 +239,10 @@ describe('API (e2e)', () => {
       .post(`/api/organizations/${secondOrganization.id}/users`)
       .send({ userId: user.id })
       .expect(201);
+    const attachedMembershipResponse =
+      attachResponse.body as MembershipResponse;
 
-    expect(attachResponse.body).toMatchObject({
+    expect(attachedMembershipResponse).toMatchObject({
       organizationId: secondOrganization.id,
       userId: user.id,
       deletedAt: null,
@@ -274,6 +303,7 @@ describe('API (e2e)', () => {
       .post(`/api/organizations/${secondaryOrganization.id}/users`)
       .send({ userId: user.id })
       .expect(201);
+    const initialMembership = initialAttachResponse.body as MembershipResponse;
 
     await request(httpServer)
       .delete(`/api/organizations/${secondaryOrganization.id}/users/${user.id}`)
@@ -283,8 +313,9 @@ describe('API (e2e)', () => {
       .post(`/api/organizations/${secondaryOrganization.id}/users`)
       .send({ userId: user.id })
       .expect(201);
+    const reactivatedMembership = reattachResponse.body as MembershipResponse;
 
-    expect(reattachResponse.body.id).toBe(initialAttachResponse.body.id);
+    expect(reactivatedMembership.id).toBe(initialMembership.id);
 
     const memberships = await prisma.membership.findMany({
       where: {
