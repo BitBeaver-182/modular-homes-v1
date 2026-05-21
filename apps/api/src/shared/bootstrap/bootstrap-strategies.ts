@@ -14,8 +14,8 @@ abstract class BaseBootstrapStrategy extends BootstrapStrategy {
     super();
   }
 
-  configure(app: INestApplication): Promise<void> {
-    return configureApp(app, {
+  configure(app: INestApplication): void {
+    configureApp(app, {
       nodeEnv: this.nodeEnv,
       quietLogger: this.quietLogger,
     });
