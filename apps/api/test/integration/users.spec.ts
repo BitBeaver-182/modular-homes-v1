@@ -1,14 +1,14 @@
 import { INestApplication, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../src/database/prisma.service';
-import { UsersService } from '../src/users/users.service';
+import { PrismaService } from '../../src/database/prisma.service';
+import { UsersService } from '../../src/users/users.service';
 import {
   applyTestMigrations,
   createRealDbTestApp,
   truncateTestDatabase,
-} from './helpers/db-test-harness';
-import { createOrganization } from './helpers/db-factories';
+} from '../helpers/db-test-harness';
+import { createOrganization } from '../helpers/db-factories';
 
-describe('UsersService (integration:db)', () => {
+describe('UsersService (integration)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let usersService: UsersService;

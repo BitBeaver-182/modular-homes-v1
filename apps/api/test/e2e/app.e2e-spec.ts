@@ -1,13 +1,13 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { PrismaService } from '../src/database/prisma.service';
+import { PrismaService } from '../../src/database/prisma.service';
 import {
   applyTestMigrations,
   createRealDbTestApp,
   truncateTestDatabase,
-} from './helpers/db-test-harness';
+} from '../helpers/db-test-harness';
 
-describe('Membership lifecycle (e2e:db)', () => {
+describe('Membership lifecycle (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
 

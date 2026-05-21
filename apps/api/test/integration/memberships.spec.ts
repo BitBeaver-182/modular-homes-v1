@@ -3,18 +3,18 @@ import {
   INestApplication,
   NotFoundException,
 } from '@nestjs/common';
-import { MembershipsService } from '../src/memberships/memberships.service';
-import { OrganizationsService } from '../src/organizations/organizations.service';
-import { PrismaService } from '../src/database/prisma.service';
-import { UsersService } from '../src/users/users.service';
+import { MembershipsService } from '../../src/memberships/memberships.service';
+import { OrganizationsService } from '../../src/organizations/organizations.service';
+import { PrismaService } from '../../src/database/prisma.service';
+import { UsersService } from '../../src/users/users.service';
 import {
   applyTestMigrations,
   createRealDbTestApp,
   truncateTestDatabase,
-} from './helpers/db-test-harness';
-import { createOrganization } from './helpers/db-factories';
+} from '../helpers/db-test-harness';
+import { createOrganization } from '../helpers/db-factories';
 
-describe('MembershipsService (integration:db)', () => {
+describe('MembershipsService (integration)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let membershipsService: MembershipsService;
