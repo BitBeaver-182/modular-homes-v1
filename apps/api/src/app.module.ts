@@ -9,10 +9,12 @@ import { UsersModule } from './users/users.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 import { ValidationPipe } from '@nestjs/common';
+import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
 
 @Module({
   imports: [
     AppConfigModule,
+    BootstrapModule,
     DatabaseModule,
     HealthModule,
     UsersModule,

@@ -2,12 +2,13 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './env.validation';
 import { AppConfigService } from './app-config.service';
+import { resolveEnvFilePaths } from './env-files';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: resolveEnvFilePaths(process.cwd()),
       validate: validateEnv,
     }),
   ],

@@ -15,4 +15,8 @@ export class AppConfigService {
       'DATABASE_URL',
     );
   }
+
+  get directUrl(): string {
+    return this.configService.getOrThrow<AppEnv['DIRECT_URL']>('DIRECT_URL');
+  }
 }
