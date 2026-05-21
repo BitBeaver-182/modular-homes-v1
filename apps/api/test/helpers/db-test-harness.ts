@@ -10,7 +10,7 @@ type TableRow = {
   table_name: string;
 };
 
-export async function applyTestMigrations(): Promise<void> {
+export function applyTestMigrations(): void {
   execFileSync('pnpm', ['prisma:deploy'], {
     cwd: resolve(__dirname, '../..'),
     env: {
@@ -59,7 +59,9 @@ export async function truncateTestDatabase(
   }
 
   await prisma.$executeRawUnsafe(
-    `TRUNCATE TABLE ${tables.map(({ table_name }) => quoteIdentifier(table_name)).join(', ')} RESTART IDENTITY CASCADE;`,
+    `TRUNCATE TABLE ${tables
+      .map(({ table_name }) => quoteIdentifier(table_name))
+      .join(', ')} RESTART IDENTITY CASCADE;`,
   );
 }
 

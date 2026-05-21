@@ -7,7 +7,9 @@ export async function createOrganization(
     slug: string;
   }>,
 ) {
-  const slug = overrides?.slug ?? `org-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const slug =
+    overrides?.slug ??
+    `org-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
   return prisma.organization.create({
     data: {

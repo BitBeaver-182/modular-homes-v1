@@ -22,7 +22,7 @@ describe('MembershipsService (integration)', () => {
   let usersService: UsersService;
 
   beforeAll(async () => {
-    await applyTestMigrations();
+    applyTestMigrations();
 
     const testApp = await createRealDbTestApp();
     app = testApp.app;

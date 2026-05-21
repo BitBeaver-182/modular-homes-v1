@@ -14,7 +14,7 @@ describe('UsersService (integration)', () => {
   let usersService: UsersService;
 
   beforeAll(async () => {
-    await applyTestMigrations();
+    applyTestMigrations();
 
     const testApp = await createRealDbTestApp();
     app = testApp.app;
@@ -31,7 +31,9 @@ describe('UsersService (integration)', () => {
   });
 
   it('creates a user with an initial membership in the requested organization', async () => {
-    const organization = await createOrganization(prisma, { slug: 'users-create-org' });
+    const organization = await createOrganization(prisma, {
+      slug: 'users-create-org',
+    });
 
     const user = await usersService.create({
       email: 'john@example.com',
@@ -45,8 +47,12 @@ describe('UsersService (integration)', () => {
   });
 
   it('enforces unique email addresses in the real database', async () => {
-    const firstOrganization = await createOrganization(prisma, { slug: 'users-unique-1' });
-    const secondOrganization = await createOrganization(prisma, { slug: 'users-unique-2' });
+    const firstOrganization = await createOrganization(prisma, {
+      slug: 'users-unique-1',
+    });
+    const secondOrganization = await createOrganization(prisma, {
+      slug: 'users-unique-2',
+    });
 
     await usersService.create({
       email: 'duplicate@example.com',
@@ -62,7 +68,9 @@ describe('UsersService (integration)', () => {
   });
 
   it('treats soft deleted users as not found', async () => {
-    const organization = await createOrganization(prisma, { slug: 'users-soft-delete-org' });
+    const organization = await createOrganization(prisma, {
+      slug: 'users-soft-delete-org',
+    });
     const user = await usersService.create({
       email: 'soft-delete@example.com',
       organizationId: organization.id.toString(),

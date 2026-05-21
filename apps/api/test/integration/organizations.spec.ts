@@ -13,7 +13,7 @@ describe('OrganizationsService (integration)', () => {
   let organizationsService: OrganizationsService;
 
   beforeAll(async () => {
-    await applyTestMigrations();
+    applyTestMigrations();
 
     const testApp = await createRealDbTestApp();
     app = testApp.app;
