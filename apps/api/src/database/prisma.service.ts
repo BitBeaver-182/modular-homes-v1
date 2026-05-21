@@ -15,6 +15,7 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(PrismaService.name);
+  private readonly pool: Pool;
 
   constructor(configService: AppConfigService) {
     const connectionString = configService.databaseUrl;
@@ -32,6 +33,7 @@ export class PrismaService
 
     const adapter = new PrismaPg(pool);
     super({ adapter });
+    this.pool = pool;
   }
 
   async onModuleInit(): Promise<void> {
@@ -41,6 +43,9 @@ export class PrismaService
 
   async onModuleDestroy(): Promise<void> {
     await this.$disconnect();
+    if (typeof this.pool.end === 'function') {
+      await this.pool.end();
+    }
     this.logger.log('Database connection closed');
   }
 }

@@ -75,6 +75,7 @@ jobs:
   e2e-tests:
     name: e2e-tests
     runs-on: ubuntu-latest
+    needs: integration-tests
     environment: testing
     env:
       NODE_ENV: test
