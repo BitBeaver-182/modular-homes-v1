@@ -13,6 +13,8 @@ import {
 } from '../helpers/db-test-harness';
 
 describe('MembershipsService (integration)', () => {
+  const toId = (value: bigint): bigint => value;
+
   let app: INestApplication;
   let prisma: PrismaService;
   let membershipsService: MembershipsService;
@@ -55,15 +57,18 @@ describe('MembershipsService (integration)', () => {
     });
 
     const createdMembership = await membershipsService.attachUser(
-      secondaryOrganization.id,
-      user.id,
+      toId(secondaryOrganization.id),
+      toId(user.id),
     );
 
-    await membershipsService.detachUser(secondaryOrganization.id, user.id);
+    await membershipsService.detachUser(
+      toId(secondaryOrganization.id),
+      toId(user.id),
+    );
 
     const reactivatedMembership = await membershipsService.attachUser(
-      secondaryOrganization.id,
-      user.id,
+      toId(secondaryOrganization.id),
+      toId(user.id),
     );
 
     expect(reactivatedMembership.id).toBe(createdMembership.id);
@@ -83,8 +88,8 @@ describe('MembershipsService (integration)', () => {
     });
 
     const updatedMembership = await membershipsService.changeRole(
-      organization.id,
-      user.id,
+      toId(organization.id),
+      toId(user.id),
       'admin',
     );
 
@@ -119,10 +124,13 @@ describe('MembershipsService (integration)', () => {
       organizationId: activeOrganization.id.toString(),
     });
 
-    await organizationsService.remove(deletedOrganization.id);
+    await organizationsService.remove(toId(deletedOrganization.id));
 
     await expect(
-      membershipsService.attachUser(deletedOrganization.id, user.id),
+      membershipsService.attachUser(
+        toId(deletedOrganization.id),
+        toId(user.id),
+      ),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -144,10 +152,10 @@ describe('MembershipsService (integration)', () => {
       organizationId: firstOrganization.id.toString(),
     });
 
-    await usersService.remove(user.id);
+    await usersService.remove(toId(user.id));
 
     await expect(
-      membershipsService.attachUser(secondOrganization.id, user.id),
+      membershipsService.attachUser(toId(secondOrganization.id), toId(user.id)),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -164,7 +172,7 @@ describe('MembershipsService (integration)', () => {
     });
 
     await expect(
-      membershipsService.detachUser(organization.id, user.id),
+      membershipsService.detachUser(toId(organization.id), toId(user.id)),
     ).rejects.toThrow(BadRequestException);
   });
 });
