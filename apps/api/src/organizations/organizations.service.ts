@@ -12,11 +12,15 @@ export class OrganizationsService {
   ) {}
 
   create(createOrganizationDto: CreateOrganizationDto) {
-    return this.prisma.organization.create({ data: createOrganizationDto });
+    return this.prisma.organization.create({
+      data: createOrganizationDto,
+    });
   }
 
   findAll() {
-    return this.prisma.organization.findMany({ where: { deletedAt: null } });
+    return this.prisma.organization.findMany({
+      where: { deletedAt: null },
+    });
   }
 
   async findOne(id: bigint) {
