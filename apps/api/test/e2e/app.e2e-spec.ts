@@ -40,7 +40,9 @@ describe('API (e2e)', () => {
   it('serves the root and health endpoints through the production-style bootstrap', async () => {
     await request(httpServer).get('/api').expect(200).expect('Hello World!');
 
-    const healthResponse = await request(httpServer).get('/api/health').expect(200);
+    const healthResponse = await request(httpServer)
+      .get('/api/health')
+      .expect(200);
 
     expect(healthResponse.body).toEqual({
       status: 'ok',
@@ -153,11 +155,16 @@ describe('API (e2e)', () => {
 
     const updateResponse = await request(httpServer)
       .patch(`/api/users/${user.id}`)
-      .send({ name: 'Updated User', avatarUrl: 'https://example.com/avatar.png' })
+      .send({
+        name: 'Updated User',
+        avatarUrl: 'https://example.com/avatar.png',
+      })
       .expect(200);
 
     expect(updateResponse.body.name).toBe('Updated User');
-    expect(updateResponse.body.avatarUrl).toBe('https://example.com/avatar.png');
+    expect(updateResponse.body.avatarUrl).toBe(
+      'https://example.com/avatar.png',
+    );
 
     const updatedUser = await prisma.user.findUniqueOrThrow({
       where: { id: BigInt(user.id) },
@@ -331,6 +338,8 @@ describe('API (e2e)', () => {
 
   it('rejects malformed path identifiers before hitting the database', async () => {
     await request(httpServer).get('/api/users/not-a-number').expect(400);
-    await request(httpServer).get('/api/organizations/not-a-number').expect(400);
+    await request(httpServer)
+      .get('/api/organizations/not-a-number')
+      .expect(400);
   });
 });
