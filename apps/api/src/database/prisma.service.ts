@@ -37,13 +37,11 @@ export class PrismaService
   }
 
   async onModuleInit(): Promise<void> {
-    // PrismaClient methods are inherited dynamically from the generated client.
     await this.$connect();
     this.logger.log('Database connection established');
   }
 
   async onModuleDestroy(): Promise<void> {
-    // Shut down both Prisma and the underlying pg pool to avoid open handles.
     await this.$disconnect();
     if (typeof this.pool.end === 'function') {
       await this.pool.end();

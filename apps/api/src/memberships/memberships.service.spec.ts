@@ -2,14 +2,6 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { MembershipsService } from './memberships.service';
 
 describe('MembershipsService', () => {
-  type MembershipResult = {
-    id: bigint;
-    organizationId?: bigint;
-    userId?: bigint;
-    deletedAt?: string | null;
-    role?: 'owner' | 'admin' | 'member';
-  };
-
   const prisma = {
     organization: {
       findFirst: jest.fn(),
@@ -95,7 +87,7 @@ describe('MembershipsService', () => {
       userId: 9n,
     });
 
-    const result = (await service.attachUser(2n, 9n)) as MembershipResult;
+    const result = await service.attachUser(2n, 9n);
     expect(result.organizationId).toBe(2n);
   });
 
@@ -126,7 +118,7 @@ describe('MembershipsService', () => {
       deletedAt: null,
     });
 
-    const result = (await service.attachUser(2n, 9n)) as MembershipResult;
+    const result = await service.attachUser(2n, 9n);
 
     expect(prisma.membership.update).toHaveBeenCalledWith({
       where: { id: 1n },
@@ -171,11 +163,7 @@ describe('MembershipsService', () => {
       role: 'admin',
     });
 
-    const result = (await service.changeRole(
-      2n,
-      9n,
-      'admin',
-    )) as MembershipResult;
+    const result = await service.changeRole(2n, 9n, 'admin');
 
     expect(prisma.membership.update).toHaveBeenCalledWith({
       where: { id: 1n },

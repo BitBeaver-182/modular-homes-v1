@@ -47,7 +47,7 @@ export async function truncateTestDatabase(
 
   await prisma.$executeRawUnsafe(
     `TRUNCATE TABLE ${tables
-      .map((table) => quoteIdentifier(table.table_name))
+      .map(({ table_name }) => quoteIdentifier(table_name))
       .join(', ')} RESTART IDENTITY CASCADE;`,
   );
 }
