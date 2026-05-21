@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: testing
     env:
-      NODE_ENV: ${{ vars.NODE_ENV }}
+      NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
     steps:
@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: testing
     env:
-      NODE_ENV: ${{ vars.NODE_ENV }}
+      NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
     steps:
