@@ -11,12 +11,12 @@ export function resolveEnvFilePaths(
   const nodeEnv = runtimeNodeEnv ?? readNodeEnvFromBaseEnvFile(configDirectory);
 
   return [
-    path.join(configDirectory, ENV_FILE_NAME),
-    nodeEnv ? path.join(configDirectory, `${ENV_FILE_NAME}.${nodeEnv}`) : null,
-    path.join(configDirectory, `${ENV_FILE_NAME}.local`),
     nodeEnv
       ? path.join(configDirectory, `${ENV_FILE_NAME}.${nodeEnv}.local`)
       : null,
+    path.join(configDirectory, `${ENV_FILE_NAME}.local`),
+    nodeEnv ? path.join(configDirectory, `${ENV_FILE_NAME}.${nodeEnv}`) : null,
+    path.join(configDirectory, ENV_FILE_NAME),
   ].filter((value): value is string => value !== null);
 }
 

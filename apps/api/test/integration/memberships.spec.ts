@@ -8,11 +8,9 @@ import { OrganizationsService } from '../../src/organizations/organizations.serv
 import { PrismaService } from '../../src/database/prisma.service';
 import { UsersService } from '../../src/users/users.service';
 import {
-  applyTestMigrations,
   createRealDbTestApp,
   truncateTestDatabase,
 } from '../helpers/db-test-harness';
-import { createOrganization } from '../helpers/db-factories';
 
 describe('MembershipsService (integration)', () => {
   let app: INestApplication;
@@ -22,8 +20,6 @@ describe('MembershipsService (integration)', () => {
   let usersService: UsersService;
 
   beforeAll(async () => {
-    applyTestMigrations();
-
     const testApp = await createRealDbTestApp();
     app = testApp.app;
     prisma = testApp.prisma;
@@ -41,11 +37,17 @@ describe('MembershipsService (integration)', () => {
   });
 
   it('reactivates a soft deleted membership instead of creating a duplicate row', async () => {
-    const primaryOrganization = await createOrganization(prisma, {
-      slug: 'membership-primary',
+    const primaryOrganization = await prisma.organization.create({
+      data: {
+        name: 'Membership Primary',
+        slug: 'membership-primary',
+      },
     });
-    const secondaryOrganization = await createOrganization(prisma, {
-      slug: 'membership-secondary',
+    const secondaryOrganization = await prisma.organization.create({
+      data: {
+        name: 'Membership Secondary',
+        slug: 'membership-secondary',
+      },
     });
     const user = await usersService.create({
       email: 'member@example.com',
@@ -69,8 +71,11 @@ describe('MembershipsService (integration)', () => {
   });
 
   it('persists role changes', async () => {
-    const organization = await createOrganization(prisma, {
-      slug: 'membership-role-org',
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Membership Role Org',
+        slug: 'membership-role-org',
+      },
     });
     const user = await usersService.create({
       email: 'role@example.com',
@@ -97,11 +102,17 @@ describe('MembershipsService (integration)', () => {
   });
 
   it('does not attach users to soft deleted organizations', async () => {
-    const activeOrganization = await createOrganization(prisma, {
-      slug: 'membership-active-org',
+    const activeOrganization = await prisma.organization.create({
+      data: {
+        name: 'Membership Active Org',
+        slug: 'membership-active-org',
+      },
     });
-    const deletedOrganization = await createOrganization(prisma, {
-      slug: 'membership-deleted-org',
+    const deletedOrganization = await prisma.organization.create({
+      data: {
+        name: 'Membership Deleted Org',
+        slug: 'membership-deleted-org',
+      },
     });
     const user = await usersService.create({
       email: 'deleted-org@example.com',
@@ -116,11 +127,17 @@ describe('MembershipsService (integration)', () => {
   });
 
   it('does not attach soft deleted users to organizations', async () => {
-    const firstOrganization = await createOrganization(prisma, {
-      slug: 'membership-user-org-1',
+    const firstOrganization = await prisma.organization.create({
+      data: {
+        name: 'Membership User Org 1',
+        slug: 'membership-user-org-1',
+      },
     });
-    const secondOrganization = await createOrganization(prisma, {
-      slug: 'membership-user-org-2',
+    const secondOrganization = await prisma.organization.create({
+      data: {
+        name: 'Membership User Org 2',
+        slug: 'membership-user-org-2',
+      },
     });
     const user = await usersService.create({
       email: 'deleted-user@example.com',
@@ -135,8 +152,11 @@ describe('MembershipsService (integration)', () => {
   });
 
   it('prevents removing the last active membership', async () => {
-    const organization = await createOrganization(prisma, {
-      slug: 'membership-last-org',
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Membership Last Org',
+        slug: 'membership-last-org',
+      },
     });
     const user = await usersService.create({
       email: 'last-membership@example.com',

@@ -15,17 +15,16 @@
     "start:prod": "node dist/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "typecheck": "pnpm prisma:generate && tsc --noEmit && tsc -p tsconfig.prisma.json",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test": "pnpm test:unit",
+    "test:unit": "jest --config ./test/jest-unit.json",
+    "test:watch": "jest --config ./test/jest-unit.json --watch",
+    "test:cov": "jest --config ./test/jest-unit.json --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --config ./test/jest-unit.json --runInBand",
+    "test:integration": "pnpm test:db:migrate && NODE_ENV=test jest --config ./test/jest-integration.json --runInBand",
+    "test:e2e": "pnpm test:db:migrate && NODE_ENV=test jest --config ./test/jest-e2e.json --runInBand",
     "test:db:start": "docker compose --env-file ./.env.test -f ./docker-compose.test.yml up -d",
     "test:db:stop": "docker compose --env-file ./.env.test -f ./docker-compose.test.yml down -v",
     "test:db:migrate": "NODE_ENV=test prisma migrate deploy",
-    "test:db:integration": "NODE_ENV=test jest --config ./test/jest-real.json --runInBand --testPathPattern=integration",
-    "test:db:e2e": "NODE_ENV=test jest --config ./test/jest-real.json --runInBand --testPathPattern=e2e",
-    "test:db": "pnpm test:db:migrate && NODE_ENV=test jest --config ./test/jest-real.json --runInBand",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate --schema ./prisma/schema.prisma",
     "prisma:db:push": "prisma db push --schema ./prisma/schema.prisma",
@@ -73,44 +72,5 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s",
-      "!generated/**",
-      "!**/*.module.ts",
-      "!**/dto/**",
-      "!**/*.interface.ts",
-      "!**/*.repository.ts",
-      "!main.ts"
-    ],
-    "coverageDirectory": "../coverage",
-    "coverageReporters": [
-      "text",
-      "lcov",
-      "json-summary"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "statements": 90,
-        "branches": 80,
-        "functions": 90,
-        "lines": 90
-      }
-    },
-    "testEnvironment": "node"
   }
 }

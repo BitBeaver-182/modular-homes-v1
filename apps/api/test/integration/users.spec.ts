@@ -2,11 +2,9 @@ import { INestApplication, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../src/database/prisma.service';
 import { UsersService } from '../../src/users/users.service';
 import {
-  applyTestMigrations,
   createRealDbTestApp,
   truncateTestDatabase,
 } from '../helpers/db-test-harness';
-import { createOrganization } from '../helpers/db-factories';
 
 describe('UsersService (integration)', () => {
   let app: INestApplication;
@@ -14,8 +12,6 @@ describe('UsersService (integration)', () => {
   let usersService: UsersService;
 
   beforeAll(async () => {
-    applyTestMigrations();
-
     const testApp = await createRealDbTestApp();
     app = testApp.app;
     prisma = testApp.prisma;
@@ -31,8 +27,11 @@ describe('UsersService (integration)', () => {
   });
 
   it('creates a user with an initial membership in the requested organization', async () => {
-    const organization = await createOrganization(prisma, {
-      slug: 'users-create-org',
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Users Create Org',
+        slug: 'users-create-org',
+      },
     });
 
     const user = await usersService.create({
@@ -47,11 +46,17 @@ describe('UsersService (integration)', () => {
   });
 
   it('enforces unique email addresses in the real database', async () => {
-    const firstOrganization = await createOrganization(prisma, {
-      slug: 'users-unique-1',
+    const firstOrganization = await prisma.organization.create({
+      data: {
+        name: 'Users Unique 1',
+        slug: 'users-unique-1',
+      },
     });
-    const secondOrganization = await createOrganization(prisma, {
-      slug: 'users-unique-2',
+    const secondOrganization = await prisma.organization.create({
+      data: {
+        name: 'Users Unique 2',
+        slug: 'users-unique-2',
+      },
     });
 
     await usersService.create({
@@ -68,8 +73,11 @@ describe('UsersService (integration)', () => {
   });
 
   it('treats soft deleted users as not found', async () => {
-    const organization = await createOrganization(prisma, {
-      slug: 'users-soft-delete-org',
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Users Soft Delete Org',
+        slug: 'users-soft-delete-org',
+      },
     });
     const user = await usersService.create({
       email: 'soft-delete@example.com',

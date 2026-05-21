@@ -1,7 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
 import { BootstrapStrategy } from '../../src/shared/bootstrap/bootstrap-strategies';
@@ -9,17 +7,6 @@ import { BootstrapStrategy } from '../../src/shared/bootstrap/bootstrap-strategi
 type TableRow = {
   table_name: string;
 };
-
-export function applyTestMigrations(): void {
-  execFileSync('pnpm', ['prisma:deploy'], {
-    cwd: resolve(__dirname, '../..'),
-    env: {
-      ...process.env,
-      NODE_ENV: 'test',
-    },
-    stdio: 'inherit',
-  });
-}
 
 export async function createRealDbTestApp(): Promise<{
   app: INestApplication;

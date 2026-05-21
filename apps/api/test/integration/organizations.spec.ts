@@ -2,7 +2,6 @@ import { INestApplication, NotFoundException } from '@nestjs/common';
 import { OrganizationsService } from '../../src/organizations/organizations.service';
 import { PrismaService } from '../../src/database/prisma.service';
 import {
-  applyTestMigrations,
   createRealDbTestApp,
   truncateTestDatabase,
 } from '../helpers/db-test-harness';
@@ -13,8 +12,6 @@ describe('OrganizationsService (integration)', () => {
   let organizationsService: OrganizationsService;
 
   beforeAll(async () => {
-    applyTestMigrations();
-
     const testApp = await createRealDbTestApp();
     app = testApp.app;
     prisma = testApp.prisma;

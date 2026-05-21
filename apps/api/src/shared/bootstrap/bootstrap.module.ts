@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AppConfigModule } from '../../config/app-config.module';
 import { AppConfigService } from '../../config/app-config.service';
 import {
   BootstrapStrategy,
@@ -8,6 +9,7 @@ import {
 } from './bootstrap-strategies';
 
 @Module({
+  imports: [AppConfigModule],
   providers: [
     {
       provide: BootstrapStrategy,

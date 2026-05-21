@@ -1,28 +1,41 @@
 import { INestApplication } from '@nestjs/common';
-import { AppConfigurator } from './app-configurator';
+import { NodeEnv } from '../../config/env.validation';
+import { configureApp } from './configure-app';
 
 export abstract class BootstrapStrategy {
   abstract configure(app: INestApplication): void | Promise<void>;
 }
 
-export class DevelopmentBootstrapStrategy extends BootstrapStrategy {
-  configure(app: INestApplication): void {
-    new AppConfigurator(app)
-      .withApiPrefix()
-      .withCors()
-      .withSwagger()
-      .withShutdownHooks();
+abstract class BaseBootstrapStrategy extends BootstrapStrategy {
+  constructor(
+    private readonly nodeEnv: NodeEnv,
+    private readonly quietLogger = false,
+  ) {
+    super();
+  }
+
+  configure(app: INestApplication): Promise<void> {
+    return configureApp(app, {
+      nodeEnv: this.nodeEnv,
+      quietLogger: this.quietLogger,
+    });
   }
 }
 
-export class ProductionBootstrapStrategy extends BootstrapStrategy {
-  configure(app: INestApplication): void {
-    new AppConfigurator(app).withApiPrefix().withCors().withShutdownHooks();
+export class DevelopmentBootstrapStrategy extends BaseBootstrapStrategy {
+  constructor() {
+    super('development');
   }
 }
 
-export class TestBootstrapStrategy extends BootstrapStrategy {
-  configure(app: INestApplication): void {
-    new AppConfigurator(app).withQuietLogger();
+export class ProductionBootstrapStrategy extends BaseBootstrapStrategy {
+  constructor() {
+    super('production');
+  }
+}
+
+export class TestBootstrapStrategy extends BaseBootstrapStrategy {
+  constructor() {
+    super('test', true);
   }
 }
