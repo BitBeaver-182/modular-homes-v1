@@ -4,7 +4,7 @@ import {
   OrganizationResponse,
 } from '../../organizations/dto/organization-response.dto';
 
-type UserDto = {
+export interface UserDto {
   id: string;
   email: string;
   name: string | null;
@@ -13,7 +13,7 @@ type UserDto = {
   updatedAt: string;
   deletedAt: string | null;
   organizations: Partial<OrganizationDto>[];
-};
+}
 
 export class UserResponse implements UserDto {
   constructor(partial: Partial<UserDto>) {

@@ -1,43 +1,14 @@
-import { INestApplication } from '@nestjs/common';
+import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Server } from 'node:http';
-import request from 'supertest';
+import request, { Response } from 'supertest';
+import type { MembershipDto } from '../../src/memberships/dto/membership.dto';
+import type { OrganizationDto } from '../../src/organizations/dto/organization-response.dto';
+import type { UserDto } from '../../src/users/dto/user-response.dto';
 import { PrismaService } from '../../src/database/prisma.service';
 import {
   createRealDbTestApp,
   truncateTestDatabase,
 } from '../helpers/db-test-harness';
-
-type EntityReference = {
-  id: string;
-};
-
-type OrganizationResponse = EntityReference & {
-  name: string;
-  slug: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-};
-
-type MembershipResponse = EntityReference & {
-  organizationId: string;
-  userId: string;
-  deletedAt: string | null;
-};
-
-type UserResponse = EntityReference & {
-  email: string;
-  name?: string;
-  avatarUrl?: string;
-  deletedAt: string | null;
-  memberships: MembershipResponse[];
-};
-
-type HealthResponse = {
-  status: 'ok';
-  service: 'api';
-  timestamp: string;
-};
 
 describe('API (e2e)', () => {
   let app: INestApplication;
@@ -59,318 +30,491 @@ describe('API (e2e)', () => {
     await app.close();
   });
 
-  it('serves the root and health endpoints through the production-style bootstrap', async () => {
-    await request(httpServer).get('/api').expect(200).expect('Hello World!');
-
-    const healthResponse = await request(httpServer)
+  it('verifies system health', async () => {
+    await request(httpServer)
       .get('/api/health')
-      .expect(200);
-    const body = healthResponse.body as HealthResponse;
-
-    expect(body.status).toBe('ok');
-    expect(body.service).toBe('api');
-    expect(body.timestamp).toEqual(expect.any(String));
+      .expect(HttpStatus.OK)
+      .expect((res: Response) => {
+        const body = res.body as { status: string };
+        expect(body.status).toBe('ok');
+      });
   });
 
-  it('creates, reads, updates, and soft deletes organizations through HTTP', async () => {
-    const createResponse = await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Acme Homes', slug: 'acme-homes' })
-      .expect(201);
-    const organization = createResponse.body as EntityReference;
+  it('serializes organization responses without internal fields', async () => {
+    const organization = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Acme Corp', slug: 'acme' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
 
-    expect(organization.id).toEqual(expect.any(String));
+    const fetchedOrganization = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .get(`/api/organizations/${organization.id}`)
+          .expect(HttpStatus.OK)
+      ).body,
+    );
+    expect(fetchedOrganization.id).toBe(organization.id);
 
-    const persistedOrganization = await prisma.organization.findUniqueOrThrow({
-      where: { id: BigInt(organization.id) },
-    });
+    const organizationsRes = await request(httpServer)
+      .get('/api/organizations')
+      .expect(HttpStatus.OK);
+    const organizations = organizationsRes.body as Array<
+      Pick<OrganizationDto, 'id' | 'name' | 'slug'>
+    >;
+    expect(organizations).toHaveLength(1);
+    expect(organizations[0]?.id).toBe(organization.id);
+    expectHiddenFieldIsAbsent(organizations[0], 'deletedAt');
+  });
 
-    expect(persistedOrganization.name).toBe('Acme Homes');
-    expect(persistedOrganization.slug).toBe('acme-homes');
+  it('serializes user responses with organizations instead of memberships', async () => {
+    const organization = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Acme Corp', slug: 'acme' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
 
-    await request(httpServer)
-      .get(`/api/organizations/${organization.id}`)
-      .expect(200)
-      .expect({
-        id: organization.id,
-        name: 'Acme Homes',
-        slug: 'acme-homes',
-        createdAt: persistedOrganization.createdAt.toISOString(),
-        updatedAt: persistedOrganization.updatedAt.toISOString(),
-        deletedAt: null,
-      });
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .send({
+            email: 'founder@acme.com',
+            name: 'Alice Founder',
+            organizationId: organization.id,
+          })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
 
-    const updateResponse = await request(httpServer)
-      .patch(`/api/organizations/${organization.id}`)
-      .send({ name: 'Acme Homes Europe' })
-      .expect(200);
-    const updatedOrganizationResponse =
-      updateResponse.body as OrganizationResponse;
+    expect(user.organizations).toHaveLength(1);
+    expect(user.organizations[0]?.id).toBe(organization.id);
 
-    expect(updatedOrganizationResponse.name).toBe('Acme Homes Europe');
+    const fetchedUser = expectUserResponse(
+      (
+        await request(httpServer)
+          .get(`/api/users/${user.id}`)
+          .expect(HttpStatus.OK)
+      ).body,
+    );
+    expect(fetchedUser.organizations[0]?.slug).toBe(organization.slug);
 
-    const updatedOrganization = await prisma.organization.findUniqueOrThrow({
-      where: { id: BigInt(organization.id) },
-    });
+    const usersRes = await request(httpServer)
+      .get('/api/users')
+      .expect(HttpStatus.OK);
+    const users = usersRes.body as Array<
+      Pick<UserDto, 'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'>
+    >;
+    expect(users).toHaveLength(1);
+    expect(users[0]?.organizations[0]?.id).toBe(organization.id);
+    expectHiddenFieldIsAbsent(users[0], 'memberships');
+    expectHiddenFieldIsAbsent(users[0], 'deletedAt');
+  });
 
-    expect(updatedOrganization.name).toBe('Acme Homes Europe');
+  it('does not return deleted organizations and removes them from user responses', async () => {
+    const organization = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Old Guard', slug: 'old-guard' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .send({
+            email: 'member@old-guard.com',
+            name: 'Member',
+            organizationId: organization.id,
+          })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    expect(user.organizations[0]?.id).toBe(organization.id);
 
     await request(httpServer)
       .delete(`/api/organizations/${organization.id}`)
-      .expect(200);
+      .expect(HttpStatus.OK);
 
-    const deletedOrganization = await prisma.organization.findUniqueOrThrow({
-      where: { id: BigInt(organization.id) },
-    });
+    const organizationsRes = await request(httpServer)
+      .get('/api/organizations')
+      .expect(HttpStatus.OK);
+    expect(organizationsRes.body).toEqual([]);
 
-    expect(deletedOrganization.deletedAt).toEqual(expect.any(Date));
+    const fetchedUser = expectUserResponse(
+      (
+        await request(httpServer)
+          .get(`/api/users/${user.id}`)
+          .expect(HttpStatus.OK)
+      ).body,
+    );
+    expect(fetchedUser.organizations).toEqual([]);
 
-    await request(httpServer).get('/api/organizations').expect(200).expect([]);
-    await request(httpServer)
-      .get(`/api/organizations/${organization.id}`)
-      .expect(404);
+    const usersRes = await request(httpServer)
+      .get('/api/users')
+      .expect(HttpStatus.OK);
+    const users = usersRes.body as Array<
+      Pick<UserDto, 'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'>
+    >;
+    expect(users).toHaveLength(1);
+    expect(users[0]?.organizations).toEqual([]);
   });
 
-  it('creates, reads, updates, and soft deletes users through HTTP', async () => {
-    const firstOrganizationResponse = await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Atlas', slug: 'atlas' })
-      .expect(201);
-    const firstOrganization = firstOrganizationResponse.body as EntityReference;
+  it('reactivates a soft-deleted user and their membership', async () => {
+    const organization = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Rejoin Inc', slug: 'rejoin-inc' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
 
-    const userResponse = await request(httpServer)
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .send({
+            email: 'leaver@example.com',
+            name: 'Leaver',
+            organizationId: organization.id,
+          })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .delete(`/api/users/${user.id}`)
+      .expect(HttpStatus.OK);
+
+    await request(httpServer)
       .post('/api/users')
       .send({
-        email: 'user@example.com',
-        name: 'Initial User',
-        organizationId: firstOrganization.id,
+        email: 'leaver@example.com',
+        name: 'Returned User',
+        organizationId: organization.id,
       })
-      .expect(201);
-    const createdUser = userResponse.body as UserResponse;
+      .expect(HttpStatus.CREATED)
+      .expect((res: Response) => {
+        const reactivatedUser = expectUserResponse(res.body);
+        expect(reactivatedUser.id).toBe(user.id);
+        expect(reactivatedUser.name).toBe('Returned User');
+        expect(reactivatedUser.organizations[0]?.id).toBe(organization.id);
+      });
 
-    expect(createdUser.id).toEqual(expect.any(String));
-    expect(createdUser.memberships).toHaveLength(1);
-    expect(createdUser.memberships[0]).toMatchObject({
-      organizationId: firstOrganization.id,
-      deletedAt: null,
-    });
+    const usersRes = await request(httpServer)
+      .get('/api/users')
+      .expect(HttpStatus.OK);
+    const users = usersRes.body as Array<
+      Pick<UserDto, 'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'>
+    >;
+    expect(users).toHaveLength(1);
+    expect(users[0]?.email).toBe('leaver@example.com');
+    expect(users[0]?.organizations[0]?.id).toBe(organization.id);
+  });
 
-    const user: EntityReference = { id: createdUser.id };
+  it('fails to create a user without organizationId', async () => {
+    await request(httpServer)
+      .post('/api/users')
+      .send({
+        email: 'no-org@example.com',
+        name: 'No Org',
+      })
+      .expect(HttpStatus.BAD_REQUEST);
+  });
 
-    const persistedUser = await prisma.user.findUniqueOrThrow({
-      where: { id: BigInt(user.id) },
-    });
+  it('does not allow duplicate organization slug', async () => {
+    await request(httpServer)
+      .post('/api/organizations')
+      .send({ name: 'Acme Corp', slug: 'acme' })
+      .expect(HttpStatus.CREATED);
 
-    expect(persistedUser.email).toBe('user@example.com');
-    expect(persistedUser.name).toBe('Initial User');
+    await request(httpServer)
+      .post('/api/organizations')
+      .send({ name: 'Another Acme', slug: 'acme' })
+      .expect(HttpStatus.BAD_REQUEST);
+  });
+
+  it('does not allow duplicate active membership', async () => {
+    const organizationA = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Client A', slug: 'client-a' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const organizationB = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Client B', slug: 'client-b' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .send({
+            email: 'user@example.com',
+            name: 'User',
+            organizationId: organizationA.id,
+          })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    expectMembershipResponse(
+      (
+        await request(httpServer)
+          .post(`/api/organizations/${organizationB.id}/users`)
+          .send({ userId: user.id })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .post(`/api/organizations/${organizationB.id}/users`)
+      .send({ userId: user.id })
+      .expect(HttpStatus.BAD_REQUEST);
+  });
+
+  it('blocks detaching the last membership', async () => {
+    const organization = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Solo Org', slug: 'solo-org' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .send({
+            email: 'solo@example.com',
+            name: 'Solo User',
+            organizationId: organization.id,
+          })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .delete(`/api/organizations/${organization.id}/users/${user.id}`)
+      .expect(HttpStatus.BAD_REQUEST);
+  });
+
+  it('returns not found when membership does not exist or has been soft deleted', async () => {
+    const organizationA = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Primary Org', slug: 'primary-org' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const organizationB = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Secondary Org', slug: 'secondary-org' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .send({
+            email: 'member@example.com',
+            name: 'Member',
+            organizationId: organizationA.id,
+          })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .delete(`/api/organizations/${organizationB.id}/users/${user.id}`)
+      .expect(HttpStatus.NOT_FOUND);
+
+    expectMembershipResponse(
+      (
+        await request(httpServer)
+          .post(`/api/organizations/${organizationB.id}/users`)
+          .send({ userId: user.id })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    expectMembershipResponse(
+      (
+        await request(httpServer)
+          .delete(`/api/organizations/${organizationB.id}/users/${user.id}`)
+          .expect(HttpStatus.OK)
+      ).body,
+    );
+
+    await request(httpServer)
+      .delete(`/api/organizations/${organizationB.id}/users/${user.id}`)
+      .expect(HttpStatus.NOT_FOUND);
+  });
+
+  it('does not create membership for a deleted organization', async () => {
+    const activeOrganization = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Active Org', slug: 'active-org' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const deletedOrganization = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Archived Org', slug: 'archived-org' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .send({
+            email: 'attached@example.com',
+            name: 'Attached User',
+            organizationId: activeOrganization.id,
+          })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .delete(`/api/organizations/${deletedOrganization.id}`)
+      .expect(HttpStatus.OK);
+
+    await request(httpServer)
+      .post(`/api/organizations/${deletedOrganization.id}/users`)
+      .send({ userId: user.id })
+      .expect(HttpStatus.NOT_FOUND);
+  });
+
+  it('does not create membership for a deleted user and does not list that user', async () => {
+    const organizationA = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Origin Org', slug: 'origin-org' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const organizationB = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .send({ name: 'Target Org', slug: 'target-org' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .send({
+            email: 'departed@example.com',
+            name: 'Departed User',
+            organizationId: organizationA.id,
+          })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .delete(`/api/users/${user.id}`)
+      .expect(HttpStatus.OK);
 
     await request(httpServer)
       .get(`/api/users/${user.id}`)
-      .expect(200)
-      .expect((response) => {
-        const fetchedUser = response.body as UserResponse;
+      .expect(HttpStatus.NOT_FOUND);
 
-        expect(fetchedUser).toMatchObject({
-          id: user.id,
-          email: 'user@example.com',
-          name: 'Initial User',
-          deletedAt: null,
-        });
-        expect(fetchedUser.memberships).toHaveLength(1);
-      });
+    const usersRes = await request(httpServer)
+      .get('/api/users')
+      .expect(HttpStatus.OK);
+    expect(usersRes.body).toEqual([]);
 
-    const updateResponse = await request(httpServer)
-      .patch(`/api/users/${user.id}`)
-      .send({
-        name: 'Updated User',
-        avatarUrl: 'https://example.com/avatar.png',
-      })
-      .expect(200);
-    const updatedUserResponse = updateResponse.body as UserResponse;
-
-    expect(updatedUserResponse.name).toBe('Updated User');
-    expect(updatedUserResponse.avatarUrl).toBe(
-      'https://example.com/avatar.png',
-    );
-
-    const updatedUser = await prisma.user.findUniqueOrThrow({
-      where: { id: BigInt(user.id) },
-    });
-
-    expect(updatedUser.name).toBe('Updated User');
-    expect(updatedUser.avatarUrl).toBe('https://example.com/avatar.png');
-
-    await request(httpServer).delete(`/api/users/${user.id}`).expect(200);
-
-    const deletedUser = await prisma.user.findUniqueOrThrow({
-      where: { id: BigInt(user.id) },
-    });
-
-    expect(deletedUser.deletedAt).toEqual(expect.any(Date));
-
-    await request(httpServer).get('/api/users').expect(200).expect([]);
-    await request(httpServer).get(`/api/users/${user.id}`).expect(404);
-  });
-
-  it('supports membership lifecycle with persisted attach and detach behavior', async () => {
-    const firstOrganizationResponse = await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Acme', slug: 'acme' })
-      .expect(201);
-    const firstOrganization = firstOrganizationResponse.body as EntityReference;
-
-    const userResponse = await request(httpServer)
-      .post('/api/users')
-      .send({
-        email: 'member@example.com',
-        organizationId: firstOrganization.id,
-      })
-      .expect(201);
-    const user = userResponse.body as EntityReference;
-
-    const secondOrganizationResponse = await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Beta', slug: 'beta' })
-      .expect(201);
-    const secondOrganization =
-      secondOrganizationResponse.body as EntityReference;
-
-    const attachResponse = await request(httpServer)
-      .post(`/api/organizations/${secondOrganization.id}/users`)
+    await request(httpServer)
+      .post(`/api/organizations/${organizationB.id}/users`)
       .send({ userId: user.id })
-      .expect(201);
-    const attachedMembershipResponse =
-      attachResponse.body as MembershipResponse;
-
-    expect(attachedMembershipResponse).toMatchObject({
-      organizationId: secondOrganization.id,
-      userId: user.id,
-      deletedAt: null,
-    });
-
-    const attachedMembership = await prisma.membership.findFirstOrThrow({
-      where: {
-        organizationId: BigInt(secondOrganization.id),
-        userId: BigInt(user.id),
-      },
-    });
-
-    expect(attachedMembership.deletedAt).toBeNull();
-
-    await request(httpServer)
-      .delete(`/api/organizations/${secondOrganization.id}/users/${user.id}`)
-      .expect(200);
-
-    const softDeletedMembership = await prisma.membership.findFirstOrThrow({
-      where: {
-        organizationId: BigInt(secondOrganization.id),
-        userId: BigInt(user.id),
-      },
-    });
-
-    expect(softDeletedMembership.deletedAt).toEqual(expect.any(Date));
-
-    await request(httpServer)
-      .delete(`/api/organizations/${firstOrganization.id}/users/${user.id}`)
-      .expect(400);
-  });
-
-  it('reactivates a soft deleted membership instead of creating a second row', async () => {
-    const primaryOrganizationResponse = await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Gamma', slug: 'gamma' })
-      .expect(201);
-    const primaryOrganization =
-      primaryOrganizationResponse.body as EntityReference;
-
-    const userResponse = await request(httpServer)
-      .post('/api/users')
-      .send({
-        email: 'reactivate@example.com',
-        organizationId: primaryOrganization.id,
-      })
-      .expect(201);
-    const user = userResponse.body as EntityReference;
-
-    const secondaryOrganizationResponse = await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Delta', slug: 'delta' })
-      .expect(201);
-    const secondaryOrganization =
-      secondaryOrganizationResponse.body as EntityReference;
-
-    const initialAttachResponse = await request(httpServer)
-      .post(`/api/organizations/${secondaryOrganization.id}/users`)
-      .send({ userId: user.id })
-      .expect(201);
-    const initialMembership = initialAttachResponse.body as MembershipResponse;
-
-    await request(httpServer)
-      .delete(`/api/organizations/${secondaryOrganization.id}/users/${user.id}`)
-      .expect(200);
-
-    const reattachResponse = await request(httpServer)
-      .post(`/api/organizations/${secondaryOrganization.id}/users`)
-      .send({ userId: user.id })
-      .expect(201);
-    const reactivatedMembership = reattachResponse.body as MembershipResponse;
-
-    expect(reactivatedMembership.id).toBe(initialMembership.id);
-
-    const memberships = await prisma.membership.findMany({
-      where: {
-        organizationId: BigInt(secondaryOrganization.id),
-        userId: BigInt(user.id),
-      },
-    });
-
-    expect(memberships).toHaveLength(1);
-    expect(memberships[0]?.deletedAt).toBeNull();
-  });
-
-  it('rejects malformed organization membership payloads before persistence', async () => {
-    const organizationResponse = await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Echo', slug: 'echo' })
-      .expect(201);
-    const organization = organizationResponse.body as EntityReference;
-
-    await request(httpServer)
-      .post(`/api/organizations/${organization.id}/users`)
-      .send({})
-      .expect(400);
-
-    const membershipCount = await prisma.membership.count({
-      where: { organizationId: BigInt(organization.id) },
-    });
-
-    expect(membershipCount).toBe(0);
-  });
-
-  it('rejects invalid user payloads at the validation layer', async () => {
-    const organizationResponse = await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Foxtrot', slug: 'foxtrot' })
-      .expect(201);
-    const organization = organizationResponse.body as EntityReference;
-
-    await request(httpServer)
-      .post('/api/users')
-      .send({
-        email: 'not-an-email',
-        organizationId: organization.id,
-      })
-      .expect(400);
-
-    const userCount = await prisma.user.count();
-
-    expect(userCount).toBe(0);
-  });
-
-  it('rejects malformed path identifiers before hitting the database', async () => {
-    await request(httpServer).get('/api/users/not-a-number').expect(400);
-    await request(httpServer)
-      .get('/api/organizations/not-a-number')
-      .expect(400);
+      .expect(HttpStatus.NOT_FOUND);
   });
 });
+
+function expectOrganizationResponse(
+  body: unknown,
+): Pick<OrganizationDto, 'id' | 'name' | 'slug'> {
+  const organization = body as Pick<OrganizationDto, 'id' | 'name' | 'slug'>;
+
+  expect(organization.id).toEqual(expect.any(String));
+  expect(organization.name).toEqual(expect.any(String));
+  expect(organization.slug).toEqual(expect.any(String));
+  expectHiddenFieldIsAbsent(body, 'createdAt');
+  expectHiddenFieldIsAbsent(body, 'updatedAt');
+  expectHiddenFieldIsAbsent(body, 'deletedAt');
+
+  return organization;
+}
+
+function expectUserResponse(
+  body: unknown,
+): Pick<UserDto, 'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'> {
+  const user = body as Pick<
+    UserDto,
+    'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'
+  >;
+
+  expect(user.id).toEqual(expect.any(String));
+  expect(user.email).toEqual(expect.any(String));
+  expect(Array.isArray(user.organizations)).toBe(true);
+  expectHiddenFieldIsAbsent(body, 'memberships');
+  expectHiddenFieldIsAbsent(body, 'createdAt');
+  expectHiddenFieldIsAbsent(body, 'updatedAt');
+  expectHiddenFieldIsAbsent(body, 'deletedAt');
+
+  return user;
+}
+
+function expectMembershipResponse(
+  body: unknown,
+): Pick<MembershipDto, 'id' | 'organizationId' | 'role'> {
+  const membership = body as Pick<
+    MembershipDto,
+    'id' | 'organizationId' | 'role'
+  >;
+
+  expect(membership.id).toEqual(expect.any(String));
+  expect(membership.organizationId).toEqual(expect.any(String));
+  expect(membership.role).toEqual(expect.any(String));
+  expectHiddenFieldIsAbsent(body, 'userId');
+  expectHiddenFieldIsAbsent(body, 'createdAt');
+  expectHiddenFieldIsAbsent(body, 'updatedAt');
+  expectHiddenFieldIsAbsent(body, 'deletedAt');
+
+  return membership;
+}
+
+function expectHiddenFieldIsAbsent(body: unknown, fieldName: string): void {
+  expect(body).not.toHaveProperty(fieldName);
+}

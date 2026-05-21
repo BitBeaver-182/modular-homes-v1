@@ -1,5 +1,5 @@
 import { OrganizationsService } from './organizations.service';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('OrganizationsService', () => {
   const prisma = {
@@ -46,11 +46,11 @@ describe('OrganizationsService', () => {
   });
 
   it('does not allow duplicate organization slug', async () => {
-    prisma.organization.create.mockRejectedValue(new Error('Unique failed'));
+    prisma.organization.create.mockRejectedValue({ code: 'P2002' });
 
     await expect(
       service.create({ name: 'Acme 2', slug: 'acme' }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('soft deletes organization by setting deletedAt', async () => {
