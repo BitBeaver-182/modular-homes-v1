@@ -6,7 +6,9 @@ import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
 import { BootstrapStrategy } from '../../src/shared/bootstrap/bootstrap-strategies';
 
-const TEST_TABLES = ['"Membership"', '"Organization"', '"User"'] as const;
+type TableRow = {
+  table_name: string;
+};
 
 export async function applyTestMigrations(): Promise<void> {
   execFileSync('pnpm', ['prisma:deploy'], {
@@ -42,9 +44,25 @@ export async function createRealDbTestApp(): Promise<{
 }
 
 export async function truncateTestDatabase(
-  prisma: Pick<PrismaService, '$executeRawUnsafe'>,
+  prisma: Pick<PrismaService, '$executeRawUnsafe' | '$queryRawUnsafe'>,
 ): Promise<void> {
+  const tables = await prisma.$queryRawUnsafe<TableRow[]>(`
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = current_schema()
+      AND table_type = 'BASE TABLE'
+      AND table_name <> '_prisma_migrations'
+  `);
+
+  if (tables.length === 0) {
+    return;
+  }
+
   await prisma.$executeRawUnsafe(
-    `TRUNCATE TABLE ${TEST_TABLES.join(', ')} RESTART IDENTITY CASCADE;`,
+    `TRUNCATE TABLE ${tables.map(({ table_name }) => quoteIdentifier(table_name)).join(', ')} RESTART IDENTITY CASCADE;`,
   );
+}
+
+function quoteIdentifier(identifier: string): string {
+  return `"${identifier.replaceAll('"', '""')}"`;
 }
