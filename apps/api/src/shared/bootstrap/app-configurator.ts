@@ -34,4 +34,9 @@ export class AppConfigurator {
     this.app.enableShutdownHooks();
     return this;
   }
+
+  withQuietLogger(): this {
+    this.app.useLogger(false);
+    return this;
+  }
 }

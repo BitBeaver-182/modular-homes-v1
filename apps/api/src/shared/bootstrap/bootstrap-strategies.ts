@@ -23,6 +23,6 @@ export class ProductionBootstrapStrategy extends BootstrapStrategy {
 
 export class TestBootstrapStrategy extends BootstrapStrategy {
   configure(app: INestApplication): void {
-    void app;
+    new AppConfigurator(app).withQuietLogger();
   }
 }
