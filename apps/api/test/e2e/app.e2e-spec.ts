@@ -124,7 +124,10 @@ describe('API (e2e)', () => {
   });
 
   it('allows an owner to delete an organization and rejects non-owners', async () => {
-    const organization = await createOrganization('deletable-org', 'Deletable Org');
+    const organization = await createOrganization(
+      'deletable-org',
+      'Deletable Org',
+    );
 
     const member = expectUserResponse(
       (
