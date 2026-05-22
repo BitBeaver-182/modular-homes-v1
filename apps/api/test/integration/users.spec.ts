@@ -1,6 +1,8 @@
 import { INestApplication, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../src/database/prisma.service';
 import { UsersService } from '../../src/users/users.service';
+import { UserRolesService } from '../../src/user-roles/user-roles.service';
+import { RolesService } from '../../src/roles/roles.service';
 import {
   createRealDbTestApp,
   truncateTestDatabase,
@@ -10,12 +12,16 @@ describe('UsersService (integration)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let usersService: UsersService;
+  let rolesService: RolesService;
+  let userRolesService: UserRolesService;
 
   beforeAll(async () => {
     const testApp = await createRealDbTestApp();
     app = testApp.app;
     prisma = testApp.prisma;
     usersService = app.get(UsersService);
+    rolesService = app.get(RolesService);
+    userRolesService = app.get(UserRolesService);
   });
 
   beforeEach(async () => {
@@ -26,7 +32,7 @@ describe('UsersService (integration)', () => {
     await app.close();
   });
 
-  it('creates a user with an initial membership in the requested organization', async () => {
+  it('creates a user linked to the scoped organization', async () => {
     const organization = await prisma.organization.create({
       data: {
         name: 'Users Create Org',
@@ -34,18 +40,17 @@ describe('UsersService (integration)', () => {
       },
     });
 
-    const user = await usersService.create({
+    const user = await usersService.create(organization.id, {
       email: 'john@example.com',
-      organizationId: organization.id.toString(),
       name: 'John',
     });
 
     expect(user.email).toBe('john@example.com');
-    expect(user.memberships).toHaveLength(1);
-    expect(user.memberships[0]?.organizationId).toBe(organization.id);
+    expect(user.organizationUsers).toHaveLength(1);
+    expect(user.organizationUsers[0]?.organizationId).toBe(organization.id);
   });
 
-  it('enforces unique email addresses in the real database', async () => {
+  it('reuses the same user across multiple organizations', async () => {
     const firstOrganization = await prisma.organization.create({
       data: {
         name: 'Users Unique 1',
@@ -59,34 +64,65 @@ describe('UsersService (integration)', () => {
       },
     });
 
-    await usersService.create({
+    const firstUser = await usersService.create(firstOrganization.id, {
       email: 'duplicate@example.com',
-      organizationId: firstOrganization.id.toString(),
     });
 
-    await expect(
-      usersService.create({
-        email: 'duplicate@example.com',
-        organizationId: secondOrganization.id.toString(),
-      }),
-    ).rejects.toThrow();
-  });
+    const secondUser = await usersService.create(secondOrganization.id, {
+      email: 'duplicate@example.com',
+    });
 
-  it('treats soft deleted users as not found', async () => {
-    const organization = await prisma.organization.create({
-      data: {
-        name: 'Users Soft Delete Org',
-        slug: 'users-soft-delete-org',
+    expect(secondUser.id).toBe(firstUser.id);
+
+    const organizationUsers = await prisma.organizationUser.findMany({
+      where: {
+        userId: firstUser.id,
+        deletedAt: null,
       },
     });
-    const user = await usersService.create({
-      email: 'soft-delete@example.com',
-      organizationId: organization.id.toString(),
+    expect(organizationUsers).toHaveLength(2);
+  });
+
+  it('scopes reads and roles to the requested organization', async () => {
+    const organizationA = await prisma.organization.create({
+      data: {
+        name: 'Users Scope A',
+        slug: 'users-scope-a',
+      },
+    });
+    const organizationB = await prisma.organization.create({
+      data: {
+        name: 'Users Scope B',
+        slug: 'users-scope-b',
+      },
+    });
+    const user = await usersService.create(organizationA.id, {
+      email: 'scoped@example.com',
+    });
+    await usersService.create(organizationB.id, {
+      email: 'scoped@example.com',
     });
 
-    await usersService.remove(user.id);
+    const roleA = await rolesService.create(organizationA.id, {
+      name: 'Estimator',
+    });
+    const roleB = await rolesService.create(organizationB.id, {
+      name: 'Sales',
+    });
+    await userRolesService.assignRole(organizationA.id, user.id, roleA.id);
+    await userRolesService.assignRole(organizationB.id, user.id, roleB.id);
 
-    await expect(usersService.findOne(user.id)).rejects.toThrow(
+    const scopedUserA = await usersService.findOne(organizationA.id, user.id);
+
+    expect(scopedUserA.organizationUsers).toHaveLength(1);
+    expect(scopedUserA.organizationUsers[0]?.organizationId).toBe(
+      organizationA.id,
+    );
+    expect(scopedUserA.organizationUsers[0]?.userRoles[0]?.role.name).toBe(
+      'Estimator',
+    );
+
+    await expect(usersService.findOne(999n, user.id)).rejects.toThrow(
       NotFoundException,
     );
   });

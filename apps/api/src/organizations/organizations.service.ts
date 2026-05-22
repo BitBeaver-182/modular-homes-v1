@@ -3,17 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MembershipsService } from '../memberships/memberships.service';
 import { PrismaService } from '../database/prisma.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 
 @Injectable()
 export class OrganizationsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly membershipsService: MembershipsService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   create(createOrganizationDto: CreateOrganizationDto) {
     return this.prisma.organization
@@ -61,14 +57,6 @@ export class OrganizationsService {
       where: { id },
       data: { deletedAt: new Date() },
     });
-  }
-
-  async attachUser(organizationId: bigint, userId: bigint) {
-    return this.membershipsService.attachUser(organizationId, userId);
-  }
-
-  async detachUser(organizationId: bigint, userId: bigint) {
-    return this.membershipsService.detachUser(organizationId, userId);
   }
 }
 

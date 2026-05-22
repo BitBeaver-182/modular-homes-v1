@@ -1,8 +1,9 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Server } from 'node:http';
 import request, { Response } from 'supertest';
-import type { MembershipDto } from '../../src/memberships/dto/membership.dto';
 import type { OrganizationDto } from '../../src/organizations/dto/organization-response.dto';
+import type { PermissionDto } from '../../src/permissions/dto/permission-response.dto';
+import type { RoleDto } from '../../src/roles/dto/role-response.dto';
 import type { UserDto } from '../../src/users/dto/user-response.dto';
 import { PrismaService } from '../../src/database/prisma.service';
 import {
@@ -40,6 +41,28 @@ describe('API (e2e)', () => {
       });
   });
 
+  it('requires x-organization-id for platform-managed routes', async () => {
+    await request(httpServer).get('/api/users').expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer).get('/api/roles').expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer)
+      .get('/api/permissions')
+      .expect(HttpStatus.BAD_REQUEST);
+  });
+
+  it('rejects malformed and unknown organization headers', async () => {
+    await request(httpServer)
+      .get('/api/users')
+      .set('x-organization-id', 'abc')
+      .expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer)
+      .get('/api/users')
+      .set('x-organization-id', '9999')
+      .expect(HttpStatus.NOT_FOUND);
+  });
+
   it('serializes organization responses without internal fields', async () => {
     const organization = expectOrganizationResponse(
       (
@@ -70,451 +93,361 @@ describe('API (e2e)', () => {
     expectHiddenFieldIsAbsent(organizations[0], 'deletedAt');
   });
 
-  it('serializes user responses with organizations instead of memberships', async () => {
-    const organization = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Acme Corp', slug: 'acme' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
+  it('creates, lists, updates, and removes org-scoped users', async () => {
+    const organizationA = await createOrganization('client-a', 'Client A');
+    const organizationB = await createOrganization('client-b', 'Client B');
 
-    const user = expectUserResponse(
+    const createdUser = expectUserResponse(
       (
         await request(httpServer)
           .post('/api/users')
+          .set('x-organization-id', organizationA.id)
           .send({
-            email: 'founder@acme.com',
-            name: 'Alice Founder',
-            organizationId: organization.id,
+            email: 'tenant.user@example.com',
+            name: 'Tenant User',
           })
           .expect(HttpStatus.CREATED)
       ).body,
     );
 
-    expect(user.organizations).toHaveLength(1);
-    expect(user.organizations[0]?.id).toBe(organization.id);
+    expect(createdUser.organization?.id).toBe(organizationA.id);
+    expect(createdUser.roles).toEqual([]);
 
-    const fetchedUser = expectUserResponse(
-      (
-        await request(httpServer)
-          .get(`/api/users/${user.id}`)
-          .expect(HttpStatus.OK)
-      ).body,
-    );
-    expect(fetchedUser.organizations[0]?.slug).toBe(organization.slug);
-
-    const usersRes = await request(httpServer)
-      .get('/api/users')
-      .expect(HttpStatus.OK);
-    const users = usersRes.body as Array<
-      Pick<UserDto, 'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'>
-    >;
-    expect(users).toHaveLength(1);
-    expect(users[0]?.organizations[0]?.id).toBe(organization.id);
-    expectHiddenFieldIsAbsent(users[0], 'memberships');
-    expectHiddenFieldIsAbsent(users[0], 'deletedAt');
-  });
-
-  it('does not return deleted organizations and removes them from user responses', async () => {
-    const organization = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Old Guard', slug: 'old-guard' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-
-    const user = expectUserResponse(
-      (
-        await request(httpServer)
-          .post('/api/users')
-          .send({
-            email: 'member@old-guard.com',
-            name: 'Member',
-            organizationId: organization.id,
-          })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-    expect(user.organizations[0]?.id).toBe(organization.id);
+    const listedUsers = (
+      await request(httpServer)
+        .get('/api/users')
+        .set('x-organization-id', organizationA.id)
+        .expect(HttpStatus.OK)
+    ).body as UserDto[];
+    expect(listedUsers).toHaveLength(1);
+    expect(listedUsers[0]?.organization?.id).toBe(organizationA.id);
 
     await request(httpServer)
-      .delete(`/api/organizations/${organization.id}`)
-      .expect(HttpStatus.OK);
+      .get(`/api/users/${createdUser.id}`)
+      .set('x-organization-id', organizationB.id)
+      .expect(HttpStatus.NOT_FOUND);
 
-    const organizationsRes = await request(httpServer)
-      .get('/api/organizations')
-      .expect(HttpStatus.OK);
-    expect(organizationsRes.body).toEqual([]);
-
-    const fetchedUser = expectUserResponse(
+    const updatedUser = expectUserResponse(
       (
         await request(httpServer)
-          .get(`/api/users/${user.id}`)
+          .patch(`/api/users/${createdUser.id}`)
+          .set('x-organization-id', organizationA.id)
+          .send({ name: 'Renamed User' })
           .expect(HttpStatus.OK)
       ).body,
     );
-    expect(fetchedUser.organizations).toEqual([]);
+    expect(updatedUser.name).toBe('Renamed User');
 
-    const usersRes = await request(httpServer)
-      .get('/api/users')
-      .expect(HttpStatus.OK);
-    const users = usersRes.body as Array<
-      Pick<UserDto, 'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'>
-    >;
-    expect(users).toHaveLength(1);
-    expect(users[0]?.organizations).toEqual([]);
+    await request(httpServer)
+      .delete(`/api/users/${createdUser.id}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.BAD_REQUEST);
   });
 
-  it('reactivates a soft-deleted user and their membership', async () => {
-    const organization = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Rejoin Inc', slug: 'rejoin-inc' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
+  it('reuses the same user across organizations and keeps role responses isolated by header', async () => {
+    const organizationA = await createOrganization('scope-a', 'Scope A');
+    const organizationB = await createOrganization('scope-b', 'Scope B');
 
-    const user = expectUserResponse(
+    const createdUserA = expectUserResponse(
       (
         await request(httpServer)
           .post('/api/users')
-          .send({
-            email: 'leaver@example.com',
-            name: 'Leaver',
-            organizationId: organization.id,
-          })
+          .set('x-organization-id', organizationA.id)
+          .send({ email: 'shared@example.com', name: 'Shared User' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const createdUserB = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organizationB.id)
+          .send({ email: 'shared@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    expect(createdUserB.id).toBe(createdUserA.id);
+
+    const roleA = expectRoleResponse(
+      (
+        await request(httpServer)
+          .post('/api/roles')
+          .set('x-organization-id', organizationA.id)
+          .send({ name: 'Estimator' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const roleB = expectRoleResponse(
+      (
+        await request(httpServer)
+          .post('/api/roles')
+          .set('x-organization-id', organizationB.id)
+          .send({ name: 'Sales' })
           .expect(HttpStatus.CREATED)
       ).body,
     );
 
     await request(httpServer)
-      .delete(`/api/users/${user.id}`)
-      .expect(HttpStatus.OK);
+      .post(`/api/users/${createdUserA.id}/roles`)
+      .set('x-organization-id', organizationA.id)
+      .send({ roleId: roleA.id })
+      .expect(HttpStatus.CREATED);
+
+    await request(httpServer)
+      .post(`/api/users/${createdUserA.id}/roles`)
+      .set('x-organization-id', organizationB.id)
+      .send({ roleId: roleB.id })
+      .expect(HttpStatus.CREATED);
+
+    const scopedUserA = expectUserResponse(
+      (
+        await request(httpServer)
+          .get(`/api/users/${createdUserA.id}`)
+          .set('x-organization-id', organizationA.id)
+          .expect(HttpStatus.OK)
+      ).body,
+    );
+    const scopedUserB = expectUserResponse(
+      (
+        await request(httpServer)
+          .get(`/api/users/${createdUserA.id}`)
+          .set('x-organization-id', organizationB.id)
+          .expect(HttpStatus.OK)
+      ).body,
+    );
+
+    expect(scopedUserA.roles.map((role) => role.name)).toEqual(['Estimator']);
+    expect(scopedUserB.roles.map((role) => role.name)).toEqual(['Sales']);
+  });
+
+  it('reactivates a soft-deleted org-user link on recreate', async () => {
+    const organizationA = await createOrganization('react-a', 'React A');
+    const organizationB = await createOrganization('react-b', 'React B');
+
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organizationA.id)
+          .send({ email: 'reactivate@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
 
     await request(httpServer)
       .post('/api/users')
-      .send({
-        email: 'leaver@example.com',
-        name: 'Returned User',
-        organizationId: organization.id,
-      })
+      .set('x-organization-id', organizationB.id)
+      .send({ email: 'reactivate@example.com' })
+      .expect(HttpStatus.CREATED);
+
+    await request(httpServer)
+      .delete(`/api/users/${user.id}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.NO_CONTENT);
+
+    await request(httpServer)
+      .post('/api/users')
+      .set('x-organization-id', organizationA.id)
+      .send({ email: 'reactivate@example.com', name: 'Back Again' })
       .expect(HttpStatus.CREATED)
       .expect((res: Response) => {
         const reactivatedUser = expectUserResponse(res.body);
         expect(reactivatedUser.id).toBe(user.id);
-        expect(reactivatedUser.name).toBe('Returned User');
-        expect(reactivatedUser.organizations[0]?.id).toBe(organization.id);
+        expect(reactivatedUser.organization?.id).toBe(organizationA.id);
       });
-
-    const usersRes = await request(httpServer)
-      .get('/api/users')
-      .expect(HttpStatus.OK);
-    const users = usersRes.body as Array<
-      Pick<UserDto, 'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'>
-    >;
-    expect(users).toHaveLength(1);
-    expect(users[0]?.email).toBe('leaver@example.com');
-    expect(users[0]?.organizations[0]?.id).toBe(organization.id);
   });
 
-  it('fails to create a user without organizationId', async () => {
+  it('keeps roles isolated per organization and rejects cross-org assignment', async () => {
+    const organizationA = await createOrganization('assign-a', 'Assign A');
+    const organizationB = await createOrganization('assign-b', 'Assign B');
+    const user = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organizationA.id)
+          .send({ email: 'assign@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
     await request(httpServer)
       .post('/api/users')
-      .send({
-        email: 'no-org@example.com',
-        name: 'No Org',
-      })
-      .expect(HttpStatus.BAD_REQUEST);
+      .set('x-organization-id', organizationB.id)
+      .send({ email: 'assign@example.com' })
+      .expect(HttpStatus.CREATED);
+
+    const roleA = expectRoleResponse(
+      (
+        await request(httpServer)
+          .post('/api/roles')
+          .set('x-organization-id', organizationA.id)
+          .send({ name: 'Admin' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .post(`/api/users/${user.id}/roles`)
+      .set('x-organization-id', organizationB.id)
+      .send({ roleId: roleA.id })
+      .expect(HttpStatus.NOT_FOUND);
   });
 
-  it('does not allow duplicate organization slug', async () => {
+  it('supports permission CRUD and org-scoped role-permission assignment', async () => {
+    const organizationA = await createOrganization('perm-a', 'Perm A');
+    const organizationB = await createOrganization('perm-b', 'Perm B');
+
+    const permission = expectPermissionResponse(
+      (
+        await request(httpServer)
+          .post('/api/permissions')
+          .set('x-organization-id', organizationA.id)
+          .send({
+            key: 'catalog.manage',
+            description: 'Manage catalog',
+          })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
     await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Acme Corp', slug: 'acme' })
+      .post('/api/permissions')
+      .set('x-organization-id', organizationB.id)
+      .send({ key: 'catalog.manage' })
+      .expect(HttpStatus.BAD_REQUEST);
+
+    const roleA = expectRoleResponse(
+      (
+        await request(httpServer)
+          .post('/api/roles')
+          .set('x-organization-id', organizationA.id)
+          .send({ name: 'Catalog Manager' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const roleB = expectRoleResponse(
+      (
+        await request(httpServer)
+          .post('/api/roles')
+          .set('x-organization-id', organizationB.id)
+          .send({ name: 'Viewer' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .post(`/api/roles/${roleA.id}/permissions`)
+      .set('x-organization-id', organizationA.id)
+      .send({ permissionId: permission.id })
       .expect(HttpStatus.CREATED);
 
     await request(httpServer)
-      .post('/api/organizations')
-      .send({ name: 'Another Acme', slug: 'acme' })
+      .post(`/api/roles/${roleA.id}/permissions`)
+      .set('x-organization-id', organizationA.id)
+      .send({ permissionId: permission.id })
       .expect(HttpStatus.BAD_REQUEST);
-  });
-
-  it('does not allow duplicate active membership', async () => {
-    const organizationA = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Client A', slug: 'client-a' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-    const organizationB = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Client B', slug: 'client-b' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-    const user = expectUserResponse(
-      (
-        await request(httpServer)
-          .post('/api/users')
-          .send({
-            email: 'user@example.com',
-            name: 'User',
-            organizationId: organizationA.id,
-          })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-
-    expectMembershipResponse(
-      (
-        await request(httpServer)
-          .post(`/api/organizations/${organizationB.id}/users`)
-          .send({ userId: user.id })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
 
     await request(httpServer)
-      .post(`/api/organizations/${organizationB.id}/users`)
-      .send({ userId: user.id })
+      .post(`/api/roles/${roleA.id}/permissions`)
+      .set('x-organization-id', organizationB.id)
+      .send({ permissionId: permission.id })
+      .expect(HttpStatus.NOT_FOUND);
+
+    const scopedPermissions = (
+      await request(httpServer)
+        .get(`/api/roles/${roleA.id}/permissions`)
+        .set('x-organization-id', organizationA.id)
+        .expect(HttpStatus.OK)
+    ).body as PermissionDto[];
+    expect(scopedPermissions.map((item) => item.key)).toEqual([
+      'catalog.manage',
+    ]);
+
+    await request(httpServer)
+      .get(`/api/roles/${roleB.id}/permissions`)
+      .set('x-organization-id', organizationB.id)
+      .expect(HttpStatus.OK)
+      .expect([]);
+  });
+
+  it('enforces unique role names per organization', async () => {
+    const organizationA = await createOrganization('dup-role-a', 'Dup Role A');
+    const organizationB = await createOrganization('dup-role-b', 'Dup Role B');
+
+    await request(httpServer)
+      .post('/api/roles')
+      .set('x-organization-id', organizationA.id)
+      .send({ name: 'Admin' })
+      .expect(HttpStatus.CREATED);
+
+    await request(httpServer)
+      .post('/api/roles')
+      .set('x-organization-id', organizationA.id)
+      .send({ name: 'Admin' })
       .expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer)
+      .post('/api/roles')
+      .set('x-organization-id', organizationB.id)
+      .send({ name: 'Admin' })
+      .expect(HttpStatus.CREATED);
   });
 
-  it('blocks detaching the last membership', async () => {
-    const organization = expectOrganizationResponse(
+  async function createOrganization(slug: string, name: string) {
+    return expectOrganizationResponse(
       (
         await request(httpServer)
           .post('/api/organizations')
-          .send({ name: 'Solo Org', slug: 'solo-org' })
+          .send({ name, slug })
           .expect(HttpStatus.CREATED)
       ).body,
     );
-    const user = expectUserResponse(
-      (
-        await request(httpServer)
-          .post('/api/users')
-          .send({
-            email: 'solo@example.com',
-            name: 'Solo User',
-            organizationId: organization.id,
-          })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-
-    await request(httpServer)
-      .delete(`/api/organizations/${organization.id}/users/${user.id}`)
-      .expect(HttpStatus.BAD_REQUEST);
-  });
-
-  it('returns not found when membership does not exist or has been soft deleted', async () => {
-    const organizationA = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Primary Org', slug: 'primary-org' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-    const organizationB = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Secondary Org', slug: 'secondary-org' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-    const user = expectUserResponse(
-      (
-        await request(httpServer)
-          .post('/api/users')
-          .send({
-            email: 'member@example.com',
-            name: 'Member',
-            organizationId: organizationA.id,
-          })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-
-    await request(httpServer)
-      .delete(`/api/organizations/${organizationB.id}/users/${user.id}`)
-      .expect(HttpStatus.NOT_FOUND);
-
-    expectMembershipResponse(
-      (
-        await request(httpServer)
-          .post(`/api/organizations/${organizationB.id}/users`)
-          .send({ userId: user.id })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-
-    expectMembershipResponse(
-      (
-        await request(httpServer)
-          .delete(`/api/organizations/${organizationB.id}/users/${user.id}`)
-          .expect(HttpStatus.OK)
-      ).body,
-    );
-
-    await request(httpServer)
-      .delete(`/api/organizations/${organizationB.id}/users/${user.id}`)
-      .expect(HttpStatus.NOT_FOUND);
-  });
-
-  it('does not create membership for a deleted organization', async () => {
-    const activeOrganization = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Active Org', slug: 'active-org' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-    const deletedOrganization = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Archived Org', slug: 'archived-org' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-    const user = expectUserResponse(
-      (
-        await request(httpServer)
-          .post('/api/users')
-          .send({
-            email: 'attached@example.com',
-            name: 'Attached User',
-            organizationId: activeOrganization.id,
-          })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-
-    await request(httpServer)
-      .delete(`/api/organizations/${deletedOrganization.id}`)
-      .expect(HttpStatus.OK);
-
-    await request(httpServer)
-      .post(`/api/organizations/${deletedOrganization.id}/users`)
-      .send({ userId: user.id })
-      .expect(HttpStatus.NOT_FOUND);
-  });
-
-  it('does not create membership for a deleted user and does not list that user', async () => {
-    const organizationA = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Origin Org', slug: 'origin-org' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-    const organizationB = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Target Org', slug: 'target-org' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-    const user = expectUserResponse(
-      (
-        await request(httpServer)
-          .post('/api/users')
-          .send({
-            email: 'departed@example.com',
-            name: 'Departed User',
-            organizationId: organizationA.id,
-          })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
-
-    await request(httpServer)
-      .delete(`/api/users/${user.id}`)
-      .expect(HttpStatus.OK);
-
-    await request(httpServer)
-      .get(`/api/users/${user.id}`)
-      .expect(HttpStatus.NOT_FOUND);
-
-    const usersRes = await request(httpServer)
-      .get('/api/users')
-      .expect(HttpStatus.OK);
-    expect(usersRes.body).toEqual([]);
-
-    await request(httpServer)
-      .post(`/api/organizations/${organizationB.id}/users`)
-      .send({ userId: user.id })
-      .expect(HttpStatus.NOT_FOUND);
-  });
+  }
 });
 
 function expectOrganizationResponse(
   body: unknown,
 ): Pick<OrganizationDto, 'id' | 'name' | 'slug'> {
   const organization = body as Pick<OrganizationDto, 'id' | 'name' | 'slug'>;
-
   expect(organization.id).toEqual(expect.any(String));
   expect(organization.name).toEqual(expect.any(String));
   expect(organization.slug).toEqual(expect.any(String));
-  expectHiddenFieldIsAbsent(body, 'createdAt');
-  expectHiddenFieldIsAbsent(body, 'updatedAt');
-  expectHiddenFieldIsAbsent(body, 'deletedAt');
-
   return organization;
 }
 
 function expectUserResponse(
   body: unknown,
-): Pick<UserDto, 'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'> {
+): Pick<
+  UserDto,
+  'id' | 'email' | 'name' | 'avatarUrl' | 'organization' | 'roles'
+> {
   const user = body as Pick<
     UserDto,
-    'id' | 'email' | 'name' | 'avatarUrl' | 'organizations'
+    'id' | 'email' | 'name' | 'avatarUrl' | 'organization' | 'roles'
   >;
 
   expect(user.id).toEqual(expect.any(String));
   expect(user.email).toEqual(expect.any(String));
-  expect(Array.isArray(user.organizations)).toBe(true);
-  expectHiddenFieldIsAbsent(body, 'memberships');
-  expectHiddenFieldIsAbsent(body, 'createdAt');
-  expectHiddenFieldIsAbsent(body, 'updatedAt');
+  expectHiddenFieldIsAbsent(body, 'organizationUsers');
   expectHiddenFieldIsAbsent(body, 'deletedAt');
-
   return user;
 }
 
-function expectMembershipResponse(
-  body: unknown,
-): Pick<MembershipDto, 'id' | 'organizationId' | 'role'> {
-  const membership = body as Pick<
-    MembershipDto,
-    'id' | 'organizationId' | 'role'
-  >;
-
-  expect(membership.id).toEqual(expect.any(String));
-  expect(membership.organizationId).toEqual(expect.any(String));
-  expect(membership.role).toEqual(expect.any(String));
-  expectHiddenFieldIsAbsent(body, 'userId');
-  expectHiddenFieldIsAbsent(body, 'createdAt');
-  expectHiddenFieldIsAbsent(body, 'updatedAt');
-  expectHiddenFieldIsAbsent(body, 'deletedAt');
-
-  return membership;
+function expectRoleResponse(body: unknown): Pick<RoleDto, 'id' | 'name'> {
+  const role = body as Pick<RoleDto, 'id' | 'name'>;
+  expect(role.id).toEqual(expect.any(String));
+  expect(role.name).toEqual(expect.any(String));
+  return role;
 }
 
-function expectHiddenFieldIsAbsent(body: unknown, fieldName: string): void {
-  expect(body).not.toHaveProperty(fieldName);
+function expectPermissionResponse(
+  body: unknown,
+): Pick<PermissionDto, 'id' | 'key'> {
+  const permission = body as Pick<PermissionDto, 'id' | 'key'>;
+  expect(permission.id).toEqual(expect.any(String));
+  expect(permission.key).toEqual(expect.any(String));
+  return permission;
+}
+
+function expectHiddenFieldIsAbsent(body: unknown, key: string) {
+  expect(body).not.toHaveProperty(key);
 }

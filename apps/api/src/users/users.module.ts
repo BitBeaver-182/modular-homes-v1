@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
-import { MembershipsModule } from '../memberships/memberships.module';
+import { DatabaseModule } from '../database/database.module';
+import { OrganizationUsersModule } from '../organization-users/organization-users.module';
+import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 
 @Module({
-  imports: [MembershipsModule],
+  imports: [DatabaseModule, OrganizationUsersModule],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, PlatformOrganizationContextGuard],
+  exports: [UsersService],
 })
 export class UsersModule {}

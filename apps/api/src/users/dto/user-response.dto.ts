@@ -3,6 +3,7 @@ import {
   OrganizationDto,
   OrganizationResponse,
 } from '../../organizations/dto/organization-response.dto';
+import { RoleDto, RoleResponse } from '../../roles/dto/role-response.dto';
 
 export interface UserDto {
   id: string;
@@ -12,7 +13,8 @@ export interface UserDto {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-  organizations: Partial<OrganizationDto>[];
+  organization: Partial<OrganizationDto> | null;
+  roles: Partial<RoleDto>[];
 }
 
 export class UserResponse implements UserDto {
@@ -34,7 +36,11 @@ export class UserResponse implements UserDto {
 
   @Expose()
   @Type(() => OrganizationResponse)
-  organizations!: Partial<OrganizationDto>[];
+  organization!: Partial<OrganizationDto> | null;
+
+  @Expose()
+  @Type(() => RoleResponse)
+  roles!: Partial<RoleDto>[];
 
   @Exclude()
   deletedAt!: string | null;

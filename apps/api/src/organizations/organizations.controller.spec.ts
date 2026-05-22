@@ -7,8 +7,6 @@ describe('OrganizationsController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
-    attachUser: jest.fn(),
-    detachUser: jest.fn(),
     findAll: jest.fn(),
   };
 
@@ -19,31 +17,6 @@ describe('OrganizationsController', () => {
     controller = new OrganizationsController(
       organizationsService as unknown as OrganizationsService,
     );
-  });
-
-  it('supports nested org-user routes', async () => {
-    organizationsService.attachUser.mockResolvedValue({
-      id: 1n,
-      organizationId: 2n,
-      userId: 9n,
-      role: 'member',
-      deletedAt: null,
-    });
-    organizationsService.detachUser.mockResolvedValue({
-      id: 1n,
-      organizationId: 2n,
-      userId: 9n,
-      role: 'member',
-      deletedAt: new Date().toISOString(),
-    });
-
-    const attached = await controller.addUserToOrganization('2', '9');
-    const detached = await controller.removeUserFromOrganization('2', '9');
-
-    expect(organizationsService.attachUser).toHaveBeenCalledWith(2n, 9n);
-    expect(organizationsService.detachUser).toHaveBeenCalledWith(2n, 9n);
-    expect(attached.userId).toBeUndefined();
-    expect(detached.deletedAt).toBeUndefined();
   });
 
   it('routes base CRUD calls to service', async () => {
@@ -82,11 +55,7 @@ describe('OrganizationsController', () => {
 
   it('rejects malformed ids before hitting service', async () => {
     await expect(controller.findOne('abc')).rejects.toThrow();
-    await expect(
-      controller.addUserToOrganization('2', 'abc'),
-    ).rejects.toThrow();
 
     expect(organizationsService.findOne).not.toHaveBeenCalled();
-    expect(organizationsService.attachUser).not.toHaveBeenCalled();
   });
 });

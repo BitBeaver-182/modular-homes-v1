@@ -9,88 +9,60 @@ describe('UsersService', () => {
       update: jest.fn(),
     },
   };
-  const membershipsService = {
-    createUserWithMembership: jest.fn(),
+  const organizationUsersService = {
+    createUserInOrganization: jest.fn(),
+    removeUserFromOrganization: jest.fn(),
   };
 
   let service: UsersService;
 
   beforeEach(() => {
     jest.resetAllMocks();
-    service = new UsersService(prisma as never, membershipsService as never);
+    service = new UsersService(
+      prisma as never,
+      organizationUsersService as never,
+    );
   });
 
-  it('delegates create to memberships service', async () => {
-    membershipsService.createUserWithMembership.mockResolvedValue({
+  it('delegates create to organization users service', async () => {
+    organizationUsersService.createUserInOrganization.mockResolvedValue({
       id: 10n,
       email: 'user@example.com',
     });
 
-    await service.create({ email: 'user@example.com', organizationId: '2' });
+    await service.create(2n, { email: 'user@example.com' });
 
-    expect(membershipsService.createUserWithMembership).toHaveBeenCalledWith({
+    expect(
+      organizationUsersService.createUserInOrganization,
+    ).toHaveBeenCalledWith(2n, {
       email: 'user@example.com',
-      organizationId: '2',
     });
   });
 
   it('throws not found when user is missing', async () => {
     prisma.user.findFirst.mockResolvedValue(null);
-    await expect(service.findOne(99n)).rejects.toThrow(NotFoundException);
+    await expect(service.findOne(2n, 99n)).rejects.toThrow(NotFoundException);
   });
 
-  it('propagates error when creating user without organization', async () => {
-    membershipsService.createUserWithMembership.mockRejectedValue(
-      new Error('User must belong to an organization'),
+  it('delegates remove to organization users service', async () => {
+    organizationUsersService.removeUserFromOrganization.mockResolvedValue(
+      undefined,
     );
 
-    await expect(
-      service.create({ email: 'test@test.com' } as never),
-    ).rejects.toThrow('User must belong to an organization');
+    await service.remove(2n, 1n);
+
+    expect(
+      organizationUsersService.removeUserFromOrganization,
+    ).toHaveBeenCalledWith(2n, 1n);
   });
 
-  it('fails on duplicate email create', async () => {
-    membershipsService.createUserWithMembership.mockRejectedValue(
-      new Error('Unique constraint failed'),
-    );
-
-    await expect(
-      service.create({ email: 'john@acme.com', organizationId: '2' }),
-    ).rejects.toThrow();
-  });
-
-  it('soft deletes user by setting deletedAt', async () => {
-    prisma.user.findFirst.mockResolvedValue({
-      id: 1n,
-      email: 'user@example.com',
-      memberships: [],
-    });
-    prisma.user.update.mockResolvedValue({
-      id: 1n,
-      email: 'user@example.com',
-      deletedAt: new Date().toISOString(),
-      memberships: [],
-    });
-
-    const result = await service.remove(1n);
-
-    const updateMock = prisma.user.update;
-    const [updateArgs] = updateMock.mock.calls[0] as [
-      { where: { id: bigint }; data: { deletedAt: Date } },
-    ];
-    expect(updateArgs.where.id).toBe(1n);
-    expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
-    expect(result.deletedAt).toBeDefined();
-  });
-
-  it('returns active users with active memberships in findAll', async () => {
+  it('returns active users scoped to the current organization in findAll', async () => {
     prisma.user.findMany.mockResolvedValue([
       {
         id: 1n,
         email: 'user@example.com',
-        memberships: [
+        organizationUsers: [
           {
-            id: 3n,
             organizationId: 2n,
             organization: {
               id: 2n,
@@ -98,68 +70,106 @@ describe('UsersService', () => {
               slug: 'acme',
               deletedAt: null,
             },
+            userRoles: [],
           },
         ],
       },
     ]);
 
-    const result = await service.findAll();
+    const result = await service.findAll(2n);
 
     expect(prisma.user.findMany).toHaveBeenCalledWith({
-      where: { deletedAt: null },
+      where: {
+        deletedAt: null,
+        organizationUsers: {
+          some: {
+            organizationId: 2n,
+            deletedAt: null,
+          },
+        },
+      },
       include: {
-        memberships: {
-          where: { deletedAt: null },
-          include: { organization: true },
+        organizationUsers: {
+          where: {
+            organizationId: 2n,
+            deletedAt: null,
+          },
+          include: {
+            organization: true,
+            userRoles: {
+              include: {
+                role: true,
+              },
+            },
+          },
         },
       },
     });
     expect(result).toHaveLength(1);
-    expect(result[0].memberships).toHaveLength(1);
+    expect(result[0].organizationUsers).toHaveLength(1);
   });
 
   it('returns user in findOne when found', async () => {
     prisma.user.findFirst.mockResolvedValue({
       id: 1n,
       email: 'user@example.com',
-      memberships: [
+      organizationUsers: [
         {
-          id: 3n,
           organizationId: 2n,
           organization: { id: 2n, name: 'Acme', slug: 'acme', deletedAt: null },
+          userRoles: [],
         },
       ],
     });
 
-    const result = await service.findOne(1n);
+    const result = await service.findOne(2n, 1n);
 
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
-      where: { id: 1n, deletedAt: null },
+      where: {
+        id: 1n,
+        deletedAt: null,
+        organizationUsers: {
+          some: {
+            organizationId: 2n,
+            deletedAt: null,
+          },
+        },
+      },
       include: {
-        memberships: {
-          where: { deletedAt: null },
-          include: { organization: true },
+        organizationUsers: {
+          where: {
+            organizationId: 2n,
+            deletedAt: null,
+          },
+          include: {
+            organization: true,
+            userRoles: {
+              include: {
+                role: true,
+              },
+            },
+          },
         },
       },
     });
     expect(result.id).toBe(1n);
-    expect(result.memberships).toHaveLength(1);
+    expect(result.organizationUsers).toHaveLength(1);
   });
 
   it('updates user after existence check', async () => {
     prisma.user.findFirst.mockResolvedValue({
       id: 1n,
       email: 'user@example.com',
-      memberships: [],
+      organizationUsers: [],
     });
     prisma.user.update.mockResolvedValue({
       id: 1n,
       email: 'updated@example.com',
-      memberships: [],
+      organizationUsers: [],
     });
 
     const dto = { email: 'updated@example.com', name: 'Updated' };
-    const result = await service.update(1n, dto);
+    const result = await service.update(2n, 1n, dto);
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: 1n },
@@ -169,13 +179,23 @@ describe('UsersService', () => {
         avatarUrl: undefined,
       },
       include: {
-        memberships: {
-          where: { deletedAt: null },
-          include: { organization: true },
+        organizationUsers: {
+          where: {
+            organizationId: 2n,
+            deletedAt: null,
+          },
+          include: {
+            organization: true,
+            userRoles: {
+              include: {
+                role: true,
+              },
+            },
+          },
         },
       },
     });
     expect(result.email).toBe('updated@example.com');
-    expect(result.memberships).toEqual([]);
+    expect(result.organizationUsers).toEqual([]);
   });
 });

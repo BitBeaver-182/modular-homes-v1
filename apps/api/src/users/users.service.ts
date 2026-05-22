@@ -1,38 +1,70 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { MembershipsService } from '../memberships/memberships.service';
 import { PrismaService } from '../database/prisma.service';
+import {
+  OrganizationUsersService,
+  scopedOrganizationUserInclude,
+} from '../organization-users/organization-users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
-const activeMembershipInclude = {
-  memberships: {
-    where: { deletedAt: null },
-    include: { organization: true },
-  },
-} as const;
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly membershipsService: MembershipsService,
+    private readonly organizationUsersService: OrganizationUsersService,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
-    return this.membershipsService.createUserWithMembership(createUserDto);
+  async create(organizationId: bigint, createUserDto: CreateUserDto) {
+    return this.organizationUsersService.createUserInOrganization(
+      organizationId,
+      createUserDto,
+    );
   }
 
-  async findAll() {
+  async findAll(organizationId: bigint) {
     return this.prisma.user.findMany({
-      where: { deletedAt: null },
-      include: activeMembershipInclude,
+      where: {
+        deletedAt: null,
+        organizationUsers: {
+          some: {
+            organizationId,
+            deletedAt: null,
+          },
+        },
+      },
+      include: {
+        organizationUsers: {
+          ...scopedOrganizationUserInclude.organizationUsers,
+          where: {
+            organizationId,
+            deletedAt: null,
+          },
+        },
+      },
     });
   }
 
-  async findOne(id: bigint) {
+  async findOne(organizationId: bigint, id: bigint) {
     const user = await this.prisma.user.findFirst({
-      where: { id, deletedAt: null },
-      include: activeMembershipInclude,
+      where: {
+        id,
+        deletedAt: null,
+        organizationUsers: {
+          some: {
+            organizationId,
+            deletedAt: null,
+          },
+        },
+      },
+      include: {
+        organizationUsers: {
+          ...scopedOrganizationUserInclude.organizationUsers,
+          where: {
+            organizationId,
+            deletedAt: null,
+          },
+        },
+      },
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -40,8 +72,12 @@ export class UsersService {
     return user;
   }
 
-  async update(id: bigint, updateUserDto: UpdateUserDto) {
-    await this.findOne(id);
+  async update(
+    organizationId: bigint,
+    id: bigint,
+    updateUserDto: UpdateUserDto,
+  ) {
+    await this.findOne(organizationId, id);
     return this.prisma.user.update({
       where: { id },
       data: {
@@ -49,16 +85,22 @@ export class UsersService {
         name: updateUserDto.name,
         avatarUrl: updateUserDto.avatarUrl,
       },
-      include: activeMembershipInclude,
+      include: {
+        organizationUsers: {
+          ...scopedOrganizationUserInclude.organizationUsers,
+          where: {
+            organizationId,
+            deletedAt: null,
+          },
+        },
+      },
     });
   }
 
-  async remove(id: bigint) {
-    await this.findOne(id);
-    return this.prisma.user.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-      include: activeMembershipInclude,
-    });
+  async remove(organizationId: bigint, id: bigint) {
+    await this.organizationUsersService.removeUserFromOrganization(
+      organizationId,
+      id,
+    );
   }
 }

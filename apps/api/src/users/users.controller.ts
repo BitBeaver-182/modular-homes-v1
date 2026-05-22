@@ -6,6 +6,9 @@ import {
   Patch,
   Param,
   Delete,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { UsersService } from './users.service';
@@ -13,15 +16,25 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { parseBigIntId } from '../common/ids/parse-bigint-id';
 import { UserResponse } from './dto/user-response.dto';
+import { OrganizationId } from '../platform/organization-id.decorator';
+import { platformPath } from '../platform/platform.constants';
+import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
 
-type UserWithMembershipOrganizations = {
-  memberships?: Array<{
+type UserWithOrganizationRoles = {
+  organizationUsers?: Array<{
     organization?: {
       id: bigint;
       name: string;
       slug: string;
       deletedAt: Date | null;
     } | null;
+    userRoles?: Array<{
+      role: {
+        id: bigint;
+        name: string;
+        description: string | null;
+      };
+    }>;
   }>;
 } & Record<string, unknown>;
 
@@ -44,14 +57,18 @@ function isActiveOrganization(
   return organization != null && organization.deletedAt == null;
 }
 
-function toUserResponse(user: UserWithMembershipOrganizations): UserResponse {
+function toUserResponse(user: UserWithOrganizationRoles): UserResponse {
+  const organizationUser = (user.organizationUsers ?? [])[0];
   return plainToInstance(
     UserResponse,
     {
       ...user,
-      organizations: (user.memberships ?? [])
-        .map((membership) => membership.organization)
-        .filter(isActiveOrganization),
+      organization: isActiveOrganization(organizationUser?.organization)
+        ? organizationUser.organization
+        : null,
+      roles: (organizationUser?.userRoles ?? []).map(
+        (userRole) => userRole.role,
+      ),
     },
     {
       excludeExtraneousValues: true,
@@ -59,31 +76,46 @@ function toUserResponse(user: UserWithMembershipOrganizations): UserResponse {
   );
 }
 
-@Controller('users')
+@UseGuards(PlatformOrganizationContextGuard)
+@Controller(platformPath('users'))
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  async create(@Body() createUserDto: CreateUserDto) {
-    const user = await this.usersService.create(createUserDto);
+  async create(
+    @OrganizationId() organizationId: bigint,
+    @Body() createUserDto: CreateUserDto,
+  ) {
+    const user = await this.usersService.create(organizationId, createUserDto);
     return toUserResponse(user);
   }
 
   @Get()
-  async findAll() {
-    const users = await this.usersService.findAll();
+  async findAll(@OrganizationId() organizationId: bigint) {
+    const users = await this.usersService.findAll(organizationId);
     return users.map((user) => toUserResponse(user));
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const user = await this.usersService.findOne(parseBigIntId(id));
+  async findOne(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+  ) {
+    const user = await this.usersService.findOne(
+      organizationId,
+      parseBigIntId(id),
+    );
     return toUserResponse(user);
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  async update(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
     const user = await this.usersService.update(
+      organizationId,
       parseBigIntId(id),
       updateUserDto,
     );
@@ -91,8 +123,11 @@ export class UsersController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    const user = await this.usersService.remove(parseBigIntId(id));
-    return toUserResponse(user);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+  ) {
+    await this.usersService.remove(organizationId, parseBigIntId(id));
   }
 }

@@ -5,11 +5,11 @@ import { AppService } from './app.service';
 import { HealthModule } from './health/health.module';
 import { AppConfigModule } from './config/app-config.module';
 import { DatabaseModule } from './database/database.module';
-import { UsersModule } from './users/users.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 import { ValidationPipe } from '@nestjs/common';
 import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
+import { PlatformModule } from './platform/platform.module';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
     BootstrapModule,
     DatabaseModule,
     HealthModule,
-    UsersModule,
+    PlatformModule,
     OrganizationsModule,
   ],
   controllers: [AppController],

@@ -23,11 +23,15 @@ describe('UsersController', () => {
       email: 'user@example.com',
       name: 'Updated',
       avatarUrl: null,
-      memberships: [
+      organizationUsers: [
         {
-          id: 3n,
           organizationId: 2n,
           organization: { id: 2n, name: 'Acme', slug: 'acme', deletedAt: null },
+          userRoles: [
+            {
+              role: { id: 7n, name: 'Admin', description: 'Admin role' },
+            },
+          ],
         },
       ],
     };
@@ -37,30 +41,34 @@ describe('UsersController', () => {
     usersService.update.mockResolvedValue(rawUser);
     usersService.remove.mockResolvedValue(rawUser);
 
-    const createDto = { email: 'user@example.com', organizationId: '1' };
-    const created = await controller.create(createDto);
-    const list = await controller.findAll();
-    const one = await controller.findOne('1');
-    const updated = await controller.update('1', { name: 'updated' });
-    const removed = await controller.remove('1');
+    const createDto = { email: 'user@example.com' };
+    const created = await controller.create(2n, createDto);
+    const list = await controller.findAll(2n);
+    const one = await controller.findOne(2n, '1');
+    const updated = await controller.update(2n, '1', { name: 'updated' });
+    await controller.remove(2n, '1');
 
-    expect(usersService.create).toHaveBeenCalledWith(createDto);
-    expect(usersService.findAll).toHaveBeenCalledTimes(1);
-    expect(usersService.findOne).toHaveBeenCalledWith(1n);
-    expect(usersService.update).toHaveBeenCalledWith(1n, { name: 'updated' });
-    expect(usersService.remove).toHaveBeenCalledWith(1n);
-    expect(created.organizations).toEqual([
+    expect(usersService.create).toHaveBeenCalledWith(2n, createDto);
+    expect(usersService.findAll).toHaveBeenCalledWith(2n);
+    expect(usersService.findOne).toHaveBeenCalledWith(2n, 1n);
+    expect(usersService.update).toHaveBeenCalledWith(2n, 1n, {
+      name: 'updated',
+    });
+    expect(usersService.remove).toHaveBeenCalledWith(2n, 1n);
+    expect(created.organization).toEqual(
       expect.objectContaining({ id: 2n, name: 'Acme', slug: 'acme' }),
+    );
+    expect(created.roles).toEqual([
+      expect.objectContaining({ id: 7n, name: 'Admin' }),
     ]);
-    expect('memberships' in list[0]).toBe(false);
-    expect(one.organizations).toHaveLength(1);
-    expect(updated.organizations).toHaveLength(1);
-    expect(removed.organizations).toHaveLength(1);
+    expect('organizationUsers' in list[0]).toBe(false);
+    expect(one.organization?.id).toBe(2n);
+    expect(updated.roles).toHaveLength(1);
   });
 
   it('rejects malformed user id before hitting service', async () => {
-    await expect(controller.findOne('abc')).rejects.toThrow();
-    await expect(controller.update('abc', { name: 'x' })).rejects.toThrow();
+    await expect(controller.findOne(2n, 'abc')).rejects.toThrow();
+    await expect(controller.update(2n, 'abc', { name: 'x' })).rejects.toThrow();
 
     expect(usersService.findOne).not.toHaveBeenCalled();
     expect(usersService.update).not.toHaveBeenCalled();
