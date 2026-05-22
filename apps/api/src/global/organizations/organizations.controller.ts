@@ -102,14 +102,17 @@ export class OrganizationsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Delete Organization',
     description: 'Delete a single organization by id.',
   })
   @ApiBigIntIdParam('id', 'organization')
   @ApiOkResponse({ type: OrganizationResponse })
-  async remove(@Param('id') id: string) {
-    const organization = await this.organizationsService.remove(
+  async remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const organization = await this.organizationsService.removeForUser(
+      user.userId,
       parseBigIntId(id, 'organizationId'),
     );
     return plainToInstance(OrganizationResponse, organization, {

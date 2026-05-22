@@ -6,7 +6,7 @@ describe('OrganizationsController', () => {
     createForUser: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
-    remove: jest.fn(),
+    removeForUser: jest.fn(),
     findAll: jest.fn(),
   };
 
@@ -33,7 +33,7 @@ describe('OrganizationsController', () => {
     organizationsService.findAll.mockResolvedValue([rawOrganization]);
     organizationsService.findOne.mockResolvedValue(rawOrganization);
     organizationsService.update.mockResolvedValue(rawOrganization);
-    organizationsService.remove.mockResolvedValue(rawOrganization);
+    organizationsService.removeForUser.mockResolvedValue(rawOrganization);
 
     const created = await controller.create(
       { userId: 7n, email: 'owner@example.com' },
@@ -42,7 +42,10 @@ describe('OrganizationsController', () => {
     const list = await controller.findAll();
     const one = await controller.findOne('2');
     const updated = await controller.update('2', updateDto);
-    const removed = await controller.remove('2');
+    const removed = await controller.remove(
+      { userId: 7n, email: 'owner@example.com' },
+      '2',
+    );
 
     expect(organizationsService.createForUser).toHaveBeenCalledWith(
       7n,
@@ -51,7 +54,7 @@ describe('OrganizationsController', () => {
     expect(organizationsService.findAll).toHaveBeenCalledTimes(1);
     expect(organizationsService.findOne).toHaveBeenCalledWith(2n);
     expect(organizationsService.update).toHaveBeenCalledWith(2n, updateDto);
-    expect(organizationsService.remove).toHaveBeenCalledWith(2n);
+    expect(organizationsService.removeForUser).toHaveBeenCalledWith(7n, 2n);
     expect(created.deletedAt).toBeUndefined();
     expect(list[0].deletedAt).toBeUndefined();
     expect(one.slug).toBe('acme');

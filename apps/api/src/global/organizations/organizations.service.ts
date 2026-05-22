@@ -64,8 +64,23 @@ export class OrganizationsService {
     });
   }
 
-  async remove(id: bigint) {
+  async removeForUser(userId: bigint, id: bigint) {
     await this.findOne(id);
+    const ownerMembership = await this.prisma.organizationUser.findFirst({
+      where: {
+        organizationId: id,
+        userId,
+        deletedAt: null,
+        status: 'active',
+        governanceRole: 'owner',
+      },
+      select: { id: true },
+    });
+
+    if (!ownerMembership) {
+      throw new BadRequestException('Owner access required');
+    }
+
     const deletedAt = new Date();
     return this.prisma.$transaction(async (tx) => {
       await tx.organizationInvitation.updateMany({

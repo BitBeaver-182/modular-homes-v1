@@ -11,6 +11,7 @@ describe('OrganizationsService', () => {
     },
     organizationUser: {
       create: jest.fn(),
+      findFirst: jest.fn(),
       updateMany: jest.fn(),
     },
     organizationInvitation: {
@@ -69,6 +70,7 @@ describe('OrganizationsService', () => {
 
   it('soft deletes organization by setting deletedAt', async () => {
     prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.organizationUser.findFirst.mockResolvedValue({ id: 4n });
     prisma.organization.update.mockResolvedValue({
       id: 2n,
       name: 'Acme',
@@ -76,7 +78,7 @@ describe('OrganizationsService', () => {
       deletedAt: new Date().toISOString(),
     });
 
-    const result = await service.remove(2n);
+    const result = await service.removeForUser(7n, 2n);
 
     const updateMock = prisma.organization.update;
     const [updateArgs] = updateMock.mock.calls[0] as [
@@ -85,6 +87,15 @@ describe('OrganizationsService', () => {
     expect(updateArgs.where.id).toBe(2n);
     expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
     expect(result.deletedAt).toBeDefined();
+  });
+
+  it('rejects organization deletion when the actor is not an owner', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.organizationUser.findFirst.mockResolvedValue(null);
+
+    await expect(service.removeForUser(7n, 2n)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('returns active organizations in findAll', async () => {

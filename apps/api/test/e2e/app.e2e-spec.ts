@@ -123,6 +123,41 @@ describe('API (e2e)', () => {
     expect(membership.status).toBe('active');
   });
 
+  it('allows an owner to delete an organization and rejects non-owners', async () => {
+    const organization = await createOrganization('deletable-org', 'Deletable Org');
+
+    const member = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organization.id)
+          .send({ email: 'org-member@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    const memberToken = (
+      await request(httpServer)
+        .post('/api/auth/token')
+        .send({ email: member.email })
+        .expect(HttpStatus.CREATED)
+    ).body as { access_token: string };
+
+    await request(httpServer)
+      .delete(`/api/organizations/${organization.id}`)
+      .set('authorization', `Bearer ${memberToken.access_token}`)
+      .expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer)
+      .delete(`/api/organizations/${organization.id}`)
+      .set('authorization', `Bearer ${organization.ownerToken}`)
+      .expect(HttpStatus.OK);
+
+    await request(httpServer)
+      .get(`/api/organizations/${organization.id}`)
+      .expect(HttpStatus.NOT_FOUND);
+  });
+
   it('creates, lists, updates, and removes org-scoped users', async () => {
     const organizationA = await createOrganization('client-a', 'Client A');
     const organizationB = await createOrganization('client-b', 'Client B');

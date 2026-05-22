@@ -52,7 +52,7 @@ describe('OrganizationsService (integration)', () => {
       slug: 'soft-delete-org',
     });
 
-    await organizationsService.remove(organization.id);
+    await organizationsService.removeForUser(owner.id, organization.id);
 
     await expect(organizationsService.findOne(organization.id)).rejects.toThrow(
       NotFoundException,
