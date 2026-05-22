@@ -14,7 +14,7 @@ Generate Prisma client:
 pnpm prisma:generate
 ```
 
-Apply local migrations when needed:
+Apply local migrations:
 
 ```bash
 pnpm prisma:deploy
@@ -28,7 +28,7 @@ Required local env:
 JWT_SECRET=secret
 ```
 
-Start the API in local mode:
+Start the API:
 
 ```bash
 pnpm start:local
@@ -45,7 +45,7 @@ Generate the OpenAPI file without starting the server:
 pnpm openapi:generate
 ```
 
-## Tests
+## Quality gates
 
 ```bash
 pnpm lint
@@ -55,198 +55,206 @@ pnpm test:integration
 pnpm test:e2e
 ```
 
-Test database helpers:
+Important:
 
-```bash
-pnpm test:db:start
-pnpm test:db:stop
-```
+- `test:integration` and `test:e2e` share the same test database.
+- Run them serially, not in parallel.
 
-## Domain model
+## System model
 
-- `User` is a global identity.
-- `Organization` owns workspace data.
+- `User` is a global account.
+- `Organization` is a workspace.
 - `OrganizationUser` is the membership join table.
-- Governance lives on membership, not on RBAC roles.
+- `OrganizationInvitation` is the invitation record for onboarding into an existing organization.
 
-Current membership fields:
+Governance lives on `OrganizationUser.governanceRole`, not on app RBAC roles.
+
+Membership fields:
 
 - `governanceRole`: `owner | member`
 - `status`: `invited | active | removed`
 
-Rules:
+Invitation fields:
 
-- The first active membership in an organization becomes `owner`.
+- `status`: `pending | accepted | expired | revoked | rejected`
+
+## Current business rules
+
+- A user signs up first.
+- An authenticated user can create an organization.
+- Creating an organization automatically creates the first active owner membership for that user.
+- A user can belong to many organizations.
+- Joining another organization creates a new membership, not a new user.
 - An organization must always have at least one active owner.
-- Removing a user from one organization only affects that membership.
-- If a user loses their last active membership anywhere, the global `User` is soft deleted.
-- Ownership is managed through dedicated membership governance routes, not through normal role assignment.
-- Invited memberships do not appear in active org-scoped user reads until activated.
+- Last active owner cannot be removed.
+- Removing a membership only affects that organization.
+- If a user loses their last active membership globally, the global user is soft deleted.
+- Deleting an organization soft-deletes the organization, its memberships, and its invitations, but does not delete global users.
 
-## Auth flow
+## Canonical frontend flow
 
-The API currently uses JWT bearer auth for membership governance routes.
+### 1. Register
 
-1. Create an active user in an organization.
-2. Issue a token for that user by email.
-3. Send `Authorization: Bearer <token>` on owner-only governance endpoints.
-
-Issue a token:
+Create a global user account and receive a JWT:
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/token \
+curl -X POST http://localhost:3000/api/auth/register \
   -H 'content-type: application/json' \
-  -d '{"email":"owner@example.com"}'
+  -d '{"email":"owner@example.com","name":"Owner"}'
 ```
 
-Inspect the current actor:
+Response shape:
 
-```bash
-curl http://localhost:3000/api/auth/me \
-  -H 'authorization: Bearer <token>'
+```json
+{
+  "access_token": "<jwt>",
+  "user": {
+    "id": "1",
+    "email": "owner@example.com",
+    "name": "Owner",
+    "avatarUrl": null
+  }
+}
 ```
 
-## Organization and membership flow
+### 2. Create an organization
 
-### 1. Create an organization
+Use the JWT from registration:
 
 ```bash
 curl -X POST http://localhost:3000/api/organizations \
   -H 'content-type: application/json' \
+  -H 'authorization: Bearer <jwt>' \
   -d '{"name":"Acme","slug":"acme"}'
 ```
 
-### 2. Create the first active user in that organization
+This creates:
 
-This user becomes the first owner automatically.
+- the organization
+- the first `OrganizationUser` membership for the creator
+- `governanceRole=owner`
+- `status=active`
+
+### 3. Invite someone else
+
+Owner token required.
 
 ```bash
-curl -X POST http://localhost:3000/api/users \
+curl -X POST http://localhost:3000/api/organization-invitations \
   -H 'content-type: application/json' \
   -H 'x-organization-id: 1' \
-  -d '{"email":"owner@example.com","name":"Owner"}'
+  -H 'authorization: Bearer <owner-jwt>' \
+  -d '{"email":"invitee@example.com","governanceRole":"member"}'
 ```
 
-### 3. Issue a token for the owner
+This creates a pending invitation record.
+
+It does not create a membership yet.
+
+### 4. Invitee signs up or signs in
+
+If the invitee does not exist yet:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H 'content-type: application/json' \
+  -d '{"email":"invitee@example.com"}'
+```
+
+If the invitee already exists:
 
 ```bash
 curl -X POST http://localhost:3000/api/auth/token \
   -H 'content-type: application/json' \
-  -d '{"email":"owner@example.com"}'
+  -d '{"email":"invitee@example.com"}'
 ```
 
-### 4. Create more active members
+### 5. Invitee accepts the invitation
 
-These default to `member`.
+The invitee must accept with a token whose email matches the invitation email.
 
 ```bash
-curl -X POST http://localhost:3000/api/users \
-  -H 'content-type: application/json' \
-  -H 'x-organization-id: 1' \
-  -d '{"email":"member@example.com","name":"Member"}'
+curl -X POST http://localhost:3000/api/organization-invitations/10/accept \
+  -H 'authorization: Bearer <invitee-jwt>'
 ```
 
-### 5. Invite a member without activating them yet
+On acceptance:
 
-Owner token required.
+- invitation becomes `accepted`
+- membership is created or reactivated
+- no duplicate user is created
+- no duplicate membership is created
 
-```bash
-curl -X POST http://localhost:3000/api/organization-memberships/invitations \
-  -H 'content-type: application/json' \
-  -H 'x-organization-id: 1' \
-  -H 'authorization: Bearer <owner-token>' \
-  -d '{"email":"invited@example.com"}'
-```
+## Governance flows
 
-Result:
-
-- membership is created with `status=invited`
-- membership is not returned by `GET /api/users`
-
-### 6. Activate an invited membership
-
-Owner token required.
-
-```bash
-curl -X POST http://localhost:3000/api/organization-memberships/3/activations \
-  -H 'x-organization-id: 1' \
-  -H 'authorization: Bearer <owner-token>'
-```
-
-After activation:
-
-- membership becomes `active`
-- it now appears in org-scoped user reads
-- it remains `member` unless it is the first active membership in the org
-
-### 7. Grant another member ownership
-
-Owner token required.
+Grant ownership:
 
 ```bash
 curl -X POST http://localhost:3000/api/organization-memberships/2/owners \
   -H 'x-organization-id: 1' \
-  -H 'authorization: Bearer <owner-token>'
+  -H 'authorization: Bearer <owner-jwt>'
 ```
 
-This is additive. The organization can have multiple active owners.
-
-### 8. Transfer sole ownership
-
-Owner token required.
-
-This flow promotes the target first and demotes the source second.
+Transfer ownership:
 
 ```bash
 curl -X POST http://localhost:3000/api/organization-memberships/2/ownership-transfers \
   -H 'content-type: application/json' \
   -H 'x-organization-id: 1' \
-  -H 'authorization: Bearer <owner-token>' \
+  -H 'authorization: Bearer <owner-jwt>' \
   -d '{"fromUserId":"1"}'
 ```
 
-### 9. Remove a user from the organization
+Delete organization:
 
 ```bash
-curl -X DELETE http://localhost:3000/api/users/2 \
-  -H 'x-organization-id: 1'
+curl -X DELETE http://localhost:3000/api/organizations/1 \
+  -H 'authorization: Bearer <owner-jwt>'
 ```
 
-Behavior:
+Only owners can delete organizations.
 
-- if the user still has another active membership elsewhere, only this membership is removed
-- if this was the user’s last active membership, the user is soft deleted globally
-- if this user is the last active owner in the organization, the request is rejected
+## Current route surface
 
-## Route summary
+Auth:
 
-Global routes:
-
-- `POST /api/organizations`
-- `GET /api/organizations`
-- `GET /api/organizations/:id`
+- `POST /api/auth/register`
 - `POST /api/auth/token`
 - `GET /api/auth/me`
 
-Organization-scoped user routes:
+Organizations:
 
-- `POST /api/users`
-- `GET /api/users`
-- `GET /api/users/:id`
-- `PATCH /api/users/:id`
-- `DELETE /api/users/:id`
+- `POST /api/organizations`  
+  Authenticated user creates an organization and becomes first owner.
+- `GET /api/organizations`
+- `GET /api/organizations/:id`
+- `PATCH /api/organizations/:id`
+- `DELETE /api/organizations/:id`  
+  Owner-only.
 
-Owner-only governance routes:
+Canonical invitation routes:
 
-- `POST /api/organization-memberships/invitations`
-- `POST /api/organization-memberships/:userId/activations`
+- `POST /api/organization-invitations`
+- `POST /api/organization-invitations/:id/accept`
+
+Membership governance routes:
+
 - `POST /api/organization-memberships/:userId/owners`
 - `POST /api/organization-memberships/:userId/ownership-transfers`
 
-All organization-scoped routes require:
+Org-scoped resource routes still use:
 
 - `x-organization-id: <organization-id>`
 
-Governance routes also require:
+## Important note about legacy routes
 
-- `Authorization: Bearer <jwt>`
+Some older membership-management routes still exist for compatibility and tests, especially under `/api/users` and `/api/organization-memberships`.
+
+For new frontend onboarding work, prefer this canonical flow:
+
+1. `auth/register` or `auth/token`
+2. `POST /organizations`
+3. `POST /organization-invitations`
+4. `POST /organization-invitations/:id/accept`
+
+Do not build new onboarding flows around pre-created invited memberships.
