@@ -3,6 +3,7 @@ import { PrismaService } from '../database/prisma.service';
 import {
   OrganizationUsersService,
   scopedOrganizationUserInclude,
+  type UserWithOrganizationContext,
 } from '../organization-users/organization-users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -14,14 +15,19 @@ export class UsersService {
     private readonly organizationUsersService: OrganizationUsersService,
   ) {}
 
-  async create(organizationId: bigint, createUserDto: CreateUserDto) {
+  async create(
+    organizationId: bigint,
+    createUserDto: CreateUserDto,
+  ): Promise<UserWithOrganizationContext> {
     return this.organizationUsersService.createUserInOrganization(
       organizationId,
       createUserDto,
     );
   }
 
-  async findAll(organizationId: bigint) {
+  async findAll(
+    organizationId: bigint,
+  ): Promise<UserWithOrganizationContext[]> {
     return this.prisma.user.findMany({
       where: {
         deletedAt: null,
@@ -44,7 +50,10 @@ export class UsersService {
     });
   }
 
-  async findOne(organizationId: bigint, id: bigint) {
+  async findOne(
+    organizationId: bigint,
+    id: bigint,
+  ): Promise<UserWithOrganizationContext> {
     const user = await this.prisma.user.findFirst({
       where: {
         id,
@@ -76,7 +85,7 @@ export class UsersService {
     organizationId: bigint,
     id: bigint,
     updateUserDto: UpdateUserDto,
-  ) {
+  ): Promise<UserWithOrganizationContext> {
     await this.findOne(organizationId, id);
     return this.prisma.user.update({
       where: { id },

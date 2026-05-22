@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { Prisma } from '../generated/prisma';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 
 const scopedOrganizationUserInclude = {
@@ -22,6 +23,21 @@ const scopedOrganizationUserInclude = {
   },
 } as const;
 
+export type UserWithOrganizationContext = Prisma.UserGetPayload<{
+  include: {
+    organizationUsers: {
+      include: {
+        organization: true;
+        userRoles: {
+          include: {
+            role: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
 @Injectable()
 export class OrganizationUsersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -29,7 +45,7 @@ export class OrganizationUsersService {
   async createUserInOrganization(
     organizationId: bigint,
     createUserDto: CreateUserDto,
-  ) {
+  ): Promise<UserWithOrganizationContext> {
     return this.prisma.$transaction(async (tx) => {
       const organization = await tx.organization.findFirst({
         where: { id: organizationId, deletedAt: null },
