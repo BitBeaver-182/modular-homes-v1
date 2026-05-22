@@ -8,7 +8,10 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get the API welcome message' })
+  @ApiOperation({
+    summary: 'Get Root',
+    description: 'Return the default root response for the API.',
+  })
   @ApiOkResponse({
     description: 'Plain text welcome response.',
     schema: {

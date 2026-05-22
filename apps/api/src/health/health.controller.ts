@@ -9,7 +9,10 @@ export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get API health status' })
+  @ApiOperation({
+    summary: 'Get Health',
+    description: 'Return the current API health status.',
+  })
   @ApiOkResponse({ type: HealthResponseDto })
   getHealthStatus() {
     return this.healthService.getStatus();

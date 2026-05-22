@@ -94,7 +94,10 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a user in the active organization' })
+  @ApiOperation({
+    summary: 'Create User',
+    description: 'Create a user in the active organization.',
+  })
   @ApiCreatedResponse({ type: UserResponse })
   async create(
     @OrganizationId() organizationId: bigint,
@@ -105,7 +108,10 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List users in the active organization' })
+  @ApiOperation({
+    summary: 'List User',
+    description: 'Return all users in the active organization.',
+  })
   @ApiOkResponse({ type: UserResponse, isArray: true })
   async findAll(@OrganizationId() organizationId: bigint) {
     const users = await this.usersService.findAll(organizationId);
@@ -113,7 +119,10 @@ export class UsersController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a user by id in the active organization' })
+  @ApiOperation({
+    summary: 'Get User',
+    description: 'Return a single user by id in the active organization.',
+  })
   @ApiBigIntIdParam('id', 'user')
   @ApiOkResponse({ type: UserResponse })
   async findOne(
@@ -128,7 +137,10 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a user in the active organization' })
+  @ApiOperation({
+    summary: 'Update User',
+    description: 'Update a single user by id in the active organization.',
+  })
   @ApiBigIntIdParam('id', 'user')
   @ApiOkResponse({ type: UserResponse })
   async update(
@@ -146,7 +158,10 @@ export class UsersController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a user from the active organization' })
+  @ApiOperation({
+    summary: 'Delete User',
+    description: 'Delete a single user by id from the active organization.',
+  })
   @ApiBigIntIdParam('id', 'user')
   async remove(
     @OrganizationId() organizationId: bigint,

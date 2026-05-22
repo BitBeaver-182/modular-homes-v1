@@ -27,7 +27,10 @@ export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create an organization' })
+  @ApiOperation({
+    summary: 'Create Organization',
+    description: 'Create a new organization.',
+  })
   @ApiCreatedResponse({ type: OrganizationResponse })
   async create(@Body() createOrganizationDto: CreateOrganizationDto) {
     const organization = await this.organizationsService.create(
@@ -39,7 +42,10 @@ export class OrganizationsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List organizations' })
+  @ApiOperation({
+    summary: 'List Organization',
+    description: 'Return all organizations.',
+  })
   @ApiOkResponse({ type: OrganizationResponse, isArray: true })
   async findAll() {
     const organizations = await this.organizationsService.findAll();
@@ -49,7 +55,10 @@ export class OrganizationsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get an organization by id' })
+  @ApiOperation({
+    summary: 'Get Organization',
+    description: 'Return a single organization by id.',
+  })
   @ApiBigIntIdParam('id', 'organization')
   @ApiOkResponse({ type: OrganizationResponse })
   async findOne(@Param('id') id: string) {
@@ -62,7 +71,10 @@ export class OrganizationsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update an organization' })
+  @ApiOperation({
+    summary: 'Update Organization',
+    description: 'Update a single organization by id.',
+  })
   @ApiBigIntIdParam('id', 'organization')
   @ApiOkResponse({ type: OrganizationResponse })
   async update(
@@ -79,7 +91,10 @@ export class OrganizationsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete an organization' })
+  @ApiOperation({
+    summary: 'Delete Organization',
+    description: 'Delete a single organization by id.',
+  })
   @ApiBigIntIdParam('id', 'organization')
   @ApiOkResponse({ type: OrganizationResponse })
   async remove(@Param('id') id: string) {

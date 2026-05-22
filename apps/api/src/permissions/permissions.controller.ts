@@ -35,7 +35,10 @@ export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a permission' })
+  @ApiOperation({
+    summary: 'Create Permission',
+    description: 'Create a permission.',
+  })
   @ApiCreatedResponse({ type: PermissionResponse })
   async create(@Body() createPermissionDto: CreatePermissionDto) {
     const permission =
@@ -46,7 +49,10 @@ export class PermissionsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List permissions' })
+  @ApiOperation({
+    summary: 'List Permission',
+    description: 'Return all permissions.',
+  })
   @ApiOkResponse({ type: PermissionResponse, isArray: true })
   async findAll() {
     const permissions = await this.permissionsService.findAll();
@@ -56,7 +62,10 @@ export class PermissionsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a permission by id' })
+  @ApiOperation({
+    summary: 'Get Permission',
+    description: 'Return a single permission by id.',
+  })
   @ApiBigIntIdParam('id', 'permission')
   @ApiOkResponse({ type: PermissionResponse })
   async findOne(@Param('id') id: string) {
@@ -67,7 +76,10 @@ export class PermissionsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a permission' })
+  @ApiOperation({
+    summary: 'Update Permission',
+    description: 'Update a single permission by id.',
+  })
   @ApiBigIntIdParam('id', 'permission')
   @ApiOkResponse({ type: PermissionResponse })
   async update(
@@ -84,7 +96,10 @@ export class PermissionsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a permission' })
+  @ApiOperation({
+    summary: 'Delete Permission',
+    description: 'Delete a single permission by id.',
+  })
   @ApiBigIntIdParam('id', 'permission')
   @ApiOkResponse({ type: PermissionResponse })
   async remove(@Param('id') id: string) {

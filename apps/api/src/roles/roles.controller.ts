@@ -36,7 +36,10 @@ export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a role in the active organization' })
+  @ApiOperation({
+    summary: 'Create Role',
+    description: 'Create a role in the active organization.',
+  })
   @ApiCreatedResponse({ type: RoleResponse })
   async create(
     @OrganizationId() organizationId: bigint,
@@ -49,7 +52,10 @@ export class RolesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List roles in the active organization' })
+  @ApiOperation({
+    summary: 'List Role',
+    description: 'Return all roles in the active organization.',
+  })
   @ApiOkResponse({ type: RoleResponse, isArray: true })
   async findAll(@OrganizationId() organizationId: bigint) {
     const roles = await this.rolesService.findAll(organizationId);
@@ -59,7 +65,10 @@ export class RolesController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a role by id in the active organization' })
+  @ApiOperation({
+    summary: 'Get Role',
+    description: 'Return a single role by id in the active organization.',
+  })
   @ApiBigIntIdParam('id', 'role')
   @ApiOkResponse({ type: RoleResponse })
   async findOne(
@@ -76,7 +85,10 @@ export class RolesController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a role in the active organization' })
+  @ApiOperation({
+    summary: 'Update Role',
+    description: 'Update a single role by id in the active organization.',
+  })
   @ApiBigIntIdParam('id', 'role')
   @ApiOkResponse({ type: RoleResponse })
   async update(
@@ -95,7 +107,10 @@ export class RolesController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a role from the active organization' })
+  @ApiOperation({
+    summary: 'Delete Role',
+    description: 'Delete a single role by id from the active organization.',
+  })
   @ApiBigIntIdParam('id', 'role')
   @ApiOkResponse({ type: RoleResponse })
   async remove(

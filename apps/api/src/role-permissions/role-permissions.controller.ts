@@ -27,7 +27,7 @@ import { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
 import { RolePermissionResponse } from './dto/role-permission.dto';
 import { RolePermissionsService } from './role-permissions.service';
 
-@ApiTags('Role Permissions')
+@ApiTags('Roles/Permissions')
 @ApiOrganizationHeader()
 @UseGuards(PlatformOrganizationContextGuard)
 @Controller(platformPath('roles/:roleId/permissions'))
@@ -37,7 +37,10 @@ export class RolePermissionsController {
   ) {}
 
   @Post()
-  @ApiOperation({ summary: 'Assign a permission to a role' })
+  @ApiOperation({
+    summary: 'Assign Role Permission',
+    description: 'Assign a permission to a role in the active organization.',
+  })
   @ApiBigIntIdParam('roleId', 'role')
   @ApiBody({ type: AssignRolePermissionDto })
   @ApiCreatedResponse({ type: RolePermissionResponse })
@@ -57,7 +60,10 @@ export class RolePermissionsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List permissions assigned to a role' })
+  @ApiOperation({
+    summary: 'List Role Permission',
+    description: 'Return all permissions assigned to a role in the active organization.',
+  })
   @ApiBigIntIdParam('roleId', 'role')
   @ApiOkResponse({ type: RolePermissionResponse, isArray: true })
   async findAll(
@@ -74,7 +80,10 @@ export class RolePermissionsController {
   }
 
   @Delete(':permissionId')
-  @ApiOperation({ summary: 'Remove a permission from a role' })
+  @ApiOperation({
+    summary: 'Remove Role Permission',
+    description: 'Remove a permission from a role in the active organization.',
+  })
   @ApiBigIntIdParam('roleId', 'role')
   @ApiBigIntIdParam('permissionId', 'permission')
   @ApiOkResponse({ type: RolePermissionResponse })

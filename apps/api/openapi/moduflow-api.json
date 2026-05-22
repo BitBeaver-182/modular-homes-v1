@@ -3,6 +3,7 @@
   "paths": {
     "/api": {
       "get": {
+        "description": "Return the default root response for the API.",
         "operationId": "AppController_getHello",
         "parameters": [],
         "responses": {
@@ -18,7 +19,7 @@
             }
           }
         },
-        "summary": "Get the API welcome message",
+        "summary": "Get Root",
         "tags": [
           "App"
         ]
@@ -26,6 +27,7 @@
     },
     "/api/health": {
       "get": {
+        "description": "Return the current API health status.",
         "operationId": "HealthController_getHealthStatus",
         "parameters": [],
         "responses": {
@@ -40,7 +42,7 @@
             }
           }
         },
-        "summary": "Get API health status",
+        "summary": "Get Health",
         "tags": [
           "Health"
         ]
@@ -48,6 +50,7 @@
     },
     "/api/users": {
       "post": {
+        "description": "Create a user in the active organization.",
         "operationId": "UsersController_create",
         "parameters": [
           {
@@ -83,12 +86,13 @@
             }
           }
         },
-        "summary": "Create a user in the active organization",
+        "summary": "Create User",
         "tags": [
           "Users"
         ]
       },
       "get": {
+        "description": "Return all users in the active organization.",
         "operationId": "UsersController_findAll",
         "parameters": [
           {
@@ -117,7 +121,7 @@
             }
           }
         },
-        "summary": "List users in the active organization",
+        "summary": "List User",
         "tags": [
           "Users"
         ]
@@ -125,6 +129,7 @@
     },
     "/api/users/{id}": {
       "get": {
+        "description": "Return a single user by id in the active organization.",
         "operationId": "UsersController_findOne",
         "parameters": [
           {
@@ -160,12 +165,13 @@
             }
           }
         },
-        "summary": "Get a user by id in the active organization",
+        "summary": "Get User",
         "tags": [
           "Users"
         ]
       },
       "patch": {
+        "description": "Update a single user by id in the active organization.",
         "operationId": "UsersController_update",
         "parameters": [
           {
@@ -211,12 +217,13 @@
             }
           }
         },
-        "summary": "Update a user in the active organization",
+        "summary": "Update User",
         "tags": [
           "Users"
         ]
       },
       "delete": {
+        "description": "Delete a single user by id from the active organization.",
         "operationId": "UsersController_remove",
         "parameters": [
           {
@@ -245,7 +252,7 @@
             "description": ""
           }
         },
-        "summary": "Delete a user from the active organization",
+        "summary": "Delete User",
         "tags": [
           "Users"
         ]
@@ -253,6 +260,7 @@
     },
     "/api/roles": {
       "post": {
+        "description": "Create a role in the active organization.",
         "operationId": "RolesController_create",
         "parameters": [
           {
@@ -288,12 +296,13 @@
             }
           }
         },
-        "summary": "Create a role in the active organization",
+        "summary": "Create Role",
         "tags": [
           "Roles"
         ]
       },
       "get": {
+        "description": "Return all roles in the active organization.",
         "operationId": "RolesController_findAll",
         "parameters": [
           {
@@ -322,7 +331,7 @@
             }
           }
         },
-        "summary": "List roles in the active organization",
+        "summary": "List Role",
         "tags": [
           "Roles"
         ]
@@ -330,6 +339,7 @@
     },
     "/api/roles/{id}": {
       "get": {
+        "description": "Return a single role by id in the active organization.",
         "operationId": "RolesController_findOne",
         "parameters": [
           {
@@ -365,12 +375,13 @@
             }
           }
         },
-        "summary": "Get a role by id in the active organization",
+        "summary": "Get Role",
         "tags": [
           "Roles"
         ]
       },
       "patch": {
+        "description": "Update a single role by id in the active organization.",
         "operationId": "RolesController_update",
         "parameters": [
           {
@@ -416,12 +427,13 @@
             }
           }
         },
-        "summary": "Update a role in the active organization",
+        "summary": "Update Role",
         "tags": [
           "Roles"
         ]
       },
       "delete": {
+        "description": "Delete a single role by id from the active organization.",
         "operationId": "RolesController_remove",
         "parameters": [
           {
@@ -457,7 +469,7 @@
             }
           }
         },
-        "summary": "Delete a role from the active organization",
+        "summary": "Delete Role",
         "tags": [
           "Roles"
         ]
@@ -465,6 +477,7 @@
     },
     "/api/permissions": {
       "post": {
+        "description": "Create a permission.",
         "operationId": "PermissionsController_create",
         "parameters": [
           {
@@ -500,12 +513,13 @@
             }
           }
         },
-        "summary": "Create a permission",
+        "summary": "Create Permission",
         "tags": [
           "Permissions"
         ]
       },
       "get": {
+        "description": "Return all permissions.",
         "operationId": "PermissionsController_findAll",
         "parameters": [
           {
@@ -534,7 +548,7 @@
             }
           }
         },
-        "summary": "List permissions",
+        "summary": "List Permission",
         "tags": [
           "Permissions"
         ]
@@ -542,6 +556,7 @@
     },
     "/api/permissions/{id}": {
       "get": {
+        "description": "Return a single permission by id.",
         "operationId": "PermissionsController_findOne",
         "parameters": [
           {
@@ -577,12 +592,13 @@
             }
           }
         },
-        "summary": "Get a permission by id",
+        "summary": "Get Permission",
         "tags": [
           "Permissions"
         ]
       },
       "patch": {
+        "description": "Update a single permission by id.",
         "operationId": "PermissionsController_update",
         "parameters": [
           {
@@ -628,12 +644,13 @@
             }
           }
         },
-        "summary": "Update a permission",
+        "summary": "Update Permission",
         "tags": [
           "Permissions"
         ]
       },
       "delete": {
+        "description": "Delete a single permission by id.",
         "operationId": "PermissionsController_remove",
         "parameters": [
           {
@@ -669,7 +686,7 @@
             }
           }
         },
-        "summary": "Delete a permission",
+        "summary": "Delete Permission",
         "tags": [
           "Permissions"
         ]
@@ -677,6 +694,7 @@
     },
     "/api/users/{userId}/roles": {
       "post": {
+        "description": "Assign a role to a user in the active organization.",
         "operationId": "UserRolesController_assignRole",
         "parameters": [
           {
@@ -722,12 +740,13 @@
             }
           }
         },
-        "summary": "Assign a role to a user",
+        "summary": "Assign User Role",
         "tags": [
-          "User Roles"
+          "Users/Roles"
         ]
       },
       "get": {
+        "description": "Return all roles assigned to a user in the active organization.",
         "operationId": "UserRolesController_findAll",
         "parameters": [
           {
@@ -766,14 +785,15 @@
             }
           }
         },
-        "summary": "List roles assigned to a user",
+        "summary": "List User Role",
         "tags": [
-          "User Roles"
+          "Users/Roles"
         ]
       }
     },
     "/api/users/{userId}/roles/{roleId}": {
       "delete": {
+        "description": "Remove a role from a user in the active organization.",
         "operationId": "UserRolesController_removeRole",
         "parameters": [
           {
@@ -819,14 +839,15 @@
             }
           }
         },
-        "summary": "Remove a role from a user",
+        "summary": "Remove User Role",
         "tags": [
-          "User Roles"
+          "Users/Roles"
         ]
       }
     },
     "/api/roles/{roleId}/permissions": {
       "post": {
+        "description": "Assign a permission to a role in the active organization.",
         "operationId": "RolePermissionsController_assignPermission",
         "parameters": [
           {
@@ -872,12 +893,13 @@
             }
           }
         },
-        "summary": "Assign a permission to a role",
+        "summary": "Assign Role Permission",
         "tags": [
-          "Role Permissions"
+          "Roles/Permissions"
         ]
       },
       "get": {
+        "description": "Return all permissions assigned to a role in the active organization.",
         "operationId": "RolePermissionsController_findAll",
         "parameters": [
           {
@@ -916,14 +938,15 @@
             }
           }
         },
-        "summary": "List permissions assigned to a role",
+        "summary": "List Role Permission",
         "tags": [
-          "Role Permissions"
+          "Roles/Permissions"
         ]
       }
     },
     "/api/roles/{roleId}/permissions/{permissionId}": {
       "delete": {
+        "description": "Remove a permission from a role in the active organization.",
         "operationId": "RolePermissionsController_removePermission",
         "parameters": [
           {
@@ -969,14 +992,15 @@
             }
           }
         },
-        "summary": "Remove a permission from a role",
+        "summary": "Remove Role Permission",
         "tags": [
-          "Role Permissions"
+          "Roles/Permissions"
         ]
       }
     },
     "/api/organizations": {
       "post": {
+        "description": "Create a new organization.",
         "operationId": "OrganizationsController_create",
         "parameters": [],
         "requestBody": {
@@ -1001,12 +1025,13 @@
             }
           }
         },
-        "summary": "Create an organization",
+        "summary": "Create Organization",
         "tags": [
           "Organizations"
         ]
       },
       "get": {
+        "description": "Return all organizations.",
         "operationId": "OrganizationsController_findAll",
         "parameters": [],
         "responses": {
@@ -1024,7 +1049,7 @@
             }
           }
         },
-        "summary": "List organizations",
+        "summary": "List Organization",
         "tags": [
           "Organizations"
         ]
@@ -1032,6 +1057,7 @@
     },
     "/api/organizations/{id}": {
       "get": {
+        "description": "Return a single organization by id.",
         "operationId": "OrganizationsController_findOne",
         "parameters": [
           {
@@ -1057,12 +1083,13 @@
             }
           }
         },
-        "summary": "Get an organization by id",
+        "summary": "Get Organization",
         "tags": [
           "Organizations"
         ]
       },
       "patch": {
+        "description": "Update a single organization by id.",
         "operationId": "OrganizationsController_update",
         "parameters": [
           {
@@ -1098,12 +1125,13 @@
             }
           }
         },
-        "summary": "Update an organization",
+        "summary": "Update Organization",
         "tags": [
           "Organizations"
         ]
       },
       "delete": {
+        "description": "Delete a single organization by id.",
         "operationId": "OrganizationsController_remove",
         "parameters": [
           {
@@ -1129,7 +1157,7 @@
             }
           }
         },
-        "summary": "Delete an organization",
+        "summary": "Delete Organization",
         "tags": [
           "Organizations"
         ]

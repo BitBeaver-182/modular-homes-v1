@@ -27,7 +27,7 @@ import { AssignUserRoleDto } from './dto/assign-user-role.dto';
 import { UserRoleResponse } from './dto/user-role.dto';
 import { UserRolesService } from './user-roles.service';
 
-@ApiTags('User Roles')
+@ApiTags('Users/Roles')
 @ApiOrganizationHeader()
 @UseGuards(PlatformOrganizationContextGuard)
 @Controller(platformPath('users/:userId/roles'))
@@ -35,7 +35,10 @@ export class UserRolesController {
   constructor(private readonly userRolesService: UserRolesService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Assign a role to a user' })
+  @ApiOperation({
+    summary: 'Assign User Role',
+    description: 'Assign a role to a user in the active organization.',
+  })
   @ApiBigIntIdParam('userId', 'user')
   @ApiBody({ type: AssignUserRoleDto })
   @ApiCreatedResponse({ type: UserRoleResponse })
@@ -55,7 +58,10 @@ export class UserRolesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List roles assigned to a user' })
+  @ApiOperation({
+    summary: 'List User Role',
+    description: 'Return all roles assigned to a user in the active organization.',
+  })
   @ApiBigIntIdParam('userId', 'user')
   @ApiOkResponse({ type: UserRoleResponse, isArray: true })
   async findAll(
@@ -72,7 +78,10 @@ export class UserRolesController {
   }
 
   @Delete(':roleId')
-  @ApiOperation({ summary: 'Remove a role from a user' })
+  @ApiOperation({
+    summary: 'Remove User Role',
+    description: 'Remove a role from a user in the active organization.',
+  })
   @ApiBigIntIdParam('userId', 'user')
   @ApiBigIntIdParam('roleId', 'role')
   @ApiOkResponse({ type: UserRoleResponse })
