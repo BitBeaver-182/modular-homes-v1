@@ -48,9 +48,15 @@ describe('configureApp', () => {
     expect(configuratorMethods.withQuietLogger).toHaveBeenCalled();
   });
 
-  it('enables swagger in development only', () => {
-    configureApp(app, { nodeEnv: 'development' });
+  it('enables swagger in local only', () => {
+    configureApp(app, { nodeEnv: 'local' });
 
     expect(configuratorMethods.withSwagger).toHaveBeenCalled();
+  });
+
+  it('does not enable swagger in development', () => {
+    configureApp(app, { nodeEnv: 'development' });
+
+    expect(configuratorMethods.withSwagger).not.toHaveBeenCalled();
   });
 });

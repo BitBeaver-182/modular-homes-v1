@@ -10,6 +10,12 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,6 +25,10 @@ import { UserResponse } from './dto/user-response.dto';
 import { OrganizationId } from '../platform/organization-id.decorator';
 import { platformPath } from '../platform/platform.constants';
 import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
+import {
+  ApiBigIntIdParam,
+  ApiOrganizationHeader,
+} from '../platform/platform-swagger.decorator';
 
 type UserWithOrganizationRoles = {
   organizationUsers?: Array<{
@@ -76,12 +86,16 @@ function toUserResponse(user: UserWithOrganizationRoles): UserResponse {
   );
 }
 
+@ApiTags('Users')
+@ApiOrganizationHeader()
 @UseGuards(PlatformOrganizationContextGuard)
 @Controller(platformPath('users'))
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a user in the active organization' })
+  @ApiCreatedResponse({ type: UserResponse })
   async create(
     @OrganizationId() organizationId: bigint,
     @Body() createUserDto: CreateUserDto,
@@ -91,12 +105,17 @@ export class UsersController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'List users in the active organization' })
+  @ApiOkResponse({ type: UserResponse, isArray: true })
   async findAll(@OrganizationId() organizationId: bigint) {
     const users = await this.usersService.findAll(organizationId);
     return users.map((user) => toUserResponse(user));
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a user by id in the active organization' })
+  @ApiBigIntIdParam('id', 'user')
+  @ApiOkResponse({ type: UserResponse })
   async findOne(
     @OrganizationId() organizationId: bigint,
     @Param('id') id: string,
@@ -109,6 +128,9 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update a user in the active organization' })
+  @ApiBigIntIdParam('id', 'user')
+  @ApiOkResponse({ type: UserResponse })
   async update(
     @OrganizationId() organizationId: bigint,
     @Param('id') id: string,
@@ -124,6 +146,8 @@ export class UsersController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a user from the active organization' })
+  @ApiBigIntIdParam('id', 'user')
   async remove(
     @OrganizationId() organizationId: bigint,
     @Param('id') id: string,

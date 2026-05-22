@@ -1,5 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 export class AppConfigurator {
   constructor(private readonly app: INestApplication) {}
@@ -26,7 +28,14 @@ export class AppConfigurator {
         .build(),
     );
 
-    SwaggerModule.setup('/docs', this.app, document);
+    const outputDirectory = resolve(__dirname, '..', '..', '..', 'openapi');
+    mkdirSync(outputDirectory, { recursive: true });
+    writeFileSync(
+      resolve(outputDirectory, 'moduflow-api.json'),
+      JSON.stringify(document, null, 2),
+    );
+
+    SwaggerModule.setup('docs', this.app, document);
     return this;
   }
 

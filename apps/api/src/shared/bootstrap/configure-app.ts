@@ -19,7 +19,7 @@ export function configureApp(
 
   configurator.withApiPrefix().withCors().withShutdownHooks();
 
-  if (options.nodeEnv === 'development') {
+  if (options.nodeEnv === 'local') {
     configurator.withSwagger();
   }
 }

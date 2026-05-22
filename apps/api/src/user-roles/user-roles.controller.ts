@@ -7,20 +7,38 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { parseBigIntId } from '../common/ids/parse-bigint-id';
 import { OrganizationId } from '../platform/organization-id.decorator';
 import { platformPath } from '../platform/platform.constants';
 import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
+import {
+  ApiBigIntIdParam,
+  ApiOrganizationHeader,
+} from '../platform/platform-swagger.decorator';
+import { AssignUserRoleDto } from './dto/assign-user-role.dto';
 import { UserRoleResponse } from './dto/user-role.dto';
 import { UserRolesService } from './user-roles.service';
 
+@ApiTags('User Roles')
+@ApiOrganizationHeader()
 @UseGuards(PlatformOrganizationContextGuard)
 @Controller(platformPath('users/:userId/roles'))
 export class UserRolesController {
   constructor(private readonly userRolesService: UserRolesService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Assign a role to a user' })
+  @ApiBigIntIdParam('userId', 'user')
+  @ApiBody({ type: AssignUserRoleDto })
+  @ApiCreatedResponse({ type: UserRoleResponse })
   async assignRole(
     @OrganizationId() organizationId: bigint,
     @Param('userId') userId: string,
@@ -37,6 +55,9 @@ export class UserRolesController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'List roles assigned to a user' })
+  @ApiBigIntIdParam('userId', 'user')
+  @ApiOkResponse({ type: UserRoleResponse, isArray: true })
   async findAll(
     @OrganizationId() organizationId: bigint,
     @Param('userId') userId: string,
@@ -51,6 +72,10 @@ export class UserRolesController {
   }
 
   @Delete(':roleId')
+  @ApiOperation({ summary: 'Remove a role from a user' })
+  @ApiBigIntIdParam('userId', 'user')
+  @ApiBigIntIdParam('roleId', 'role')
+  @ApiOkResponse({ type: UserRoleResponse })
   async removeRole(
     @OrganizationId() organizationId: bigint,
     @Param('userId') userId: string,

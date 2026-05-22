@@ -28,6 +28,12 @@ export class DevelopmentBootstrapStrategy extends BaseBootstrapStrategy {
   }
 }
 
+export class LocalBootstrapStrategy extends BaseBootstrapStrategy {
+  constructor() {
+    super('local');
+  }
+}
+
 export class ProductionBootstrapStrategy extends BaseBootstrapStrategy {
   constructor() {
     super('production');

@@ -8,22 +8,36 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { parseBigIntId } from '../common/ids/parse-bigint-id';
 import { OrganizationId } from '../platform/organization-id.decorator';
 import { platformPath } from '../platform/platform.constants';
 import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
+import {
+  ApiBigIntIdParam,
+  ApiOrganizationHeader,
+} from '../platform/platform-swagger.decorator';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { RoleResponse } from './dto/role-response.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { RolesService } from './roles.service';
 
+@ApiTags('Roles')
+@ApiOrganizationHeader()
 @UseGuards(PlatformOrganizationContextGuard)
 @Controller(platformPath('roles'))
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a role in the active organization' })
+  @ApiCreatedResponse({ type: RoleResponse })
   async create(
     @OrganizationId() organizationId: bigint,
     @Body() createRoleDto: CreateRoleDto,
@@ -35,6 +49,8 @@ export class RolesController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'List roles in the active organization' })
+  @ApiOkResponse({ type: RoleResponse, isArray: true })
   async findAll(@OrganizationId() organizationId: bigint) {
     const roles = await this.rolesService.findAll(organizationId);
     return plainToInstance(RoleResponse, roles, {
@@ -43,6 +59,9 @@ export class RolesController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a role by id in the active organization' })
+  @ApiBigIntIdParam('id', 'role')
+  @ApiOkResponse({ type: RoleResponse })
   async findOne(
     @OrganizationId() organizationId: bigint,
     @Param('id') id: string,
@@ -57,6 +76,9 @@ export class RolesController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update a role in the active organization' })
+  @ApiBigIntIdParam('id', 'role')
+  @ApiOkResponse({ type: RoleResponse })
   async update(
     @OrganizationId() organizationId: bigint,
     @Param('id') id: string,
@@ -73,6 +95,9 @@ export class RolesController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete a role from the active organization' })
+  @ApiBigIntIdParam('id', 'role')
+  @ApiOkResponse({ type: RoleResponse })
   async remove(
     @OrganizationId() organizationId: bigint,
     @Param('id') id: string,

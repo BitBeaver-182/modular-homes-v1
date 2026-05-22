@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import {
   OrganizationDto,
@@ -23,23 +24,32 @@ export class UserResponse implements UserDto {
   }
 
   @Expose()
+  @ApiProperty({ example: '1' })
   id!: string;
 
   @Expose()
+  @ApiProperty({ example: 'alex@example.com' })
   email!: string;
 
   @Expose()
+  @ApiProperty({ example: 'Alex Johnson', nullable: true })
   name!: string | null;
 
   @Expose()
+  @ApiProperty({
+    example: 'https://example.com/avatar.png',
+    nullable: true,
+  })
   avatarUrl!: string | null;
 
   @Expose()
   @Type(() => OrganizationResponse)
+  @ApiProperty({ type: () => OrganizationResponse, nullable: true })
   organization!: Partial<OrganizationDto> | null;
 
   @Expose()
   @Type(() => RoleResponse)
+  @ApiProperty({ type: () => RoleResponse, isArray: true })
   roles!: Partial<RoleDto>[];
 
   @Exclude()

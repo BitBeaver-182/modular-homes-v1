@@ -7,6 +7,7 @@ import { configureApp } from './configure-app';
 import {
   BootstrapStrategy,
   DevelopmentBootstrapStrategy,
+  LocalBootstrapStrategy,
   ProductionBootstrapStrategy,
   TestBootstrapStrategy,
 } from './bootstrap-strategies';
@@ -22,15 +23,25 @@ describe('bootstrap strategies', () => {
     expect(new DevelopmentBootstrapStrategy()).toBeInstanceOf(
       BootstrapStrategy,
     );
+    expect(new LocalBootstrapStrategy()).toBeInstanceOf(BootstrapStrategy);
     expect(new ProductionBootstrapStrategy()).toBeInstanceOf(BootstrapStrategy);
     expect(new TestBootstrapStrategy()).toBeInstanceOf(BootstrapStrategy);
   });
 
-  it('configures development apps with swagger enabled later', () => {
+  it('configures development apps without local-only swagger', () => {
     new DevelopmentBootstrapStrategy().configure(app);
 
     expect(configureApp).toHaveBeenCalledWith(app, {
       nodeEnv: 'development',
+      quietLogger: false,
+    });
+  });
+
+  it('configures local apps with swagger enabled later', () => {
+    new LocalBootstrapStrategy().configure(app);
+
+    expect(configureApp).toHaveBeenCalledWith(app, {
+      nodeEnv: 'local',
       quietLogger: false,
     });
   });

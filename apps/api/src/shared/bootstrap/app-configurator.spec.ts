@@ -1,6 +1,12 @@
 import { SwaggerModule } from '@nestjs/swagger';
 import { INestApplication } from '@nestjs/common';
+import * as fs from 'node:fs';
 import { AppConfigurator } from './app-configurator';
+
+jest.mock('node:fs', () => ({
+  mkdirSync: jest.fn(),
+  writeFileSync: jest.fn(),
+}));
 
 describe('AppConfigurator', () => {
   const app = {
@@ -57,9 +63,14 @@ describe('AppConfigurator', () => {
       version: '1.0',
     });
     expect(setupSpy).toHaveBeenCalledWith(
-      '/docs',
+      'docs',
       app,
       expect.objectContaining({ openapi: '3.0.0' }),
+    );
+    expect(fs.mkdirSync).toHaveBeenCalled();
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      expect.stringMatching(/openapi\/moduflow-api\.json$/),
+      expect.any(String),
     );
   });
 

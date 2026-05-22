@@ -7,14 +7,28 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { parseBigIntId } from '../common/ids/parse-bigint-id';
 import { OrganizationId } from '../platform/organization-id.decorator';
 import { platformPath } from '../platform/platform.constants';
 import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
+import {
+  ApiBigIntIdParam,
+  ApiOrganizationHeader,
+} from '../platform/platform-swagger.decorator';
+import { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
 import { RolePermissionResponse } from './dto/role-permission.dto';
 import { RolePermissionsService } from './role-permissions.service';
 
+@ApiTags('Role Permissions')
+@ApiOrganizationHeader()
 @UseGuards(PlatformOrganizationContextGuard)
 @Controller(platformPath('roles/:roleId/permissions'))
 export class RolePermissionsController {
@@ -23,6 +37,10 @@ export class RolePermissionsController {
   ) {}
 
   @Post()
+  @ApiOperation({ summary: 'Assign a permission to a role' })
+  @ApiBigIntIdParam('roleId', 'role')
+  @ApiBody({ type: AssignRolePermissionDto })
+  @ApiCreatedResponse({ type: RolePermissionResponse })
   async assignPermission(
     @OrganizationId() organizationId: bigint,
     @Param('roleId') roleId: string,
@@ -39,6 +57,9 @@ export class RolePermissionsController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'List permissions assigned to a role' })
+  @ApiBigIntIdParam('roleId', 'role')
+  @ApiOkResponse({ type: RolePermissionResponse, isArray: true })
   async findAll(
     @OrganizationId() organizationId: bigint,
     @Param('roleId') roleId: string,
@@ -53,6 +74,10 @@ export class RolePermissionsController {
   }
 
   @Delete(':permissionId')
+  @ApiOperation({ summary: 'Remove a permission from a role' })
+  @ApiBigIntIdParam('roleId', 'role')
+  @ApiBigIntIdParam('permissionId', 'permission')
+  @ApiOkResponse({ type: RolePermissionResponse })
   async removePermission(
     @OrganizationId() organizationId: bigint,
     @Param('roleId') roleId: string,

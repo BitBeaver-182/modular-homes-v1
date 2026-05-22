@@ -8,21 +8,35 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { parseBigIntId } from '../common/ids/parse-bigint-id';
 import { platformPath } from '../platform/platform.constants';
 import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
+import {
+  ApiBigIntIdParam,
+  ApiOrganizationHeader,
+} from '../platform/platform-swagger.decorator';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { PermissionResponse } from './dto/permission-response.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { PermissionsService } from './permissions.service';
 
+@ApiTags('Permissions')
+@ApiOrganizationHeader()
 @UseGuards(PlatformOrganizationContextGuard)
 @Controller(platformPath('permissions'))
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a permission' })
+  @ApiCreatedResponse({ type: PermissionResponse })
   async create(@Body() createPermissionDto: CreatePermissionDto) {
     const permission =
       await this.permissionsService.create(createPermissionDto);
@@ -32,6 +46,8 @@ export class PermissionsController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'List permissions' })
+  @ApiOkResponse({ type: PermissionResponse, isArray: true })
   async findAll() {
     const permissions = await this.permissionsService.findAll();
     return plainToInstance(PermissionResponse, permissions, {
@@ -40,6 +56,9 @@ export class PermissionsController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a permission by id' })
+  @ApiBigIntIdParam('id', 'permission')
+  @ApiOkResponse({ type: PermissionResponse })
   async findOne(@Param('id') id: string) {
     const permission = await this.permissionsService.findOne(parseBigIntId(id));
     return plainToInstance(PermissionResponse, permission, {
@@ -48,6 +67,9 @@ export class PermissionsController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update a permission' })
+  @ApiBigIntIdParam('id', 'permission')
+  @ApiOkResponse({ type: PermissionResponse })
   async update(
     @Param('id') id: string,
     @Body() updatePermissionDto: UpdatePermissionDto,
@@ -62,6 +84,9 @@ export class PermissionsController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete a permission' })
+  @ApiBigIntIdParam('id', 'permission')
+  @ApiOkResponse({ type: PermissionResponse })
   async remove(@Param('id') id: string) {
     const permission = await this.permissionsService.remove(parseBigIntId(id));
     return plainToInstance(PermissionResponse, permission, {
