@@ -78,6 +78,7 @@ describe('UsersService (integration)', () => {
       where: {
         userId: firstUser.id,
         deletedAt: null,
+        status: 'active',
       },
     });
     expect(organizationUsers).toHaveLength(2);
@@ -124,6 +125,49 @@ describe('UsersService (integration)', () => {
 
     await expect(usersService.findOne(999n, user.id)).rejects.toThrow(
       NotFoundException,
+    );
+  });
+
+  it('removed membership is excluded from active membership queries', async () => {
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Users Removed Org',
+        slug: 'users-removed-org',
+      },
+    });
+    const helperOrganization = await prisma.organization.create({
+      data: {
+        name: 'Users Removed Helper',
+        slug: 'users-removed-helper',
+      },
+    });
+
+    const user = await usersService.create(organization.id, {
+      email: 'removed-membership@example.com',
+      name: 'Removed Membership',
+    });
+    await usersService.create(helperOrganization.id, {
+      email: 'removed-membership@example.com',
+    });
+
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: user.id,
+          organizationId: organization.id,
+        },
+      },
+      data: {
+        deletedAt: new Date(),
+        status: 'removed',
+      },
+    });
+
+    await expect(
+      usersService.findOne(organization.id, user.id),
+    ).rejects.toThrow(NotFoundException);
+    await expect(usersService.findAll(organization.id)).resolves.toHaveLength(
+      0,
     );
   });
 });

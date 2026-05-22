@@ -29,10 +29,8 @@ describe('AuthController', () => {
     );
   });
 
-  it('returns the current actor payload', async () => {
-    await expect(
-      controller.me({ userId: 7n, email: 'owner@example.com' }),
-    ).resolves.toEqual({
+  it('returns the current actor payload', () => {
+    expect(controller.me({ userId: 7n, email: 'owner@example.com' })).toEqual({
       userId: '7',
       email: 'owner@example.com',
     });

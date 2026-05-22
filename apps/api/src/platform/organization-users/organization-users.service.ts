@@ -11,6 +11,7 @@ const scopedOrganizationUserInclude = {
   organizationUsers: {
     where: {
       deletedAt: null,
+      status: 'active',
     },
     include: {
       organization: true,
@@ -94,21 +95,42 @@ export class OrganizationUsersService {
             organizationId,
           },
         },
-        select: { id: true, deletedAt: true },
+        select: { id: true, deletedAt: true, governanceRole: true },
+      });
+
+      const activeOrganizationUserCount = await tx.organizationUser.count({
+        where: {
+          organizationId,
+          deletedAt: null,
+          status: 'active',
+        },
       });
 
       if (existingOrganizationUser) {
         if (existingOrganizationUser.deletedAt) {
           await tx.organizationUser.update({
             where: { id: existingOrganizationUser.id },
-            data: { deletedAt: null },
+            data: {
+              deletedAt: null,
+              status: 'active',
+              governanceRole:
+                activeOrganizationUserCount === 0
+                  ? 'owner'
+                  : existingOrganizationUser.governanceRole,
+            },
           });
         } else {
           throw new BadRequestException('User already belongs to organization');
         }
       } else {
         await tx.organizationUser.create({
-          data: { organizationId, userId },
+          data: {
+            organizationId,
+            userId,
+            governanceRole:
+              activeOrganizationUserCount === 0 ? 'owner' : 'member',
+            status: 'active',
+          },
         });
       }
 
@@ -120,6 +142,7 @@ export class OrganizationUsersService {
             where: {
               organizationId,
               deletedAt: null,
+              status: 'active',
             },
           },
         },
@@ -133,6 +156,7 @@ export class OrganizationUsersService {
         organizationId,
         userId,
         deletedAt: null,
+        status: 'active',
       },
       include: {
         organization: true,
@@ -158,6 +182,7 @@ export class OrganizationUsersService {
           organizationId,
           userId,
           deletedAt: null,
+          status: 'active',
         },
         select: {
           id: true,
@@ -172,6 +197,7 @@ export class OrganizationUsersService {
         where: {
           userId,
           deletedAt: null,
+          status: 'active',
         },
       });
 
@@ -183,7 +209,7 @@ export class OrganizationUsersService {
 
       await tx.organizationUser.update({
         where: { id: organizationUser.id },
-        data: { deletedAt: new Date() },
+        data: { deletedAt: new Date(), status: 'removed' },
       });
     });
   }

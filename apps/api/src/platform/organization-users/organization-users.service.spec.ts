@@ -34,11 +34,12 @@ describe('OrganizationUsersService', () => {
     service = new OrganizationUsersService(prisma as never);
   });
 
-  it('creates a new user and organization link', async () => {
+  it('first membership in an organization is created as owner', async () => {
     prisma.organization.findFirst.mockResolvedValue({ id: 2n });
     prisma.user.findUnique.mockResolvedValue(null);
     prisma.user.create.mockResolvedValue({ id: 9n });
     prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.count.mockResolvedValue(0);
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       id: 9n,
       email: 'john@example.com',
@@ -65,9 +66,66 @@ describe('OrganizationUsersService', () => {
       },
     });
     expect(prisma.organizationUser.create).toHaveBeenCalledWith({
-      data: { organizationId: 2n, userId: 9n },
+      data: {
+        organizationId: 2n,
+        userId: 9n,
+        governanceRole: 'owner',
+        status: 'active',
+      },
     });
     expect(user.organizationUsers).toHaveLength(1);
+  });
+
+  it('subsequent memberships in an organization are created as member', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({ id: 9n });
+    prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.count.mockResolvedValue(1);
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      id: 9n,
+      email: 'john@example.com',
+      organizationUsers: [],
+    });
+
+    await service.createUserInOrganization(2n, {
+      email: 'john@example.com',
+    });
+
+    expect(prisma.organizationUser.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: 2n,
+        userId: 9n,
+        governanceRole: 'member',
+        status: 'active',
+      },
+    });
+  });
+
+  it('membership defaults to active status on creation', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({ id: 9n });
+    prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.count.mockResolvedValue(1);
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      id: 9n,
+      email: 'john@example.com',
+      organizationUsers: [],
+    });
+
+    await service.createUserInOrganization(2n, {
+      email: 'john@example.com',
+    });
+
+    expect(prisma.organizationUser.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: 2n,
+        userId: 9n,
+        governanceRole: 'member',
+        status: 'active',
+      },
+    });
   });
 
   it('reactivates a soft deleted organization link', async () => {
@@ -76,7 +134,9 @@ describe('OrganizationUsersService', () => {
     prisma.organizationUser.findUnique.mockResolvedValue({
       id: 4n,
       deletedAt: new Date(),
+      governanceRole: 'member',
     });
+    prisma.organizationUser.count.mockResolvedValue(1);
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       id: 9n,
       email: 'john@example.com',
@@ -89,7 +149,11 @@ describe('OrganizationUsersService', () => {
 
     expect(prisma.organizationUser.update).toHaveBeenCalledWith({
       where: { id: 4n },
-      data: { deletedAt: null },
+      data: {
+        deletedAt: null,
+        status: 'active',
+        governanceRole: 'member',
+      },
     });
   });
 
@@ -99,7 +163,9 @@ describe('OrganizationUsersService', () => {
     prisma.organizationUser.findUnique.mockResolvedValue({
       id: 4n,
       deletedAt: null,
+      governanceRole: 'member',
     });
+    prisma.organizationUser.count.mockResolvedValue(1);
 
     await expect(
       service.createUserInOrganization(2n, { email: 'john@example.com' }),
@@ -111,6 +177,7 @@ describe('OrganizationUsersService', () => {
     prisma.user.findUnique.mockResolvedValue({ id: 9n, deletedAt: new Date() });
     prisma.user.update.mockResolvedValue({ id: 9n, deletedAt: null });
     prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.count.mockResolvedValue(0);
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       id: 9n,
       email: 'john@example.com',
@@ -148,6 +215,7 @@ describe('OrganizationUsersService', () => {
         organizationId: 2n,
         userId: 9n,
         deletedAt: null,
+        status: 'active',
       },
       include: {
         organization: true,
@@ -187,11 +255,12 @@ describe('OrganizationUsersService', () => {
     const [updateArgs] = prisma.organizationUser.update.mock.calls[0] as [
       {
         where: { id: bigint };
-        data: { deletedAt: Date };
+        data: { deletedAt: Date; status: 'removed' };
       },
     ];
 
     expect(updateArgs.where.id).toBe(1n);
     expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
+    expect(updateArgs.data.status).toBe('removed');
   });
 });

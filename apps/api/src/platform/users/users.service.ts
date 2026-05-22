@@ -35,6 +35,7 @@ export class UsersService {
           some: {
             organizationId,
             deletedAt: null,
+            status: 'active',
           },
         },
       },
@@ -44,6 +45,7 @@ export class UsersService {
           where: {
             organizationId,
             deletedAt: null,
+            status: 'active',
           },
         },
       },
@@ -62,6 +64,7 @@ export class UsersService {
           some: {
             organizationId,
             deletedAt: null,
+            status: 'active',
           },
         },
       },
@@ -71,6 +74,7 @@ export class UsersService {
           where: {
             organizationId,
             deletedAt: null,
+            status: 'active',
           },
         },
       },
@@ -100,6 +104,7 @@ export class UsersService {
           where: {
             organizationId,
             deletedAt: null,
+            status: 'active',
           },
         },
       },

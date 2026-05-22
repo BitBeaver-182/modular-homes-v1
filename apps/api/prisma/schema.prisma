@@ -11,6 +11,17 @@ datasource db {
   provider = "postgresql"
 }
 
+enum GovernanceRole {
+  owner
+  member
+}
+
+enum MembershipStatus {
+  invited
+  active
+  removed
+}
+
 model User {
   id        BigInt   @id @default(autoincrement())
   email     String   @unique
@@ -46,6 +57,8 @@ model OrganizationUser {
 
   userId         BigInt
   organizationId BigInt
+  governanceRole GovernanceRole   @default(member)
+  status         MembershipStatus @default(active)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
