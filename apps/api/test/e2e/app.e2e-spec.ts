@@ -141,7 +141,17 @@ describe('API (e2e)', () => {
     await request(httpServer)
       .delete(`/api/users/${createdUser.id}`)
       .set('x-organization-id', organizationA.id)
-      .expect(HttpStatus.BAD_REQUEST);
+      .expect(HttpStatus.NO_CONTENT);
+
+    await request(httpServer)
+      .get(`/api/users/${createdUser.id}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.NOT_FOUND);
+
+    const deletedUser = await prisma.user.findUniqueOrThrow({
+      where: { id: BigInt(createdUser.id) },
+    });
+    expect(deletedUser.deletedAt).toBeInstanceOf(Date);
   });
 
   it('reuses the same user across organizations and keeps role responses isolated by header', async () => {
@@ -255,6 +265,47 @@ describe('API (e2e)', () => {
         expect(reactivatedUser.id).toBe(user.id);
         expect(reactivatedUser.organization?.id).toBe(organizationA.id);
       });
+  });
+
+  it('removing a membership only removes the user from that organization', async () => {
+    const organizationA = await createOrganization('member-a', 'Member A');
+    const organizationB = await createOrganization('member-b', 'Member B');
+
+    const createdUser = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organizationA.id)
+          .send({ email: 'membership-only@example.com', name: 'Shared Member' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .post('/api/users')
+      .set('x-organization-id', organizationB.id)
+      .send({ email: 'membership-only@example.com' })
+      .expect(HttpStatus.CREATED);
+
+    await request(httpServer)
+      .delete(`/api/users/${createdUser.id}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.NO_CONTENT);
+
+    await request(httpServer)
+      .get(`/api/users/${createdUser.id}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.NOT_FOUND);
+
+    await request(httpServer)
+      .get(`/api/users/${createdUser.id}`)
+      .set('x-organization-id', organizationB.id)
+      .expect(HttpStatus.OK);
+
+    const persistedUser = await prisma.user.findUniqueOrThrow({
+      where: { id: BigInt(createdUser.id) },
+    });
+    expect(persistedUser.deletedAt).toBeNull();
   });
 
   it('keeps roles isolated per organization and rejects cross-org assignment', async () => {

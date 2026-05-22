@@ -201,16 +201,19 @@ export class OrganizationUsersService {
         },
       });
 
-      if (activeOrganizationUserCount <= 1) {
-        throw new BadRequestException(
-          'User must belong to at least one organization',
-        );
-      }
+      const removedAt = new Date();
 
       await tx.organizationUser.update({
         where: { id: organizationUser.id },
-        data: { deletedAt: new Date(), status: 'removed' },
+        data: { deletedAt: removedAt, status: 'removed' },
       });
+
+      if (activeOrganizationUserCount === 1) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { deletedAt: removedAt },
+        });
+      }
     });
   }
 }

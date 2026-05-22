@@ -237,30 +237,50 @@ describe('OrganizationUsersService', () => {
     );
   });
 
-  it('blocks removing the last active organization', async () => {
+  it('removing the last active membership soft deletes the global user', async () => {
     prisma.organizationUser.findFirst.mockResolvedValue({ id: 1n });
     prisma.organizationUser.count.mockResolvedValue(1);
+    prisma.user.update.mockResolvedValue({ id: 9n, deletedAt: new Date() });
 
-    await expect(service.removeUserFromOrganization(2n, 9n)).rejects.toThrow(
-      BadRequestException,
-    );
+    await service.removeUserFromOrganization(2n, 9n);
+
+    const organizationUserUpdateArgs = prisma.organizationUser.update.mock
+      .calls[0] as unknown as [
+      {
+        where: { id: bigint };
+        data: { deletedAt: Date; status: string };
+      },
+    ];
+    expect(organizationUserUpdateArgs[0].where.id).toBe(1n);
+    expect(organizationUserUpdateArgs[0].data.status).toBe('removed');
+    expect(organizationUserUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
+
+    const userUpdateArgs = prisma.user.update.mock.calls[0] as unknown as [
+      {
+        where: { id: bigint };
+        data: { deletedAt: Date };
+      },
+    ];
+    expect(userUpdateArgs[0].where.id).toBe(9n);
+    expect(userUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
   });
 
-  it('soft deletes the org-user link when another active org remains', async () => {
+  it('removing a membership does not delete the global user when another active membership exists', async () => {
     prisma.organizationUser.findFirst.mockResolvedValue({ id: 1n });
     prisma.organizationUser.count.mockResolvedValue(2);
 
     await service.removeUserFromOrganization(2n, 9n);
 
-    const [updateArgs] = prisma.organizationUser.update.mock.calls[0] as [
+    const organizationUserUpdateArgs = prisma.organizationUser.update.mock
+      .calls[0] as unknown as [
       {
         where: { id: bigint };
-        data: { deletedAt: Date; status: 'removed' };
+        data: { deletedAt: Date; status: string };
       },
     ];
-
-    expect(updateArgs.where.id).toBe(1n);
-    expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
-    expect(updateArgs.data.status).toBe('removed');
+    expect(organizationUserUpdateArgs[0].where.id).toBe(1n);
+    expect(organizationUserUpdateArgs[0].data.status).toBe('removed');
+    expect(organizationUserUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  INestApplication,
-  NotFoundException,
-} from '@nestjs/common';
+import { INestApplication, NotFoundException } from '@nestjs/common';
 import { OrganizationUsersService } from '../../src/platform/organization-users/organization-users.service';
 import { PrismaService } from '../../src/database/prisma.service';
 import {
@@ -182,6 +178,52 @@ describe('OrganizationUsersService (integration)', () => {
     expect(membership.status).toBe('removed');
   });
 
+  it('removing a membership does not delete the global user when another active membership exists', async () => {
+    const organizationA = await prisma.organization.create({
+      data: {
+        name: 'Removal A',
+        slug: 'removal-a',
+      },
+    });
+    const organizationB = await prisma.organization.create({
+      data: {
+        name: 'Removal B',
+        slug: 'removal-b',
+      },
+    });
+
+    const user = await organizationUsersService.createUserInOrganization(
+      organizationA.id,
+      {
+        email: 'multi-org@example.com',
+      },
+    );
+    await organizationUsersService.createUserInOrganization(organizationB.id, {
+      email: 'multi-org@example.com',
+    });
+
+    await organizationUsersService.removeUserFromOrganization(
+      organizationA.id,
+      user.id,
+    );
+
+    const removedMembership = await prisma.organizationUser.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: user.id,
+          organizationId: organizationA.id,
+        },
+      },
+    });
+    const persistedUser = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+    });
+
+    expect(removedMembership.deletedAt).toBeInstanceOf(Date);
+    expect(removedMembership.status).toBe('removed');
+    expect(persistedUser.deletedAt).toBeNull();
+  });
+
   it('does not create org-user links for deleted organizations', async () => {
     const organization = await prisma.organization.create({
       data: {
@@ -198,7 +240,7 @@ describe('OrganizationUsersService (integration)', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('prevents removing the last active organization for a user', async () => {
+  it('removing the last active membership soft deletes the global user', async () => {
     const organization = await prisma.organization.create({
       data: {
         name: 'Last Org',
@@ -212,11 +254,25 @@ describe('OrganizationUsersService (integration)', () => {
       },
     );
 
-    await expect(
-      organizationUsersService.removeUserFromOrganization(
-        organization.id,
-        user.id,
-      ),
-    ).rejects.toThrow(BadRequestException);
+    await organizationUsersService.removeUserFromOrganization(
+      organization.id,
+      user.id,
+    );
+
+    const removedMembership = await prisma.organizationUser.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: user.id,
+          organizationId: organization.id,
+        },
+      },
+    });
+    const removedUser = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+    });
+
+    expect(removedMembership.deletedAt).toBeInstanceOf(Date);
+    expect(removedMembership.status).toBe('removed');
+    expect(removedUser.deletedAt).toBeInstanceOf(Date);
   });
 });
