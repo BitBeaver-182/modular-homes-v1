@@ -4,6 +4,7 @@ import { AppConfigService } from './app-config.service';
 describe('AppConfigService', () => {
   const configService = {
     getOrThrow: jest.fn(),
+    get: jest.fn(),
   };
 
   let service: AppConfigService;
@@ -34,5 +35,18 @@ describe('AppConfigService', () => {
 
     expect(service.directUrl).toBe('postgresql://direct');
     expect(configService.getOrThrow).toHaveBeenCalledWith('DIRECT_URL');
+  });
+
+  it('returns jwtSecret from config when present', () => {
+    configService.get.mockReturnValue('jwt-secret');
+
+    expect(service.jwtSecret).toBe('jwt-secret');
+    expect(configService.get).toHaveBeenCalledWith('JWT_SECRET');
+  });
+
+  it('falls back to the local default jwt secret when absent', () => {
+    configService.get.mockReturnValue(undefined);
+
+    expect(service.jwtSecret).toBe('moduflow-local-jwt-secret');
   });
 });

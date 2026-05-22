@@ -51,11 +51,11 @@ type UserWithOrganizationRoles = {
 function isActiveOrganization(
   organization:
     | {
-      id: bigint;
-      name: string;
-      slug: string;
-      deletedAt: Date | null;
-    }
+        id: bigint;
+        name: string;
+        slug: string;
+        deletedAt: Date | null;
+      }
     | null
     | undefined,
 ): organization is {
@@ -91,7 +91,7 @@ function toUserResponse(user: UserWithOrganizationRoles): UserResponse {
 @UseGuards(PlatformOrganizationContextGuard)
 @Controller(platformPath('users'))
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
   @ApiOperation({

@@ -17,6 +17,7 @@ describe('validateEnv', () => {
       NODE_ENV: 'test',
       DATABASE_URL: databaseUrl,
       DIRECT_URL: directUrl,
+      JWT_SECRET: undefined,
     });
   });
 
@@ -54,5 +55,26 @@ describe('validateEnv', () => {
         DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
       }),
     ).toThrow('DIRECT_URL is required');
+  });
+
+  it('requires JWT_SECRET in production', () => {
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+      }),
+    ).toThrow('JWT_SECRET is required in production');
+  });
+
+  it('includes JWT_SECRET when provided', () => {
+    const result = validateEnv({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+      DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+      JWT_SECRET: 'super-secret',
+    });
+
+    expect(result.JWT_SECRET).toBe('super-secret');
   });
 });

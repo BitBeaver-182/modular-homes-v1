@@ -19,4 +19,11 @@ export class AppConfigService {
   get directUrl(): string {
     return this.configService.getOrThrow<AppEnv['DIRECT_URL']>('DIRECT_URL');
   }
+
+  get jwtSecret(): string {
+    return (
+      this.configService.get<AppEnv['JWT_SECRET']>('JWT_SECRET') ??
+      'moduflow-local-jwt-secret'
+    );
+  }
 }
