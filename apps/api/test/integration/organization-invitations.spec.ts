@@ -93,6 +93,40 @@ describe('OrganizationInvitationsService (integration)', () => {
     expect(acceptedInvitation.status).toBe('accepted');
   });
 
+  it('lists pending invitations for an email with organization details', async () => {
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Inbox Org',
+        slug: 'inbox-org',
+      },
+    });
+
+    await invitationsService.createInvitation(organization.id, {
+      email: 'invitee@example.com',
+      governanceRole: 'member',
+    });
+    await invitationsService.createInvitation(organization.id, {
+      email: 'other@example.com',
+      governanceRole: 'owner',
+    });
+
+    const invitations = await invitationsService.findPendingInvitationsForEmail(
+      'invitee@example.com',
+    );
+
+    expect(invitations).toHaveLength(1);
+    expect(invitations[0]).toMatchObject({
+      email: 'invitee@example.com',
+      governanceRole: 'member',
+      status: 'pending',
+      organization: {
+        id: organization.id,
+        name: 'Inbox Org',
+        slug: 'inbox-org',
+      },
+    });
+  });
+
   it('rejects acceptance for a different authenticated email', async () => {
     const organization = await prisma.organization.create({
       data: {

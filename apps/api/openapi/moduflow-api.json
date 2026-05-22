@@ -995,6 +995,37 @@
         ]
       }
     },
+    "/api/organization-invitations/mine": {
+      "get": {
+        "description": "Return pending invitations for the authenticated email across organizations.",
+        "operationId": "OrganizationInvitationsController_findMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizationInvitationResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my pending invitations",
+        "tags": [
+          "Organization Invitations"
+        ]
+      }
+    },
     "/api/organization-invitations": {
       "post": {
         "description": "Create a pending invitation for an email in the active organization.",
@@ -1050,17 +1081,6 @@
         "description": "Accept a pending invitation for the authenticated user when the invitation email matches the actor email.",
         "operationId": "OrganizationInvitationsController_accept",
         "parameters": [
-          {
-            "name": "x-organization-id",
-            "in": "header",
-            "description": "Active organization identifier for platform-scoped routes.",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "default": "{{organizationId}}",
-              "example": "{{organizationId}}"
-            }
-          },
           {
             "name": "id",
             "required": true,
@@ -1958,25 +1978,24 @@
           }
         }
       },
-      "CreateOrganizationInvitationDto": {
+      "OrganizationInvitationOrganizationResponse": {
         "type": "object",
         "properties": {
-          "email": {
-            "type": "string",
-            "example": "invitee@example.com"
+          "id": {
+            "format": "int64",
+            "type": "integer"
           },
-          "governanceRole": {
-            "type": "string",
-            "enum": [
-              "owner",
-              "member"
-            ],
-            "example": "member"
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
           }
         },
         "required": [
-          "email",
-          "governanceRole"
+          "id",
+          "name",
+          "slug"
         ]
       },
       "OrganizationInvitationResponse": {
@@ -2009,6 +2028,9 @@
               "revoked",
               "rejected"
             ]
+          },
+          "organization": {
+            "$ref": "#/components/schemas/OrganizationInvitationOrganizationResponse"
           }
         },
         "required": [
@@ -2017,6 +2039,27 @@
           "email",
           "governanceRole",
           "status"
+        ]
+      },
+      "CreateOrganizationInvitationDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "invitee@example.com"
+          },
+          "governanceRole": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ],
+            "example": "member"
+          }
+        },
+        "required": [
+          "email",
+          "governanceRole"
         ]
       },
       "AssignUserRoleDto": {

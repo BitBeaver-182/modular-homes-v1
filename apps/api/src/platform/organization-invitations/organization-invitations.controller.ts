@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -11,6 +12,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiNoContentResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -32,16 +34,36 @@ import { OrganizationInvitationResponse } from './dto/organization-invitation-re
 import { OrganizationInvitationsService } from './organization-invitations.service';
 
 @ApiTags('Organization Invitations')
-@ApiOrganizationHeader()
 @Controller(platformPath('organization-invitations'))
 export class OrganizationInvitationsController {
   constructor(
     private readonly organizationInvitationsService: OrganizationInvitationsService,
   ) {}
 
+  @Get('mine')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'List my pending invitations',
+    description:
+      'Return pending invitations for the authenticated email across organizations.',
+  })
+  @ApiOkResponse({ type: OrganizationInvitationResponse, isArray: true })
+  async findMine(@CurrentUser() user: AuthUser) {
+    const invitations =
+      await this.organizationInvitationsService.findPendingInvitationsForEmail(
+        user.email,
+      );
+
+    return plainToInstance(OrganizationInvitationResponse, invitations, {
+      excludeExtraneousValues: true,
+    });
+  }
+
   @Post()
   @UseGuards(JwtGuard, PlatformOrganizationContextGuard, PlatformOwnerGuard)
   @ApiBearerAuth()
+  @ApiOrganizationHeader()
   @ApiOperation({
     summary: 'Create invitation',
     description:

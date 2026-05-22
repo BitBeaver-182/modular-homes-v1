@@ -9,6 +9,7 @@ describe('OrganizationInvitationsService', () => {
   const prisma = {
     organizationInvitation: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
       create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -58,6 +59,67 @@ describe('OrganizationInvitationsService', () => {
     });
     expect(invitation.status).toBe('pending');
     expect(prisma.organizationUser.create).not.toHaveBeenCalled();
+  });
+
+  it('lists pending invitations for the authenticated email', async () => {
+    prisma.organizationInvitation.findMany.mockResolvedValue([
+      {
+        id: 1n,
+        organizationId: 2n,
+        email: 'invitee@example.com',
+        governanceRole: 'member',
+        status: 'pending',
+        organization: {
+          id: 2n,
+          name: 'Acme',
+          slug: 'acme',
+        },
+      },
+    ]);
+
+    const invitations = await service.findPendingInvitationsForEmail(
+      'invitee@example.com',
+    );
+
+    const findManyArgs = prisma.organizationInvitation.findMany.mock
+      .calls[0] as unknown as [
+      {
+        where: {
+          email: string;
+          status: string;
+          deletedAt: null;
+          OR: Array<{ expiresAt: null | { gt: Date } }>;
+        };
+        include: {
+          organization: {
+            select: {
+              id: true;
+              name: true;
+              slug: true;
+            };
+          };
+        };
+        orderBy: Array<{ id: string }>;
+      },
+    ];
+
+    expect(findManyArgs[0].where.email).toBe('invitee@example.com');
+    expect(findManyArgs[0].where.status).toBe('pending');
+    expect(findManyArgs[0].where.deletedAt).toBeNull();
+    expect(findManyArgs[0].where.OR[0]?.expiresAt).toBeNull();
+    const expiryFilter = findManyArgs[0].where.OR[1]?.expiresAt;
+    expect(expiryFilter).toBeDefined();
+    if (expiryFilter && 'gt' in expiryFilter) {
+      expect(expiryFilter.gt).toBeInstanceOf(Date);
+    }
+    expect(findManyArgs[0].include.organization.select).toEqual({
+      id: true,
+      name: true,
+      slug: true,
+    });
+    expect(findManyArgs[0].orderBy).toEqual([{ id: 'desc' }]);
+    expect(invitations).toHaveLength(1);
+    expect(invitations[0]?.organization.name).toBe('Acme');
   });
 
   it('rejects duplicate pending invitations for the same org and email', async () => {

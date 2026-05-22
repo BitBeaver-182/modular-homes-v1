@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { Expose } from 'class-transformer';
+import { OrganizationInvitationOrganizationResponse } from './organization-invitation-organization-response.dto';
 
 export class OrganizationInvitationResponse {
   @Expose()
@@ -23,4 +25,12 @@ export class OrganizationInvitationResponse {
     enum: ['pending', 'accepted', 'expired', 'revoked', 'rejected'],
   })
   status!: 'pending' | 'accepted' | 'expired' | 'revoked' | 'rejected';
+
+  @Expose()
+  @Type(() => OrganizationInvitationOrganizationResponse)
+  @ApiProperty({
+    type: OrganizationInvitationOrganizationResponse,
+    required: false,
+  })
+  organization?: OrganizationInvitationOrganizationResponse;
 }

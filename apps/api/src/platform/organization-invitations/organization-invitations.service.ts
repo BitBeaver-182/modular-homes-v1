@@ -12,6 +12,27 @@ import { CreateOrganizationInvitationDto } from './dto/create-organization-invit
 export class OrganizationInvitationsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findPendingInvitationsForEmail(email: string) {
+    return this.prisma.organizationInvitation.findMany({
+      where: {
+        email,
+        status: 'pending',
+        deletedAt: null,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: [{ id: 'desc' }],
+    });
+  }
+
   async createInvitation(
     organizationId: bigint,
     createInvitationDto: CreateOrganizationInvitationDto,

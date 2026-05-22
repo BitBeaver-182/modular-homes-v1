@@ -605,6 +605,66 @@ describe('API (e2e)', () => {
     ).toBe(true);
   });
 
+  it('lists pending invitations for the authenticated user', async () => {
+    const organization = await createOrganization('invite-feed', 'Invite Feed');
+
+    const invitation = (
+      await request(httpServer)
+        .post('/api/organization-invitations')
+        .set('x-organization-id', organization.id)
+        .set('authorization', `Bearer ${organization.ownerToken}`)
+        .send({
+          email: 'pending-invitee@example.com',
+          governanceRole: 'member',
+        })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      id: string;
+      email: string;
+      governanceRole: 'owner' | 'member';
+      status: string;
+    };
+
+    const invitee = (
+      await request(httpServer)
+        .post('/api/auth/register')
+        .send({ email: 'pending-invitee@example.com' })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      access_token: string;
+    };
+
+    const invitations = (
+      await request(httpServer)
+        .get('/api/organization-invitations/mine')
+        .set('authorization', `Bearer ${invitee.access_token}`)
+        .expect(HttpStatus.OK)
+    ).body as Array<{
+      id: string;
+      email: string;
+      governanceRole: 'owner' | 'member';
+      status: string;
+      organization: {
+        id: string;
+        name: string;
+        slug: string;
+      };
+    }>;
+
+    expect(invitations).toHaveLength(1);
+    expect(invitations[0]).toMatchObject({
+      id: invitation.id,
+      email: 'pending-invitee@example.com',
+      governanceRole: 'member',
+      status: 'pending',
+      organization: {
+        id: organization.id,
+        name: 'Invite Feed',
+        slug: 'invite-feed',
+      },
+    });
+  });
+
   it('keeps roles isolated per organization and rejects cross-org assignment', async () => {
     const organizationA = await createOrganization('assign-a', 'Assign A');
     const organizationB = await createOrganization('assign-b', 'Assign B');

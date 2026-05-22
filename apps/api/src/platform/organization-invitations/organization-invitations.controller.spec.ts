@@ -3,6 +3,7 @@ import { OrganizationInvitationsService } from './organization-invitations.servi
 
 describe('OrganizationInvitationsController', () => {
   const organizationInvitationsService = {
+    findPendingInvitationsForEmail: jest.fn(),
     createInvitation: jest.fn(),
     acceptInvitation: jest.fn(),
   };
@@ -17,6 +18,22 @@ describe('OrganizationInvitationsController', () => {
   });
 
   it('routes invitation calls to service', async () => {
+    organizationInvitationsService.findPendingInvitationsForEmail.mockResolvedValue(
+      [
+        {
+          id: 4n,
+          organizationId: 2n,
+          email: 'invitee@example.com',
+          governanceRole: 'member',
+          status: 'pending',
+          organization: {
+            id: 2n,
+            name: 'Acme',
+            slug: 'acme',
+          },
+        },
+      ],
+    );
     organizationInvitationsService.createInvitation.mockResolvedValue({
       id: 1n,
       organizationId: 2n,
@@ -28,6 +45,10 @@ describe('OrganizationInvitationsController', () => {
       undefined,
     );
 
+    const invitations = await controller.findMine({
+      userId: 9n,
+      email: 'invitee@example.com',
+    });
     const invitation = await controller.create(2n, {
       email: 'invitee@example.com',
       governanceRole: 'member',
@@ -41,11 +62,16 @@ describe('OrganizationInvitationsController', () => {
       governanceRole: 'member',
     });
     expect(
+      organizationInvitationsService.findPendingInvitationsForEmail,
+    ).toHaveBeenCalledWith('invitee@example.com');
+    expect(
       organizationInvitationsService.acceptInvitation,
     ).toHaveBeenCalledWith(1n, {
       userId: 9n,
       email: 'invitee@example.com',
     });
+    expect(invitations).toHaveLength(1);
+    expect(invitations[0]?.organization?.name).toBe('Acme');
     expect(invitation.status).toBe('pending');
   });
 });
