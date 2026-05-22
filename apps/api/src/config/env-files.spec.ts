@@ -63,9 +63,7 @@ describe('env-files', () => {
     it('preserves unquoted values containing equals signs', () => {
       delete process.env.NODE_ENV;
       jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-      jest
-        .spyOn(fs, 'readFileSync')
-        .mockReturnValue('NODE_ENV=prod=like\n');
+      jest.spyOn(fs, 'readFileSync').mockReturnValue('NODE_ENV=prod=like\n');
 
       expect(resolveEnvFilePaths(configDirectory, undefined)).toEqual([
         path.join(configDirectory, '.env.prod=like'),
@@ -78,9 +76,10 @@ describe('env-files', () => {
     it('loads only existing env files', () => {
       const existsSyncSpy = jest
         .spyOn(fs, 'existsSync')
-        .mockImplementation((filePath) =>
-          String(filePath).endsWith('.env.test') ||
-          String(filePath).endsWith('.env'),
+        .mockImplementation(
+          (filePath) =>
+            String(filePath).endsWith('.env.test') ||
+            String(filePath).endsWith('.env'),
         );
       const loadEnvFileSpy = jest
         .spyOn(process, 'loadEnvFile')

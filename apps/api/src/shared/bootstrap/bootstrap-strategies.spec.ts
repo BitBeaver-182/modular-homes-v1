@@ -19,7 +19,9 @@ describe('bootstrap strategies', () => {
   });
 
   it('exposes a shared bootstrap strategy base type', () => {
-    expect(new DevelopmentBootstrapStrategy()).toBeInstanceOf(BootstrapStrategy);
+    expect(new DevelopmentBootstrapStrategy()).toBeInstanceOf(
+      BootstrapStrategy,
+    );
     expect(new ProductionBootstrapStrategy()).toBeInstanceOf(BootstrapStrategy);
     expect(new TestBootstrapStrategy()).toBeInstanceOf(BootstrapStrategy);
   });

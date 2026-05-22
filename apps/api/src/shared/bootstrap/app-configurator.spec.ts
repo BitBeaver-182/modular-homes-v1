@@ -1,4 +1,4 @@
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { INestApplication } from '@nestjs/common';
 import { AppConfigurator } from './app-configurator';
 
@@ -48,16 +48,14 @@ describe('AppConfigurator', () => {
     const setupSpy = jest.spyOn(SwaggerModule, 'setup').mockImplementation();
 
     expect(configurator.withSwagger()).toBe(configurator);
-    expect(createDocumentSpy).toHaveBeenCalledWith(
-      app,
-      expect.objectContaining({
-        info: expect.objectContaining({
-          title: 'Moduflow API',
-          description: 'Moduflow API documentation',
-          version: '1.0',
-        }),
-      }) as ReturnType<DocumentBuilder['build']>,
-    );
+    expect(createDocumentSpy).toHaveBeenCalled();
+    const documentConfig = createDocumentSpy.mock.calls[0]?.[1];
+    expect(documentConfig).toBeDefined();
+    expect(documentConfig.info).toMatchObject({
+      title: 'Moduflow API',
+      description: 'Moduflow API documentation',
+      version: '1.0',
+    });
     expect(setupSpy).toHaveBeenCalledWith(
       '/docs',
       app,
