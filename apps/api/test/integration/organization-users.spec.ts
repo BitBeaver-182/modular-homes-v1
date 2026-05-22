@@ -393,4 +393,118 @@ describe('OrganizationUsersService (integration)', () => {
       ),
     ).rejects.toThrow('Organization must have at least one active owner');
   });
+
+  it('owner can grant ownership to another active member', async () => {
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Grant Owner Org',
+        slug: 'grant-owner-org',
+      },
+    });
+
+    await organizationUsersService.createUserInOrganization(organization.id, {
+      email: 'first-owner@example.com',
+    });
+    const member = await organizationUsersService.createUserInOrganization(
+      organization.id,
+      {
+        email: 'member@example.com',
+      },
+    );
+
+    await organizationUsersService.grantOwner(organization.id, member.id);
+
+    const membership = await prisma.organizationUser.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: member.id,
+          organizationId: organization.id,
+        },
+      },
+    });
+    expect(membership.governanceRole).toBe('owner');
+  });
+
+  it('transfer sole ownership demotes source after promoting target', async () => {
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Transfer Owner Org',
+        slug: 'transfer-owner-org',
+      },
+    });
+
+    const sourceOwner = await organizationUsersService.createUserInOrganization(
+      organization.id,
+      {
+        email: 'source-owner@example.com',
+      },
+    );
+    const targetMember =
+      await organizationUsersService.createUserInOrganization(organization.id, {
+        email: 'target-member@example.com',
+      });
+
+    await organizationUsersService.transferOwnership(
+      organization.id,
+      sourceOwner.id,
+      targetMember.id,
+    );
+
+    const memberships = await prisma.organizationUser.findMany({
+      where: {
+        organizationId: organization.id,
+      },
+      orderBy: { userId: 'asc' },
+    });
+
+    expect(
+      memberships.filter((membership) => membership.governanceRole === 'owner'),
+    ).toHaveLength(1);
+    expect(
+      memberships.find((membership) => membership.userId === sourceOwner.id)
+        ?.governanceRole,
+    ).toBe('member');
+    expect(
+      memberships.find((membership) => membership.userId === targetMember.id)
+        ?.governanceRole,
+    ).toBe('owner');
+  });
+
+  it('activating an invited membership makes it visible to org-scoped reads', async () => {
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Invite Activate Org',
+        slug: 'invite-activate-org',
+      },
+    });
+
+    const invitation = await organizationUsersService.inviteUserToOrganization(
+      organization.id,
+      {
+        email: 'invite@example.com',
+      },
+    );
+
+    await expect(
+      organizationUsersService.findActiveOrganizationUser(
+        organization.id,
+        invitation.user.id,
+      ),
+    ).rejects.toThrow(NotFoundException);
+
+    const activatedMembership =
+      await organizationUsersService.activateMembership(
+        organization.id,
+        invitation.user.id,
+      );
+
+    expect(activatedMembership.status).toBe('active');
+
+    const activeMembership =
+      await organizationUsersService.findActiveOrganizationUser(
+        organization.id,
+        invitation.user.id,
+      );
+    expect(activeMembership.id).toBe(activatedMembership.id);
+  });
 });

@@ -17,6 +17,7 @@ describe('OrganizationUsersService', () => {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       count: jest.fn(),
     },
     $transaction: jest.fn(),
@@ -299,5 +300,122 @@ describe('OrganizationUsersService', () => {
     expect(organizationUserUpdateArgs[0].data.status).toBe('removed');
     expect(organizationUserUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
     expect(prisma.user.update).toHaveBeenCalled();
+  });
+
+  it('owner can grant ownership to another active member', async () => {
+    prisma.organizationUser.updateMany.mockResolvedValue({ count: 1 });
+    prisma.organizationUser.findFirst.mockResolvedValue({ id: 4n });
+
+    await service.grantOwner(2n, 9n);
+
+    expect(prisma.organizationUser.updateMany).toHaveBeenCalledWith({
+      where: {
+        organizationId: 2n,
+        userId: 9n,
+        deletedAt: null,
+        status: 'active',
+      },
+      data: {
+        governanceRole: 'owner',
+      },
+    });
+  });
+
+  it('cannot grant ownership to a removed membership', async () => {
+    prisma.organizationUser.updateMany.mockResolvedValue({ count: 0 });
+    prisma.organizationUser.findFirst.mockResolvedValue(null);
+
+    await expect(service.grantOwner(2n, 9n)).rejects.toThrow(NotFoundException);
+  });
+
+  it('transfer sole ownership promotes target before demoting source', async () => {
+    prisma.organizationUser.findFirst
+      .mockResolvedValueOnce({ id: 1n, governanceRole: 'owner' })
+      .mockResolvedValueOnce({ id: 2n, governanceRole: 'member' });
+
+    await service.transferOwnership(2n, 1n, 2n);
+
+    expect(prisma.organizationUser.update.mock.calls[0]).toEqual([
+      {
+        where: { id: 2n },
+        data: {
+          governanceRole: 'owner',
+        },
+      },
+    ]);
+    expect(prisma.organizationUser.update.mock.calls[1]).toEqual([
+      {
+        where: { id: 1n },
+        data: {
+          governanceRole: 'member',
+        },
+      },
+    ]);
+  });
+
+  it('owner transfer is rejected when target membership does not exist', async () => {
+    prisma.organizationUser.findFirst
+      .mockResolvedValueOnce({ id: 1n, governanceRole: 'owner' })
+      .mockResolvedValueOnce(null);
+
+    await expect(service.transferOwnership(2n, 1n, 2n)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('owner transfer is rejected when source is not an owner', async () => {
+    prisma.organizationUser.findFirst
+      .mockResolvedValueOnce({ id: 1n, governanceRole: 'member' })
+      .mockResolvedValueOnce({ id: 2n, governanceRole: 'member' });
+
+    await expect(service.transferOwnership(2n, 1n, 2n)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('invited membership is excluded from active membership queries', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({ id: 9n });
+    prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.create.mockResolvedValue({
+      id: 3n,
+      organizationId: 2n,
+      governanceRole: 'member',
+      status: 'invited',
+      user: {
+        id: 9n,
+        email: 'invited@example.com',
+        name: null,
+        avatarUrl: null,
+      },
+    });
+
+    const membership = await service.inviteUserToOrganization(2n, {
+      email: 'invited@example.com',
+    });
+
+    expect(prisma.organizationUser.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: 2n,
+        userId: 9n,
+        governanceRole: 'member',
+        status: 'invited',
+      },
+      include: {
+        user: true,
+      },
+    });
+    expect(membership.status).toBe('invited');
+  });
+
+  it('ownership cannot be transferred to invited memberships', async () => {
+    prisma.organizationUser.findFirst
+      .mockResolvedValueOnce({ id: 1n, governanceRole: 'owner' })
+      .mockResolvedValueOnce(null);
+
+    await expect(service.transferOwnership(2n, 1n, 2n)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

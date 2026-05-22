@@ -417,6 +417,134 @@ describe('API (e2e)', () => {
     expect(deletedUser.deletedAt).toBeInstanceOf(Date);
   });
 
+  it('grants ownership to another active member and can transfer sole ownership', async () => {
+    const organization = await createOrganization('owner-flows', 'Owner Flows');
+
+    const sourceOwner = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organization.id)
+          .send({ email: 'source-owner@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const targetMember = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organization.id)
+          .send({ email: 'target-member@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .post(`/api/organization-memberships/${targetMember.id}/owners`)
+      .set('x-organization-id', organization.id)
+      .expect(HttpStatus.NO_CONTENT);
+
+    let targetMembership = await prisma.organizationUser.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(targetMember.id),
+          organizationId: BigInt(organization.id),
+        },
+      },
+    });
+    expect(targetMembership.governanceRole).toBe('owner');
+
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(targetMember.id),
+          organizationId: BigInt(organization.id),
+        },
+      },
+      data: {
+        governanceRole: 'member',
+      },
+    });
+
+    await request(httpServer)
+      .post(
+        `/api/organization-memberships/${targetMember.id}/ownership-transfers`,
+      )
+      .set('x-organization-id', organization.id)
+      .send({ fromUserId: sourceOwner.id })
+      .expect(HttpStatus.NO_CONTENT);
+
+    const memberships = await prisma.organizationUser.findMany({
+      where: {
+        organizationId: BigInt(organization.id),
+      },
+      orderBy: { userId: 'asc' },
+    });
+    expect(
+      memberships.filter((membership) => membership.governanceRole === 'owner'),
+    ).toHaveLength(1);
+    targetMembership = await prisma.organizationUser.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(targetMember.id),
+          organizationId: BigInt(organization.id),
+        },
+      },
+    });
+    expect(targetMembership.governanceRole).toBe('owner');
+  });
+
+  it('supports invitation and activation lifecycle for memberships', async () => {
+    const organization = await createOrganization(
+      'invitation-org',
+      'Invitation Org',
+    );
+
+    const invitedMembership = (
+      await request(httpServer)
+        .post('/api/organization-memberships/invitations')
+        .set('x-organization-id', organization.id)
+        .send({ email: 'invited-member@example.com' })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      user: { id: string };
+      status: string;
+    };
+    expect(invitedMembership.status).toBe('invited');
+
+    const listedUsersBeforeActivation = (
+      await request(httpServer)
+        .get('/api/users')
+        .set('x-organization-id', organization.id)
+        .expect(HttpStatus.OK)
+    ).body as UserDto[];
+    expect(listedUsersBeforeActivation).toHaveLength(0);
+
+    const activatedMembership = (
+      await request(httpServer)
+        .post(
+          `/api/organization-memberships/${invitedMembership.user.id}/activations`,
+        )
+        .set('x-organization-id', organization.id)
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      user: { id: string };
+      status: string;
+      governanceRole: string;
+    };
+    expect(activatedMembership.status).toBe('active');
+    expect(activatedMembership.governanceRole).toBe('owner');
+
+    const listedUsersAfterActivation = (
+      await request(httpServer)
+        .get('/api/users')
+        .set('x-organization-id', organization.id)
+        .expect(HttpStatus.OK)
+    ).body as UserDto[];
+    expect(listedUsersAfterActivation).toHaveLength(1);
+    expect(listedUsersAfterActivation[0]?.id).toBe(invitedMembership.user.id);
+  });
+
   it('keeps roles isolated per organization and rejects cross-org assignment', async () => {
     const organizationA = await createOrganization('assign-a', 'Assign A');
     const organizationB = await createOrganization('assign-b', 'Assign B');
