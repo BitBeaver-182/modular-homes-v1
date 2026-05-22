@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 
 describe('AuthController', () => {
   const authService = {
+    registerUser: jest.fn(),
     issueTokenForEmail: jest.fn(),
   };
 
@@ -27,6 +28,33 @@ describe('AuthController', () => {
     expect(authService.issueTokenForEmail).toHaveBeenCalledWith(
       'owner@example.com',
     );
+  });
+
+  it('registers a user and returns the token payload', async () => {
+    authService.registerUser.mockResolvedValue({
+      access_token: 'token-value',
+      user: {
+        id: '7',
+        email: 'owner@example.com',
+        name: 'Owner',
+        avatarUrl: null,
+      },
+    });
+
+    await expect(
+      controller.register({
+        email: 'owner@example.com',
+        name: 'Owner',
+      }),
+    ).resolves.toEqual({
+      access_token: 'token-value',
+      user: {
+        id: '7',
+        email: 'owner@example.com',
+        name: 'Owner',
+        avatarUrl: null,
+      },
+    });
   });
 
   it('returns the current actor payload', () => {

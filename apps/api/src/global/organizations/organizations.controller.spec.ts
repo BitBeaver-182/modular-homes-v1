@@ -3,7 +3,7 @@ import { OrganizationsService } from './organizations.service';
 
 describe('OrganizationsController', () => {
   const organizationsService = {
-    create: jest.fn(),
+    createForUser: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
@@ -29,19 +29,25 @@ describe('OrganizationsController', () => {
       deletedAt: null,
     };
 
-    organizationsService.create.mockResolvedValue(rawOrganization);
+    organizationsService.createForUser.mockResolvedValue(rawOrganization);
     organizationsService.findAll.mockResolvedValue([rawOrganization]);
     organizationsService.findOne.mockResolvedValue(rawOrganization);
     organizationsService.update.mockResolvedValue(rawOrganization);
     organizationsService.remove.mockResolvedValue(rawOrganization);
 
-    const created = await controller.create(createDto);
+    const created = await controller.create(
+      { userId: 7n, email: 'owner@example.com' },
+      createDto,
+    );
     const list = await controller.findAll();
     const one = await controller.findOne('2');
     const updated = await controller.update('2', updateDto);
     const removed = await controller.remove('2');
 
-    expect(organizationsService.create).toHaveBeenCalledWith(createDto);
+    expect(organizationsService.createForUser).toHaveBeenCalledWith(
+      7n,
+      createDto,
+    );
     expect(organizationsService.findAll).toHaveBeenCalledTimes(1);
     expect(organizationsService.findOne).toHaveBeenCalledWith(2n);
     expect(organizationsService.update).toHaveBeenCalledWith(2n, updateDto);

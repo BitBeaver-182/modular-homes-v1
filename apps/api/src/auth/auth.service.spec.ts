@@ -1,9 +1,10 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   const prisma = {
     user: {
+      create: jest.fn(),
       findFirst: jest.fn(),
     },
   };
@@ -16,6 +17,46 @@ describe('AuthService', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     service = new AuthService(prisma as never, jwtService as never);
+  });
+
+  it('registers a new user and issues a token', async () => {
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({
+      id: 7n,
+      email: 'owner@example.com',
+      name: 'Owner',
+      avatarUrl: null,
+    });
+    jwtService.sign.mockReturnValue('signed-token');
+
+    await expect(
+      service.registerUser({
+        email: 'owner@example.com',
+        name: 'Owner',
+      }),
+    ).resolves.toEqual({
+      access_token: 'signed-token',
+      user: {
+        id: '7',
+        email: 'owner@example.com',
+        name: 'Owner',
+        avatarUrl: null,
+      },
+    });
+  });
+
+  it('rejects duplicate active user registration', async () => {
+    prisma.user.findFirst.mockResolvedValue({
+      id: 7n,
+      email: 'owner@example.com',
+      deletedAt: null,
+    });
+
+    await expect(
+      service.registerUser({
+        email: 'owner@example.com',
+      }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('issues a token for an existing active user', async () => {

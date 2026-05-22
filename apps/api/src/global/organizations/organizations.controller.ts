@@ -6,14 +6,19 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
+import { CurrentUser } from '../../auth/decorator/current-user.decorator';
+import { JwtGuard } from '../../auth/guard/jwt.guard';
+import type { AuthUser } from '../../auth/auth.types';
 import { OrganizationsService } from './organizations.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
@@ -27,13 +32,19 @@ export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
   @Post()
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Create Organization',
-    description: 'Create a new organization.',
+    description: 'Create a new organization for the authenticated user.',
   })
   @ApiCreatedResponse({ type: OrganizationResponse })
-  async create(@Body() createOrganizationDto: CreateOrganizationDto) {
-    const organization = await this.organizationsService.create(
+  async create(
+    @CurrentUser() user: AuthUser,
+    @Body() createOrganizationDto: CreateOrganizationDto,
+  ) {
+    const organization = await this.organizationsService.createForUser(
+      user.userId,
       createOrganizationDto,
     );
     return plainToInstance(OrganizationResponse, organization, {

@@ -9,6 +9,7 @@ import {
 import { CurrentUser } from './decorator/current-user.decorator';
 import { Public } from './decorator/public.decorator';
 import { CreateTokenDto } from './dto/create-token.dto';
+import { RegisterUserDto } from './dto/register-user.dto';
 import { JwtGuard } from './guard/jwt.guard';
 import { AuthService } from './auth.service';
 import type { AuthUser } from './auth.types';
@@ -17,6 +18,36 @@ import type { AuthUser } from './auth.types';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Public()
+  @Post('register')
+  @ApiOperation({
+    summary: 'Register user',
+    description: 'Create a new global user account and issue a JWT.',
+  })
+  @ApiBody({ type: RegisterUserDto })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        access_token: {
+          type: 'string',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            name: { type: 'string', nullable: true },
+            avatarUrl: { type: 'string', nullable: true },
+          },
+        },
+      },
+    },
+  })
+  async register(@Body() registerUserDto: RegisterUserDto) {
+    return this.authService.registerUser(registerUserDto);
+  }
 
   @Public()
   @Post('token')
