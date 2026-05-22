@@ -68,6 +68,18 @@ export class OrganizationsService {
     await this.findOne(id);
     const deletedAt = new Date();
     return this.prisma.$transaction(async (tx) => {
+      await tx.organizationInvitation.updateMany({
+        where: {
+          organizationId: id,
+          deletedAt: null,
+        },
+        data: {
+          deletedAt,
+          status: 'revoked',
+          revokedAt: deletedAt,
+        },
+      });
+
       await tx.organizationUser.updateMany({
         where: {
           organizationId: id,

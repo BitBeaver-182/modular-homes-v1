@@ -501,25 +501,29 @@ describe('API (e2e)', () => {
     expect(targetMembership.governanceRole).toBe('owner');
   });
 
-  it('supports invitation and activation lifecycle for memberships', async () => {
+  it('supports invitation acceptance for an authenticated user with matching email', async () => {
     const organization = await createOrganization(
       'invitation-org',
       'Invitation Org',
     );
     const ownerToken = organization.ownerToken;
 
-    const invitedMembership = (
+    const invitation = (
       await request(httpServer)
-        .post('/api/organization-memberships/invitations')
+        .post('/api/organization-invitations')
         .set('x-organization-id', organization.id)
         .set('authorization', `Bearer ${ownerToken}`)
-        .send({ email: 'invited-member@example.com' })
+        .send({
+          email: 'invited-member@example.com',
+          governanceRole: 'member',
+        })
         .expect(HttpStatus.CREATED)
     ).body as {
-      user: { id: string };
+      id: string;
+      email: string;
       status: string;
     };
-    expect(invitedMembership.status).toBe('invited');
+    expect(invitation.status).toBe('pending');
 
     const listedUsersBeforeActivation = (
       await request(httpServer)
@@ -530,25 +534,24 @@ describe('API (e2e)', () => {
     expect(listedUsersBeforeActivation).toHaveLength(1);
     expect(
       listedUsersBeforeActivation.some(
-        (user) => user.id === invitedMembership.user.id,
+        (user) => user.email === invitation.email,
       ),
     ).toBe(false);
 
-    const activatedMembership = (
+    const invitedUser = (
       await request(httpServer)
-        .post(
-          `/api/organization-memberships/${invitedMembership.user.id}/activations`,
-        )
-        .set('x-organization-id', organization.id)
-        .set('authorization', `Bearer ${ownerToken}`)
+        .post('/api/auth/register')
+        .send({ email: 'invited-member@example.com' })
         .expect(HttpStatus.CREATED)
     ).body as {
+      access_token: string;
       user: { id: string };
-      status: string;
-      governanceRole: string;
     };
-    expect(activatedMembership.status).toBe('active');
-    expect(activatedMembership.governanceRole).toBe('member');
+
+    await request(httpServer)
+      .post(`/api/organization-invitations/${invitation.id}/accept`)
+      .set('authorization', `Bearer ${invitedUser.access_token}`)
+      .expect(HttpStatus.NO_CONTENT);
 
     const listedUsersAfterActivation = (
       await request(httpServer)
@@ -559,7 +562,7 @@ describe('API (e2e)', () => {
     expect(listedUsersAfterActivation).toHaveLength(2);
     expect(
       listedUsersAfterActivation.some(
-        (user) => user.id === invitedMembership.user.id,
+        (user) => user.id === invitedUser.user.id,
       ),
     ).toBe(true);
   });
@@ -728,16 +731,6 @@ describe('API (e2e)', () => {
       owner: registration.user,
       ownerToken: registration.access_token,
     };
-  }
-
-  async function issueTokenForEmail(email: string) {
-    const response = await request(httpServer)
-      .post('/api/auth/token')
-      .send({ email })
-      .expect(HttpStatus.CREATED);
-
-    const body = response.body as { access_token: string };
-    return body.access_token;
   }
 });
 

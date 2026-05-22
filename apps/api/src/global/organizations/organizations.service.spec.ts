@@ -13,6 +13,9 @@ describe('OrganizationsService', () => {
       create: jest.fn(),
       updateMany: jest.fn(),
     },
+    organizationInvitation: {
+      updateMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
