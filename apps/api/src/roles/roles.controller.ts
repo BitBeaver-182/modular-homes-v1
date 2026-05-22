@@ -77,7 +77,7 @@ export class RolesController {
   ) {
     const role = await this.rolesService.findOne(
       organizationId,
-      parseBigIntId(id),
+      parseBigIntId(id, 'roleId'),
     );
     return plainToInstance(RoleResponse, role, {
       excludeExtraneousValues: true,
@@ -98,7 +98,7 @@ export class RolesController {
   ) {
     const role = await this.rolesService.update(
       organizationId,
-      parseBigIntId(id),
+      parseBigIntId(id, 'roleId'),
       updateRoleDto,
     );
     return plainToInstance(RoleResponse, role, {
@@ -119,7 +119,7 @@ export class RolesController {
   ) {
     const role = await this.rolesService.remove(
       organizationId,
-      parseBigIntId(id),
+      parseBigIntId(id, 'roleId'),
     );
     return plainToInstance(RoleResponse, role, {
       excludeExtraneousValues: true,

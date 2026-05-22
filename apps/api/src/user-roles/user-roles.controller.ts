@@ -45,12 +45,12 @@ export class UserRolesController {
   async assignRole(
     @OrganizationId() organizationId: bigint,
     @Param('userId') userId: string,
-    @Body('roleId') roleId: string,
+    @Body() assignUserRoleDto: AssignUserRoleDto,
   ) {
     const role = await this.userRolesService.assignRole(
       organizationId,
       parseBigIntId(userId, 'userId'),
-      parseBigIntId(roleId, 'roleId'),
+      parseBigIntId(assignUserRoleDto.roleId, 'roleId'),
     );
     return plainToInstance(UserRoleResponse, role, {
       excludeExtraneousValues: true,

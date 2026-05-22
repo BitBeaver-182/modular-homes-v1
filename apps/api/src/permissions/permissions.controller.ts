@@ -69,7 +69,9 @@ export class PermissionsController {
   @ApiBigIntIdParam('id', 'permission')
   @ApiOkResponse({ type: PermissionResponse })
   async findOne(@Param('id') id: string) {
-    const permission = await this.permissionsService.findOne(parseBigIntId(id));
+    const permission = await this.permissionsService.findOne(
+      parseBigIntId(id, 'permissionId'),
+    );
     return plainToInstance(PermissionResponse, permission, {
       excludeExtraneousValues: true,
     });
@@ -87,7 +89,7 @@ export class PermissionsController {
     @Body() updatePermissionDto: UpdatePermissionDto,
   ) {
     const permission = await this.permissionsService.update(
-      parseBigIntId(id),
+      parseBigIntId(id, 'permissionId'),
       updatePermissionDto,
     );
     return plainToInstance(PermissionResponse, permission, {
@@ -103,7 +105,9 @@ export class PermissionsController {
   @ApiBigIntIdParam('id', 'permission')
   @ApiOkResponse({ type: PermissionResponse })
   async remove(@Param('id') id: string) {
-    const permission = await this.permissionsService.remove(parseBigIntId(id));
+    const permission = await this.permissionsService.remove(
+      parseBigIntId(id, 'permissionId'),
+    );
     return plainToInstance(PermissionResponse, permission, {
       excludeExtraneousValues: true,
     });

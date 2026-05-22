@@ -27,7 +27,9 @@ describe('RolePermissionsController', () => {
     rolePermissionsService.findAll.mockResolvedValue([rawPermission]);
     rolePermissionsService.removePermission.mockResolvedValue(rawPermission);
 
-    const created = await controller.assignPermission(3n, '5', '2');
+    const created = await controller.assignPermission(3n, '5', {
+      permissionId: '2',
+    });
     const list = await controller.findAll(3n, '5');
     const removed = await controller.removePermission(3n, '5', '2');
 

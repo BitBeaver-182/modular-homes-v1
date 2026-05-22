@@ -23,7 +23,7 @@ describe('UserRolesController', () => {
     userRolesService.findAll.mockResolvedValue([rawRole]);
     userRolesService.removeRole.mockResolvedValue(rawRole);
 
-    const created = await controller.assignRole(2n, '9', '4');
+    const created = await controller.assignRole(2n, '9', { roleId: '4' });
     const list = await controller.findAll(2n, '9');
     const removed = await controller.removeRole(2n, '9', '4');
 

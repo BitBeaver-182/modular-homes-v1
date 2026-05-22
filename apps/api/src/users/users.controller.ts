@@ -131,7 +131,7 @@ export class UsersController {
   ) {
     const user = await this.usersService.findOne(
       organizationId,
-      parseBigIntId(id),
+      parseBigIntId(id, 'userId'),
     );
     return toUserResponse(user);
   }
@@ -150,7 +150,7 @@ export class UsersController {
   ) {
     const user = await this.usersService.update(
       organizationId,
-      parseBigIntId(id),
+      parseBigIntId(id, 'userId'),
       updateUserDto,
     );
     return toUserResponse(user);
@@ -167,6 +167,6 @@ export class UsersController {
     @OrganizationId() organizationId: bigint,
     @Param('id') id: string,
   ) {
-    await this.usersService.remove(organizationId, parseBigIntId(id));
+    await this.usersService.remove(organizationId, parseBigIntId(id, 'userId'));
   }
 }

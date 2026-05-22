@@ -47,12 +47,12 @@ export class RolePermissionsController {
   async assignPermission(
     @OrganizationId() organizationId: bigint,
     @Param('roleId') roleId: string,
-    @Body('permissionId') permissionId: string,
+    @Body() assignRolePermissionDto: AssignRolePermissionDto,
   ) {
     const permission = await this.rolePermissionsService.assignPermission(
       organizationId,
       parseBigIntId(roleId, 'roleId'),
-      parseBigIntId(permissionId, 'permissionId'),
+      parseBigIntId(assignRolePermissionDto.permissionId, 'permissionId'),
     );
     return plainToInstance(RolePermissionResponse, permission, {
       excludeExtraneousValues: true,

@@ -63,7 +63,7 @@ export class OrganizationsController {
   @ApiOkResponse({ type: OrganizationResponse })
   async findOne(@Param('id') id: string) {
     const organization = await this.organizationsService.findOne(
-      parseBigIntId(id),
+      parseBigIntId(id, 'organizationId'),
     );
     return plainToInstance(OrganizationResponse, organization, {
       excludeExtraneousValues: true,
@@ -82,7 +82,7 @@ export class OrganizationsController {
     @Body() updateOrganizationDto: UpdateOrganizationDto,
   ) {
     const organization = await this.organizationsService.update(
-      parseBigIntId(id),
+      parseBigIntId(id, 'organizationId'),
       updateOrganizationDto,
     );
     return plainToInstance(OrganizationResponse, organization, {
@@ -99,7 +99,7 @@ export class OrganizationsController {
   @ApiOkResponse({ type: OrganizationResponse })
   async remove(@Param('id') id: string) {
     const organization = await this.organizationsService.remove(
-      parseBigIntId(id),
+      parseBigIntId(id, 'organizationId'),
     );
     return plainToInstance(OrganizationResponse, organization, {
       excludeExtraneousValues: true,
