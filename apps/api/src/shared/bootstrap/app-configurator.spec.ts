@@ -62,6 +62,14 @@ describe('AppConfigurator', () => {
       description: 'Moduflow API documentation',
       version: '1.0',
     });
+    expect(JSON.stringify(documentConfig.components)).toContain('"bearer"');
+    expect(JSON.stringify(documentConfig.components)).toContain(
+      '"scheme":"bearer"',
+    );
+    expect(JSON.stringify(documentConfig.components)).toContain(
+      '"bearerFormat":"JWT"',
+    );
+    expect(JSON.stringify(documentConfig.components)).toContain('{{token}}');
     expect(setupSpy).toHaveBeenCalledWith(
       'docs',
       app,

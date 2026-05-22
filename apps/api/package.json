@@ -10,6 +10,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "openapi:generate": "NODE_ENV=local ts-node -r tsconfig-paths/register src/openapi.ts",
+    "prestart:local": "NODE_ENV=local pnpm prisma:deploy",
     "start": "nest start",
     "start:local": "NODE_ENV=local nest start --watch",
     "start:dev": "nest start --watch",

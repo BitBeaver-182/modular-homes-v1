@@ -1,6 +1,63 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api/auth/register": {
+      "post": {
+        "description": "Create a new global user account and issue a JWT.",
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Register user",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/auth/token": {
       "post": {
         "description": "Issue a JWT for an existing active user by email.",
@@ -938,6 +995,99 @@
         ]
       }
     },
+    "/api/organization-invitations": {
+      "post": {
+        "description": "Create a pending invitation for an email in the active organization.",
+        "operationId": "OrganizationInvitationsController_create",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationInvitationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationInvitationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create invitation",
+        "tags": [
+          "Organization Invitations"
+        ]
+      }
+    },
+    "/api/organization-invitations/{id}/accept": {
+      "post": {
+        "description": "Accept a pending invitation for the authenticated user when the invitation email matches the actor email.",
+        "operationId": "OrganizationInvitationsController_accept",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the invitation.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept invitation",
+        "tags": [
+          "Organization Invitations"
+        ]
+      }
+    },
     "/api/users/{userId}/roles": {
       "post": {
         "description": "Assign a role to a user in the active organization.",
@@ -1252,7 +1402,7 @@
     },
     "/api/organizations": {
       "post": {
-        "description": "Create a new organization.",
+        "description": "Create a new organization for the authenticated user.",
         "operationId": "OrganizationsController_create",
         "parameters": [],
         "requestBody": {
@@ -1277,6 +1427,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Create Organization",
         "tags": [
           "Organizations"
@@ -1409,6 +1564,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Delete Organization",
         "tags": [
           "Organizations"
@@ -1425,7 +1585,37 @@
   "tags": [],
   "servers": [],
   "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Use a raw JWT bearer token here. For Postman environments, store it as {{token}}."
+      }
+    },
     "schemas": {
+      "RegisterUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "owner@example.com"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "Owner User"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://example.com/avatar.png"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
       "CreateTokenDto": {
         "type": "object",
         "properties": {
@@ -1767,6 +1957,67 @@
             "example": "Allows managing users."
           }
         }
+      },
+      "CreateOrganizationInvitationDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "invitee@example.com"
+          },
+          "governanceRole": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ],
+            "example": "member"
+          }
+        },
+        "required": [
+          "email",
+          "governanceRole"
+        ]
+      },
+      "OrganizationInvitationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "organizationId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "email": {
+            "type": "string"
+          },
+          "governanceRole": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "expired",
+              "revoked",
+              "rejected"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "email",
+          "governanceRole",
+          "status"
+        ]
       },
       "AssignUserRoleDto": {
         "type": "object",

@@ -34,10 +34,13 @@ Start the API:
 pnpm start:local
 ```
 
+`start:local` now runs `prisma migrate deploy` first, so local schema changes are applied before Nest boots.
+
 Swagger:
 
 - UI: `http://localhost:3000/api/docs`
 - JSON: `http://localhost:3000/api/docs-json`
+- Bearer auth scheme: use `{{token}}` as your Postman environment variable value
 
 Generate the OpenAPI file without starting the server:
 
