@@ -186,11 +186,29 @@ export class OrganizationUsersService {
         },
         select: {
           id: true,
+          governanceRole: true,
         },
       });
 
       if (!organizationUser) {
         throw new NotFoundException('User not found');
+      }
+
+      if (organizationUser.governanceRole === 'owner') {
+        const activeOwnerCount = await tx.organizationUser.count({
+          where: {
+            organizationId,
+            deletedAt: null,
+            status: 'active',
+            governanceRole: 'owner',
+          },
+        });
+
+        if (activeOwnerCount <= 1) {
+          throw new BadRequestException(
+            'Organization must have at least one active owner',
+          );
+        }
       }
 
       const activeOrganizationUserCount = await tx.organizationUser.count({

@@ -141,17 +141,7 @@ describe('API (e2e)', () => {
     await request(httpServer)
       .delete(`/api/users/${createdUser.id}`)
       .set('x-organization-id', organizationA.id)
-      .expect(HttpStatus.NO_CONTENT);
-
-    await request(httpServer)
-      .get(`/api/users/${createdUser.id}`)
-      .set('x-organization-id', organizationA.id)
-      .expect(HttpStatus.NOT_FOUND);
-
-    const deletedUser = await prisma.user.findUniqueOrThrow({
-      where: { id: BigInt(createdUser.id) },
-    });
-    expect(deletedUser.deletedAt).toBeInstanceOf(Date);
+      .expect(HttpStatus.BAD_REQUEST);
   });
 
   it('reuses the same user across organizations and keeps role responses isolated by header', async () => {
@@ -250,6 +240,27 @@ describe('API (e2e)', () => {
       .send({ email: 'reactivate@example.com' })
       .expect(HttpStatus.CREATED);
 
+    const backupOwner = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organizationA.id)
+          .send({ email: 'reactivate-owner@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(backupOwner.id),
+          organizationId: BigInt(organizationA.id),
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+      },
+    });
+
     await request(httpServer)
       .delete(`/api/users/${user.id}`)
       .set('x-organization-id', organizationA.id)
@@ -287,6 +298,27 @@ describe('API (e2e)', () => {
       .send({ email: 'membership-only@example.com' })
       .expect(HttpStatus.CREATED);
 
+    const backupOwner = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organizationA.id)
+          .send({ email: 'membership-owner@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(backupOwner.id),
+          organizationId: BigInt(organizationA.id),
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+      },
+    });
+
     await request(httpServer)
       .delete(`/api/users/${createdUser.id}`)
       .set('x-organization-id', organizationA.id)
@@ -306,6 +338,83 @@ describe('API (e2e)', () => {
       where: { id: BigInt(createdUser.id) },
     });
     expect(persistedUser.deletedAt).toBeNull();
+  });
+
+  it('blocks deleting the last active owner from the organization', async () => {
+    const organization = await createOrganization('solo-owner', 'Solo Owner');
+
+    const owner = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organization.id)
+          .send({ email: 'solo-owner@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .delete(`/api/users/${owner.id}`)
+      .set('x-organization-id', organization.id)
+      .expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer)
+      .get(`/api/users/${owner.id}`)
+      .set('x-organization-id', organization.id)
+      .expect(HttpStatus.OK);
+  });
+
+  it('allows deleting an owner when another active owner exists', async () => {
+    const organization = await createOrganization(
+      'shared-owner',
+      'Shared Owner',
+    );
+
+    const firstOwner = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organization.id)
+          .send({ email: 'first-owner@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const secondUser = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organization.id)
+          .send({ email: 'second-owner@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(secondUser.id),
+          organizationId: BigInt(organization.id),
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+      },
+    });
+
+    await request(httpServer)
+      .delete(`/api/users/${firstOwner.id}`)
+      .set('x-organization-id', organization.id)
+      .expect(HttpStatus.NO_CONTENT);
+
+    await request(httpServer)
+      .get(`/api/users/${firstOwner.id}`)
+      .set('x-organization-id', organization.id)
+      .expect(HttpStatus.NOT_FOUND);
+
+    const deletedUser = await prisma.user.findUniqueOrThrow({
+      where: { id: BigInt(firstOwner.id) },
+    });
+    expect(deletedUser.deletedAt).toBeInstanceOf(Date);
   });
 
   it('keeps roles isolated per organization and rejects cross-org assignment', async () => {

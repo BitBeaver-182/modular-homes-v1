@@ -237,37 +237,29 @@ describe('OrganizationUsersService', () => {
     );
   });
 
-  it('removing the last active membership soft deletes the global user', async () => {
-    prisma.organizationUser.findFirst.mockResolvedValue({ id: 1n });
-    prisma.organizationUser.count.mockResolvedValue(1);
-    prisma.user.update.mockResolvedValue({ id: 9n, deletedAt: new Date() });
+  it('last active owner cannot be removed from the organization', async () => {
+    prisma.organizationUser.findFirst.mockResolvedValue({
+      id: 1n,
+      governanceRole: 'owner',
+    });
+    prisma.organizationUser.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1);
 
-    await service.removeUserFromOrganization(2n, 9n);
+    await expect(service.removeUserFromOrganization(2n, 9n)).rejects.toThrow(
+      BadRequestException,
+    );
 
-    const organizationUserUpdateArgs = prisma.organizationUser.update.mock
-      .calls[0] as unknown as [
-      {
-        where: { id: bigint };
-        data: { deletedAt: Date; status: string };
-      },
-    ];
-    expect(organizationUserUpdateArgs[0].where.id).toBe(1n);
-    expect(organizationUserUpdateArgs[0].data.status).toBe('removed');
-    expect(organizationUserUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
-
-    const userUpdateArgs = prisma.user.update.mock.calls[0] as unknown as [
-      {
-        where: { id: bigint };
-        data: { deletedAt: Date };
-      },
-    ];
-    expect(userUpdateArgs[0].where.id).toBe(9n);
-    expect(userUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
+    expect(prisma.organizationUser.update).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it('removing a membership does not delete the global user when another active membership exists', async () => {
-    prisma.organizationUser.findFirst.mockResolvedValue({ id: 1n });
-    prisma.organizationUser.count.mockResolvedValue(2);
+  it('non-owner member can be removed while preserving owner invariant', async () => {
+    prisma.organizationUser.findFirst.mockResolvedValue({
+      id: 1n,
+      governanceRole: 'member',
+    });
+    prisma.organizationUser.count.mockResolvedValueOnce(2);
 
     await service.removeUserFromOrganization(2n, 9n);
 
@@ -282,5 +274,30 @@ describe('OrganizationUsersService', () => {
     expect(organizationUserUpdateArgs[0].data.status).toBe('removed');
     expect(organizationUserUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('owner can be removed when another active owner exists', async () => {
+    prisma.organizationUser.findFirst.mockResolvedValue({
+      id: 1n,
+      governanceRole: 'owner',
+    });
+    prisma.organizationUser.count
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(1);
+    prisma.user.update.mockResolvedValue({ id: 9n, deletedAt: new Date() });
+
+    await service.removeUserFromOrganization(2n, 9n);
+
+    const organizationUserUpdateArgs = prisma.organizationUser.update.mock
+      .calls[0] as unknown as [
+      {
+        where: { id: bigint };
+        data: { deletedAt: Date; status: string };
+      },
+    ];
+    expect(organizationUserUpdateArgs[0].where.id).toBe(1n);
+    expect(organizationUserUpdateArgs[0].data.status).toBe('removed');
+    expect(organizationUserUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
+    expect(prisma.user.update).toHaveBeenCalled();
   });
 });

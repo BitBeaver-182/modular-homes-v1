@@ -155,8 +155,25 @@ describe('OrganizationUsersService (integration)', () => {
         email: 'history@example.com',
       },
     );
+    const backupOwner = await organizationUsersService.createUserInOrganization(
+      organizationA.id,
+      {
+        email: 'history-owner@example.com',
+      },
+    );
     await organizationUsersService.createUserInOrganization(organizationB.id, {
       email: 'history@example.com',
+    });
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: backupOwner.id,
+          organizationId: organizationA.id,
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+      },
     });
 
     await organizationUsersService.removeUserFromOrganization(
@@ -198,8 +215,25 @@ describe('OrganizationUsersService (integration)', () => {
         email: 'multi-org@example.com',
       },
     );
+    const backupOwner = await organizationUsersService.createUserInOrganization(
+      organizationA.id,
+      {
+        email: 'backup-owner@example.com',
+      },
+    );
     await organizationUsersService.createUserInOrganization(organizationB.id, {
       email: 'multi-org@example.com',
+    });
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: backupOwner.id,
+          organizationId: organizationA.id,
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+      },
     });
 
     await organizationUsersService.removeUserFromOrganization(
@@ -240,7 +274,7 @@ describe('OrganizationUsersService (integration)', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('removing the last active membership soft deletes the global user', async () => {
+  it('last active owner cannot be removed from the organization', async () => {
     const organization = await prisma.organization.create({
       data: {
         name: 'Last Org',
@@ -254,25 +288,109 @@ describe('OrganizationUsersService (integration)', () => {
       },
     );
 
+    await expect(
+      organizationUsersService.removeUserFromOrganization(
+        organization.id,
+        user.id,
+      ),
+    ).rejects.toThrow('Organization must have at least one active owner');
+  });
+
+  it('owner can be removed when another active owner exists', async () => {
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Dual Owner Org',
+        slug: 'dual-owner-org',
+      },
+    });
+
+    const firstOwner = await organizationUsersService.createUserInOrganization(
+      organization.id,
+      {
+        email: 'first-owner@example.com',
+      },
+    );
+    const secondUser = await organizationUsersService.createUserInOrganization(
+      organization.id,
+      {
+        email: 'second-owner@example.com',
+      },
+    );
+
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: secondUser.id,
+          organizationId: organization.id,
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+      },
+    });
+
     await organizationUsersService.removeUserFromOrganization(
       organization.id,
-      user.id,
+      firstOwner.id,
     );
 
     const removedMembership = await prisma.organizationUser.findUniqueOrThrow({
       where: {
         userId_organizationId: {
-          userId: user.id,
+          userId: firstOwner.id,
           organizationId: organization.id,
         },
       },
     });
     const removedUser = await prisma.user.findUniqueOrThrow({
-      where: { id: user.id },
+      where: { id: firstOwner.id },
     });
 
     expect(removedMembership.deletedAt).toBeInstanceOf(Date);
     expect(removedMembership.status).toBe('removed');
     expect(removedUser.deletedAt).toBeInstanceOf(Date);
+  });
+
+  it('removed owner membership does not satisfy owner invariant', async () => {
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Removed Owner Org',
+        slug: 'removed-owner-org',
+      },
+    });
+
+    const firstOwner = await organizationUsersService.createUserInOrganization(
+      organization.id,
+      {
+        email: 'primary-owner@example.com',
+      },
+    );
+    const secondUser = await organizationUsersService.createUserInOrganization(
+      organization.id,
+      {
+        email: 'secondary-owner@example.com',
+      },
+    );
+
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: secondUser.id,
+          organizationId: organization.id,
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+        status: 'removed',
+        deletedAt: new Date(),
+      },
+    });
+
+    await expect(
+      organizationUsersService.removeUserFromOrganization(
+        organization.id,
+        firstOwner.id,
+      ),
+    ).rejects.toThrow('Organization must have at least one active owner');
   });
 });
