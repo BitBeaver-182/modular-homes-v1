@@ -15,13 +15,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
-import { parseBigIntId } from '../common/ids/parse-bigint-id';
-import { platformPath } from '../platform/platform.constants';
-import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
+import { parseBigIntId } from '../../common/ids/parse-bigint-id';
+import { platformPath } from '../platform.constants';
+import { PlatformOrganizationContextGuard } from '../platform-organization-context.guard';
 import {
   ApiBigIntIdParam,
   ApiOrganizationHeader,
-} from '../platform/platform-swagger.decorator';
+} from '../platform-swagger.decorator';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { PermissionResponse } from './dto/permission-response.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';

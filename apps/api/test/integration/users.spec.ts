@@ -1,8 +1,8 @@
 import { INestApplication, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../src/database/prisma.service';
-import { UsersService } from '../../src/users/users.service';
-import { UserRolesService } from '../../src/user-roles/user-roles.service';
-import { RolesService } from '../../src/roles/roles.service';
+import { UsersService } from '../../src/platform/users/users.service';
+import { UserRolesService } from '../../src/platform/user-roles/user-roles.service';
+import { RolesService } from '../../src/platform/roles/roles.service';
 import {
   createRealDbTestApp,
   truncateTestDatabase,

@@ -17,9 +17,9 @@ import { plainToInstance } from 'class-transformer';
 import { OrganizationsService } from './organizations.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
-import { parseBigIntId } from '../common/ids/parse-bigint-id';
+import { parseBigIntId } from '../../common/ids/parse-bigint-id';
 import { OrganizationResponse } from './dto/organization-response.dto';
-import { ApiBigIntIdParam } from '../platform/platform-swagger.decorator';
+import { ApiBigIntIdParam } from '../../platform/platform-swagger.decorator';
 
 @ApiTags('Organizations')
 @Controller('organizations')

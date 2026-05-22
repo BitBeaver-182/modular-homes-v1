@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from '../database/database.module';
-import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
+import { DatabaseModule } from '../../database/database.module';
+import { PlatformOrganizationContextGuard } from '../platform-organization-context.guard';
 import { RolePermissionsController } from './role-permissions.controller';
 import { RolePermissionsService } from './role-permissions.service';
 

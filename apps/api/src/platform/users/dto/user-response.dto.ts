@@ -3,7 +3,7 @@ import { Exclude, Expose, Type } from 'class-transformer';
 import {
   OrganizationDto,
   OrganizationResponse,
-} from '../../organizations/dto/organization-response.dto';
+} from '../../../global/organizations/dto/organization-response.dto';
 import { RoleDto, RoleResponse } from '../../roles/dto/role-response.dto';
 
 export interface UserDto {

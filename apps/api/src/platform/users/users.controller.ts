@@ -20,15 +20,15 @@ import { plainToInstance } from 'class-transformer';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { parseBigIntId } from '../common/ids/parse-bigint-id';
+import { parseBigIntId } from '../../common/ids/parse-bigint-id';
 import { UserResponse } from './dto/user-response.dto';
-import { OrganizationId } from '../platform/organization-id.decorator';
-import { platformPath } from '../platform/platform.constants';
-import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
+import { OrganizationId } from '../organization-id.decorator';
+import { platformPath } from '../platform.constants';
+import { PlatformOrganizationContextGuard } from '../platform-organization-context.guard';
 import {
   ApiBigIntIdParam,
   ApiOrganizationHeader,
-} from '../platform/platform-swagger.decorator';
+} from '../platform-swagger.decorator';
 
 type UserWithOrganizationRoles = {
   organizationUsers?: Array<{

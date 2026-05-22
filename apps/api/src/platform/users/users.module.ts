@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from '../database/database.module';
+import { DatabaseModule } from '../../database/database.module';
 import { OrganizationUsersModule } from '../organization-users/organization-users.module';
-import { PlatformOrganizationContextGuard } from '../platform/platform-organization-context.guard';
+import { PlatformOrganizationContextGuard } from '../platform-organization-context.guard';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 

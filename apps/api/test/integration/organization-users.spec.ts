@@ -3,7 +3,7 @@ import {
   INestApplication,
   NotFoundException,
 } from '@nestjs/common';
-import { OrganizationUsersService } from '../../src/organization-users/organization-users.service';
+import { OrganizationUsersService } from '../../src/platform/organization-users/organization-users.service';
 import { PrismaService } from '../../src/database/prisma.service';
 import {
   createRealDbTestApp,

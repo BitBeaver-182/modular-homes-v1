@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { UsersModule } from '../users/users.module';
-import { RolesModule } from '../roles/roles.module';
-import { PermissionsModule } from '../permissions/permissions.module';
-import { UserRolesModule } from '../user-roles/user-roles.module';
-import { RolePermissionsModule } from '../role-permissions/role-permissions.module';
+import { UsersModule } from './users/users.module';
+import { RolesModule } from './roles/roles.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { UserRolesModule } from './user-roles/user-roles.module';
+import { RolePermissionsModule } from './role-permissions/role-permissions.module';
+import { OrganizationUsersModule } from './organization-users/organization-users.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { RolePermissionsModule } from '../role-permissions/role-permissions.modu
     PermissionsModule,
     UserRolesModule,
     RolePermissionsModule,
+    OrganizationUsersModule,
   ],
 })
 export class PlatformModule {}

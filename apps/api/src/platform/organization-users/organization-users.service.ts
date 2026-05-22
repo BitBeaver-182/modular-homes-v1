@@ -3,8 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../database/prisma.service';
-import { Prisma } from '../generated/prisma';
+import { PrismaService } from '../../database/prisma.service';
+import { Prisma } from '../../generated/prisma';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 
 const scopedOrganizationUserInclude = {

@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
-import { HealthModule } from './health/health.module';
+import { HealthModule } from './global/health/health.module';
 import { AppConfigModule } from './config/app-config.module';
 import { DatabaseModule } from './database/database.module';
-import { OrganizationsModule } from './organizations/organizations.module';
+import { OrganizationsModule } from './global/organizations/organizations.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 import { ValidationPipe } from '@nestjs/common';
 import { BootstrapModule } from './shared/bootstrap/bootstrap.module';

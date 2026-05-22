@@ -1,10 +1,10 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Server } from 'node:http';
 import request, { Response } from 'supertest';
-import type { OrganizationDto } from '../../src/organizations/dto/organization-response.dto';
-import type { PermissionDto } from '../../src/permissions/dto/permission-response.dto';
-import type { RoleDto } from '../../src/roles/dto/role-response.dto';
-import type { UserDto } from '../../src/users/dto/user-response.dto';
+import type { OrganizationDto } from '../../src/global/organizations/dto/organization-response.dto';
+import type { PermissionDto } from '../../src/platform/permissions/dto/permission-response.dto';
+import type { RoleDto } from '../../src/platform/roles/dto/role-response.dto';
+import type { UserDto } from '../../src/platform/users/dto/user-response.dto';
 import { PrismaService } from '../../src/database/prisma.service';
 import {
   createRealDbTestApp,

@@ -1,5 +1,5 @@
 import { INestApplication, NotFoundException } from '@nestjs/common';
-import { OrganizationsService } from '../../src/organizations/organizations.service';
+import { OrganizationsService } from '../../src/global/organizations/organizations.service';
 import { PrismaService } from '../../src/database/prisma.service';
 import {
   createRealDbTestApp,

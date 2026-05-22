@@ -4,9 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../src/database/prisma.service';
-import { PermissionsService } from '../../src/permissions/permissions.service';
-import { RolePermissionsService } from '../../src/role-permissions/role-permissions.service';
-import { RolesService } from '../../src/roles/roles.service';
+import { PermissionsService } from '../../src/platform/permissions/permissions.service';
+import { RolePermissionsService } from '../../src/platform/role-permissions/role-permissions.service';
+import { RolesService } from '../../src/platform/roles/roles.service';
 import {
   createRealDbTestApp,
   truncateTestDatabase,
