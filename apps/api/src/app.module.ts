@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthModule } from './health/health.module';
+import { HealthModule } from './global/health/health.module';
 import { AppConfigModule } from './config/app-config.module';
 import { DatabaseModule } from './database/database.module';
-import { UsersModule } from './users/users.module';
-import { OrganizationsModule } from './organizations/organizations.module';
+import { OrganizationsModule } from './global/organizations/organizations.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 import { ValidationPipe } from '@nestjs/common';
 import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
+import { PlatformModule } from './platform/platform.module';
 
 @Module({
   imports: [
@@ -17,12 +15,10 @@ import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
     BootstrapModule,
     DatabaseModule,
     HealthModule,
-    UsersModule,
+    PlatformModule,
     OrganizationsModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     {
       provide: APP_INTERCEPTOR,
       useClass: BigIntSerializerInterceptor,

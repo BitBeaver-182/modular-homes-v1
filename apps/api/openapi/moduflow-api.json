@@ -1,0 +1,1520 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/health": {
+      "get": {
+        "description": "Return the current API health status.",
+        "operationId": "HealthController_getHealthStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Health",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/users": {
+      "post": {
+        "description": "Create a user in the active organization.",
+        "operationId": "UsersController_create",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create User",
+        "tags": [
+          "Users"
+        ]
+      },
+      "get": {
+        "description": "Return all users in the active organization.",
+        "operationId": "UsersController_findAll",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List User",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "description": "Return a single user by id in the active organization.",
+        "operationId": "UsersController_findOne",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the user.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get User",
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "description": "Update a single user by id in the active organization.",
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the user.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update User",
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "description": "Delete a single user by id from the active organization.",
+        "operationId": "UsersController_remove",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the user.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Delete User",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/roles": {
+      "post": {
+        "description": "Create a role in the active organization.",
+        "operationId": "RolesController_create",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create Role",
+        "tags": [
+          "Roles"
+        ]
+      },
+      "get": {
+        "description": "Return all roles in the active organization.",
+        "operationId": "RolesController_findAll",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoleResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Role",
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/api/roles/{id}": {
+      "get": {
+        "description": "Return a single role by id in the active organization.",
+        "operationId": "RolesController_findOne",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the role.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Role",
+        "tags": [
+          "Roles"
+        ]
+      },
+      "patch": {
+        "description": "Update a single role by id in the active organization.",
+        "operationId": "RolesController_update",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the role.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update Role",
+        "tags": [
+          "Roles"
+        ]
+      },
+      "delete": {
+        "description": "Delete a single role by id from the active organization.",
+        "operationId": "RolesController_remove",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the role.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete Role",
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/api/permissions": {
+      "post": {
+        "description": "Create a permission.",
+        "operationId": "PermissionsController_create",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create Permission",
+        "tags": [
+          "Permissions"
+        ]
+      },
+      "get": {
+        "description": "Return all permissions.",
+        "operationId": "PermissionsController_findAll",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PermissionResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Permission",
+        "tags": [
+          "Permissions"
+        ]
+      }
+    },
+    "/api/permissions/{id}": {
+      "get": {
+        "description": "Return a single permission by id.",
+        "operationId": "PermissionsController_findOne",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the permission.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Permission",
+        "tags": [
+          "Permissions"
+        ]
+      },
+      "patch": {
+        "description": "Update a single permission by id.",
+        "operationId": "PermissionsController_update",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the permission.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update Permission",
+        "tags": [
+          "Permissions"
+        ]
+      },
+      "delete": {
+        "description": "Delete a single permission by id.",
+        "operationId": "PermissionsController_remove",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the permission.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete Permission",
+        "tags": [
+          "Permissions"
+        ]
+      }
+    },
+    "/api/users/{userId}/roles": {
+      "post": {
+        "description": "Assign a role to a user in the active organization.",
+        "operationId": "UserRolesController_assignRole",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the user.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignUserRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRoleResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Assign User Role",
+        "tags": [
+          "Users/Roles"
+        ]
+      },
+      "get": {
+        "description": "Return all roles assigned to a user in the active organization.",
+        "operationId": "UserRolesController_findAll",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the user.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserRoleResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List User Role",
+        "tags": [
+          "Users/Roles"
+        ]
+      }
+    },
+    "/api/users/{userId}/roles/{roleId}": {
+      "delete": {
+        "description": "Remove a role from a user in the active organization.",
+        "operationId": "UserRolesController_removeRole",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the user.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the role.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRoleResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Remove User Role",
+        "tags": [
+          "Users/Roles"
+        ]
+      }
+    },
+    "/api/roles/{roleId}/permissions": {
+      "post": {
+        "description": "Assign a permission to a role in the active organization.",
+        "operationId": "RolePermissionsController_assignPermission",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the role.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignRolePermissionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolePermissionResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Assign Role Permission",
+        "tags": [
+          "Roles/Permissions"
+        ]
+      },
+      "get": {
+        "description": "Return all permissions assigned to a role in the active organization.",
+        "operationId": "RolePermissionsController_findAll",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the role.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RolePermissionResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Role Permission",
+        "tags": [
+          "Roles/Permissions"
+        ]
+      }
+    },
+    "/api/roles/{roleId}/permissions/{permissionId}": {
+      "delete": {
+        "description": "Remove a permission from a role in the active organization.",
+        "operationId": "RolePermissionsController_removePermission",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the role.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          },
+          {
+            "name": "permissionId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the permission.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolePermissionResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Remove Role Permission",
+        "tags": [
+          "Roles/Permissions"
+        ]
+      }
+    },
+    "/api/organizations": {
+      "post": {
+        "description": "Create a new organization.",
+        "operationId": "OrganizationsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create Organization",
+        "tags": [
+          "Organizations"
+        ]
+      },
+      "get": {
+        "description": "Return all organizations.",
+        "operationId": "OrganizationsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizationResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Organization",
+        "tags": [
+          "Organizations"
+        ]
+      }
+    },
+    "/api/organizations/{id}": {
+      "get": {
+        "description": "Return a single organization by id.",
+        "operationId": "OrganizationsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the organization.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Organization",
+        "tags": [
+          "Organizations"
+        ]
+      },
+      "patch": {
+        "description": "Update a single organization by id.",
+        "operationId": "OrganizationsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the organization.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrganizationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update Organization",
+        "tags": [
+          "Organizations"
+        ]
+      },
+      "delete": {
+        "description": "Delete a single organization by id.",
+        "operationId": "OrganizationsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the organization.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete Organization",
+        "tags": [
+          "Organizations"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Moduflow API",
+    "description": "Moduflow API documentation",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "HealthResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "service": {
+            "type": "string",
+            "example": "api"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-15T10:00:00.000Z"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "timestamp"
+        ]
+      },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Unique email address for the user.",
+            "example": "alex@example.com"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for the user.",
+            "example": "Alex Johnson",
+            "maxLength": 120
+          },
+          "avatarUrl": {
+            "type": "string",
+            "description": "Avatar image URL.",
+            "example": "https://example.com/avatar.png",
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "OrganizationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Northwind Homes"
+          },
+          "slug": {
+            "type": "string",
+            "example": "northwind-homes"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ]
+      },
+      "RoleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Admin"
+          },
+          "description": {
+            "type": "object",
+            "example": "Can manage users and permissions.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description"
+        ]
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "email": {
+            "type": "string",
+            "example": "alex@example.com"
+          },
+          "name": {
+            "type": "object",
+            "example": "Alex Johnson",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "object",
+            "example": "https://example.com/avatar.png",
+            "nullable": true
+          },
+          "organization": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrganizationResponse"
+              }
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "avatarUrl",
+          "organization",
+          "roles"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Unique email address for the user.",
+            "example": "alex@example.com"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for the user.",
+            "example": "Alex Johnson",
+            "maxLength": 120
+          },
+          "avatarUrl": {
+            "type": "string",
+            "description": "Avatar image URL.",
+            "example": "https://example.com/avatar.png",
+            "maxLength": 2048
+          }
+        }
+      },
+      "CreateRoleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Role name.",
+            "example": "Admin",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "description": "Role description.",
+            "example": "Can manage users and permissions."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateRoleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Role name.",
+            "example": "Admin",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "description": "Role description.",
+            "example": "Can manage users and permissions."
+          }
+        }
+      },
+      "CreatePermissionDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Permission key.",
+            "example": "users.manage",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "description": "Permission description.",
+            "example": "Allows managing users."
+          }
+        },
+        "required": [
+          "key"
+        ]
+      },
+      "PermissionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "key": {
+            "type": "string",
+            "example": "users.manage"
+          },
+          "description": {
+            "type": "object",
+            "example": "Allows managing users.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "description"
+        ]
+      },
+      "UpdatePermissionDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Permission key.",
+            "example": "users.manage",
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string",
+            "description": "Permission description.",
+            "example": "Allows managing users."
+          }
+        }
+      },
+      "AssignUserRoleDto": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string",
+            "description": "Role id to assign to the user.",
+            "example": "1"
+          }
+        },
+        "required": [
+          "roleId"
+        ]
+      },
+      "UserRoleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Admin"
+          },
+          "description": {
+            "type": "object",
+            "example": "Can manage users and permissions.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description"
+        ]
+      },
+      "AssignRolePermissionDto": {
+        "type": "object",
+        "properties": {
+          "permissionId": {
+            "type": "string",
+            "description": "Permission id to assign to the role.",
+            "example": "1"
+          }
+        },
+        "required": [
+          "permissionId"
+        ]
+      },
+      "RolePermissionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "key": {
+            "type": "string",
+            "example": "users.manage"
+          },
+          "description": {
+            "type": "object",
+            "example": "Allows managing users.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "description"
+        ]
+      },
+      "CreateOrganizationDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Organization name.",
+            "example": "Northwind Homes",
+            "maxLength": 120
+          },
+          "slug": {
+            "type": "string",
+            "description": "URL-friendly unique organization slug.",
+            "example": "northwind-homes",
+            "maxLength": 80,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          }
+        },
+        "required": [
+          "name",
+          "slug"
+        ]
+      },
+      "UpdateOrganizationDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Organization name.",
+            "example": "Northwind Homes",
+            "maxLength": 120
+          },
+          "slug": {
+            "type": "string",
+            "description": "URL-friendly unique organization slug.",
+            "example": "northwind-homes",
+            "maxLength": 80,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          }
+        }
+      }
+    }
+  }
+}

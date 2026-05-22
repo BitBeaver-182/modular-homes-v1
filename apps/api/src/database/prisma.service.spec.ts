@@ -21,7 +21,7 @@ jest.mock('pg', () => ({
   },
 }));
 
-jest.mock('@prisma/client', () => ({
+jest.mock('../generated/prisma', () => ({
   PrismaClient: class PrismaClientMock {
     constructor() {}
     $connect = mockConnect;

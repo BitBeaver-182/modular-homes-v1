@@ -4,6 +4,7 @@ import { AppConfigService } from '../../config/app-config.service';
 import {
   BootstrapStrategy,
   DevelopmentBootstrapStrategy,
+  LocalBootstrapStrategy,
   ProductionBootstrapStrategy,
   TestBootstrapStrategy,
 } from './bootstrap-strategies';
@@ -16,6 +17,8 @@ import {
       inject: [AppConfigService],
       useFactory: (configService: AppConfigService): BootstrapStrategy => {
         switch (configService.nodeEnv) {
+          case 'local':
+            return new LocalBootstrapStrategy();
           case 'development':
             return new DevelopmentBootstrapStrategy();
           case 'test':

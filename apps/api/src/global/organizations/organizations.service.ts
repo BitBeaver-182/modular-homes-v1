@@ -1,0 +1,70 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { UpdateOrganizationDto } from './dto/update-organization.dto';
+
+@Injectable()
+export class OrganizationsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  create(createOrganizationDto: CreateOrganizationDto) {
+    return this.prisma.organization
+      .create({
+        data: createOrganizationDto,
+      })
+      .catch((error: unknown) => {
+        if (isUniqueConstraintError(error)) {
+          throw new BadRequestException('Organization slug already exists');
+        }
+        throw error;
+      });
+  }
+
+  findAll() {
+    return this.prisma.organization.findMany({
+      where: { deletedAt: null },
+    });
+  }
+
+  async findOne(id: bigint) {
+    const organization = await this.prisma.organization.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+    return organization;
+  }
+
+  async update(id: bigint, updateOrganizationDto: UpdateOrganizationDto) {
+    await this.findOne(id);
+    return this.prisma.organization.update({
+      where: { id },
+      data: {
+        name: updateOrganizationDto.name,
+        slug: updateOrganizationDto.slug,
+      },
+    });
+  }
+
+  async remove(id: bigint) {
+    await this.findOne(id);
+    return this.prisma.organization.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+  }
+}
+
+function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  );
+}

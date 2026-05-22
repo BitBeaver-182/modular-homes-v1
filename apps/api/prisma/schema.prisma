@@ -5,6 +5,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -21,7 +22,7 @@ model User {
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
-  memberships      Membership[]
+  organizationUsers OrganizationUser[]
 
   @@index([deletedAt])
 }
@@ -35,18 +36,17 @@ model Organization {
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
-  memberships      Membership[]
+  organizationUsers OrganizationUser[]
+  roles             Role[]
 
   @@index([deletedAt])
 }
 
-model Membership {
+model OrganizationUser {
   id             BigInt   @id @default(autoincrement())
 
   userId         BigInt
   organizationId BigInt
-
-  role           MembershipRole @default(member)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -54,14 +54,64 @@ model Membership {
 
   user           User         @relation(fields: [userId], references: [id])
   organization   Organization @relation(fields: [organizationId], references: [id])
+  userRoles      UserRole[]
 
   @@index([userId])
   @@index([organizationId])
   @@index([deletedAt])
+  @@unique([userId, organizationId], map: "OrganizationUser_userId_organizationId_key")
 }
 
-enum MembershipRole {
-  owner
-  admin
-  member
+model Role {
+  id             BigInt   @id @default(autoincrement())
+  organizationId BigInt
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  userRoles      UserRole[]
+  rolePermissions RolePermission[]
+
+  @@index([organizationId])
+  @@unique([organizationId, name])
+}
+
+model Permission {
+  id              BigInt   @id @default(autoincrement())
+  key             String   @unique
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+}
+
+model UserRole {
+  id                 BigInt   @id @default(autoincrement())
+  organizationUserId BigInt
+  roleId             BigInt
+  createdAt          DateTime @default(now())
+
+  organizationUser   OrganizationUser @relation(fields: [organizationUserId], references: [id], onDelete: Cascade)
+  role               Role             @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([organizationUserId])
+  @@index([roleId])
+  @@unique([organizationUserId, roleId])
+}
+
+model RolePermission {
+  id           BigInt   @id @default(autoincrement())
+  roleId       BigInt
+  permissionId BigInt
+  createdAt    DateTime @default(now())
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@index([roleId])
+  @@index([permissionId])
+  @@unique([roleId, permissionId])
 }
