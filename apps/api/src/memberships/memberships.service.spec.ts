@@ -8,7 +8,9 @@ describe('MembershipsService', () => {
     },
     user: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
       findUniqueOrThrow: jest.fn(),
     },
     membership: {
@@ -39,9 +41,11 @@ describe('MembershipsService', () => {
 
   it('creates user with initial organization membership', async () => {
     prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findUnique = jest.fn().mockResolvedValue(null);
     prisma.user.create = jest
       .fn()
       .mockResolvedValue({ id: 9n, email: 'john@acme.com' });
+    prisma.membership.findFirst.mockResolvedValue(null);
     prisma.membership.create.mockResolvedValue({
       id: 1n,
       organizationId: 2n,
@@ -50,7 +54,15 @@ describe('MembershipsService', () => {
     prisma.user.findUniqueOrThrow = jest.fn().mockResolvedValue({
       id: 9n,
       email: 'john@acme.com',
-      memberships: [{ id: 1n, organizationId: 2n }],
+      name: 'John',
+      avatarUrl: null,
+      memberships: [
+        {
+          id: 1n,
+          organizationId: 2n,
+          organization: { id: 2n, name: 'Acme', slug: 'acme', deletedAt: null },
+        },
+      ],
     });
 
     const user = await service.createUserWithMembership({
@@ -60,21 +72,78 @@ describe('MembershipsService', () => {
     });
 
     expect(user).toBeDefined();
+    expect(prisma.user.create).toHaveBeenCalled();
     expect(prisma.membership.create).toHaveBeenCalledWith({
       data: { userId: 9n, organizationId: 2n },
     });
+    expect(user.memberships).toHaveLength(1);
   });
 
-  it('fails creating user when duplicate email exists', async () => {
+  it('reactivates a soft-deleted user and their membership', async () => {
     prisma.organization.findFirst.mockResolvedValue({ id: 2n });
-    prisma.user.create = jest.fn().mockRejectedValue(new Error('P2002'));
+    // User exists but is soft-deleted
+    prisma.user.findUnique = jest.fn().mockResolvedValue({
+      id: 9n,
+      email: 'john@acme.com',
+      deletedAt: new Date(),
+    });
+    prisma.user.update = jest.fn().mockResolvedValue({
+      id: 9n,
+      email: 'john@acme.com',
+      deletedAt: null,
+    });
+    // Membership also exists and is soft-deleted
+    prisma.membership.findFirst.mockResolvedValue({
+      id: 1n,
+      deletedAt: new Date(),
+    });
+    prisma.membership.update = jest.fn().mockResolvedValue({
+      id: 1n,
+      deletedAt: null,
+    });
+    prisma.user.findUniqueOrThrow = jest.fn().mockResolvedValue({
+      id: 9n,
+      email: 'john@acme.com',
+      organizations: [],
+      memberships: [
+        {
+          id: 1n,
+          organizationId: 2n,
+          organization: { id: 2n, name: 'Acme', slug: 'acme', deletedAt: null },
+        },
+      ],
+    });
+
+    const user = await service.createUserWithMembership({
+      email: 'john@acme.com',
+      organizationId: '2',
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 9n },
+      data: { deletedAt: null, name: undefined, avatarUrl: undefined },
+    });
+    expect(prisma.membership.update).toHaveBeenCalledWith({
+      where: { id: 1n },
+      data: { deletedAt: null },
+    });
+    expect(user.memberships).toHaveLength(1);
+  });
+
+  it('fails creating user when an active user with same email exists', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findUnique = jest.fn().mockResolvedValue({
+      id: 9n,
+      email: 'john@acme.com',
+      deletedAt: null, // Active
+    });
 
     await expect(
       service.createUserWithMembership({
         email: 'john@acme.com',
         organizationId: '2',
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('attaches user to organization', async () => {
@@ -89,6 +158,7 @@ describe('MembershipsService', () => {
 
     const result = await service.attachUser(2n, 9n);
     expect(result.organizationId).toBe(2n);
+    expect(result.userId).toBe(9n);
   });
 
   it('does not allow duplicate active membership', async () => {

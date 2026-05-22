@@ -35,7 +35,7 @@ describe('validateEnv', () => {
         NODE_ENV: 'staging',
         DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/postgres',
       }),
-    ).toThrow('NODE_ENV must be one of: development, test, production');
+    ).toThrow('NODE_ENV must be one of: development, test, production, local');
   });
 
   it('throws when DATABASE_URL is missing', () => {

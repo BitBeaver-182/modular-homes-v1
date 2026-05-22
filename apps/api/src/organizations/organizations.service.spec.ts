@@ -1,5 +1,5 @@
 import { OrganizationsService } from './organizations.service';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('OrganizationsService', () => {
   const prisma = {
@@ -46,17 +46,19 @@ describe('OrganizationsService', () => {
   });
 
   it('does not allow duplicate organization slug', async () => {
-    prisma.organization.create.mockRejectedValue(new Error('Unique failed'));
+    prisma.organization.create.mockRejectedValue({ code: 'P2002' });
 
     await expect(
       service.create({ name: 'Acme 2', slug: 'acme' }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('soft deletes organization by setting deletedAt', async () => {
     prisma.organization.findFirst.mockResolvedValue({ id: 2n });
     prisma.organization.update.mockResolvedValue({
       id: 2n,
+      name: 'Acme',
+      slug: 'acme',
       deletedAt: new Date().toISOString(),
     });
 
@@ -82,7 +84,9 @@ describe('OrganizationsService', () => {
   });
 
   it('returns active organizations in findAll', async () => {
-    prisma.organization.findMany.mockResolvedValue([{ id: 1n, slug: 'acme' }]);
+    prisma.organization.findMany.mockResolvedValue([
+      { id: 1n, name: 'Acme', slug: 'acme' },
+    ]);
 
     const result = await service.findAll();
 
@@ -90,10 +94,17 @@ describe('OrganizationsService', () => {
       where: { deletedAt: null },
     });
     expect(result).toHaveLength(1);
+    expect(result[0]).toEqual(
+      expect.objectContaining({ id: 1n, name: 'Acme', slug: 'acme' }),
+    );
   });
 
   it('returns organization in findOne when found', async () => {
-    prisma.organization.findFirst.mockResolvedValue({ id: 2n, slug: 'acme' });
+    prisma.organization.findFirst.mockResolvedValue({
+      id: 2n,
+      name: 'Acme',
+      slug: 'acme',
+    });
 
     const result = await service.findOne(2n);
 
@@ -110,7 +121,11 @@ describe('OrganizationsService', () => {
   });
 
   it('updates organization after existence check', async () => {
-    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.organization.findFirst.mockResolvedValue({
+      id: 2n,
+      name: 'Acme',
+      slug: 'acme',
+    });
     prisma.organization.update.mockResolvedValue({
       id: 2n,
       name: 'Acme 2',

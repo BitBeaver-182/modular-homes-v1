@@ -4,6 +4,13 @@ import { PrismaService } from '../database/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
+const activeMembershipInclude = {
+  memberships: {
+    where: { deletedAt: null },
+    include: { organization: true },
+  },
+} as const;
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -15,17 +22,17 @@ export class UsersService {
     return this.membershipsService.createUserWithMembership(createUserDto);
   }
 
-  findAll() {
+  async findAll() {
     return this.prisma.user.findMany({
       where: { deletedAt: null },
-      include: { memberships: { where: { deletedAt: null } } },
+      include: activeMembershipInclude,
     });
   }
 
   async findOne(id: bigint) {
     const user = await this.prisma.user.findFirst({
       where: { id, deletedAt: null },
-      include: { memberships: { where: { deletedAt: null } } },
+      include: activeMembershipInclude,
     });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -42,6 +49,7 @@ export class UsersService {
         name: updateUserDto.name,
         avatarUrl: updateUserDto.avatarUrl,
       },
+      include: activeMembershipInclude,
     });
   }
 
@@ -50,6 +58,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: { deletedAt: new Date() },
+      include: activeMembershipInclude,
     });
   }
 }

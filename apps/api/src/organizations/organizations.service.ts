@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MembershipsService } from '../memberships/memberships.service';
 import { PrismaService } from '../database/prisma.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
@@ -12,11 +16,22 @@ export class OrganizationsService {
   ) {}
 
   create(createOrganizationDto: CreateOrganizationDto) {
-    return this.prisma.organization.create({ data: createOrganizationDto });
+    return this.prisma.organization
+      .create({
+        data: createOrganizationDto,
+      })
+      .catch((error: unknown) => {
+        if (isUniqueConstraintError(error)) {
+          throw new BadRequestException('Organization slug already exists');
+        }
+        throw error;
+      });
   }
 
   findAll() {
-    return this.prisma.organization.findMany({ where: { deletedAt: null } });
+    return this.prisma.organization.findMany({
+      where: { deletedAt: null },
+    });
   }
 
   async findOne(id: bigint) {
@@ -55,4 +70,13 @@ export class OrganizationsService {
   async detachUser(organizationId: bigint, userId: bigint) {
     return this.membershipsService.detachUser(organizationId, userId);
   }
+}
+
+function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  );
 }

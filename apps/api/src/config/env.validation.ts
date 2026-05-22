@@ -1,4 +1,4 @@
-export type NodeEnv = 'development' | 'test' | 'production';
+export type NodeEnv = 'development' | 'test' | 'production' | 'local';
 export type DatabaseType = 'postgresql' | 'mysql' | 'mongodb';
 
 export interface AppEnv {
@@ -15,11 +15,14 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
   }
 
   if (
+    rawNodeEnv !== 'local' &&
     rawNodeEnv !== 'development' &&
     rawNodeEnv !== 'test' &&
     rawNodeEnv !== 'production'
   ) {
-    throw new Error('NODE_ENV must be one of: development, test, production');
+    throw new Error(
+      'NODE_ENV must be one of: development, test, production, local',
+    );
   }
 
   const databaseUrl = getRequiredString(config.DATABASE_URL, 'DATABASE_URL');
