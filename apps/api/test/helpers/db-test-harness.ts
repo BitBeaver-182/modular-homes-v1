@@ -19,7 +19,6 @@ export async function createRealDbTestApp(): Promise<{
 
   const app = moduleRef.createNestApplication();
   const bootstrapStrategy = app.get(BootstrapStrategy);
-
   await bootstrapStrategy.configure(app);
   await app.init();
 

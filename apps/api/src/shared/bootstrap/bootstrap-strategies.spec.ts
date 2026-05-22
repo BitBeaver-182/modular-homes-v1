@@ -47,6 +47,17 @@ describe('bootstrap strategies', () => {
     expect(new TestBootstrapStrategy()).toBeInstanceOf(BootstrapStrategy);
   });
 
+  it('configures test apps without listening', async () => {
+    await new TestBootstrapStrategy().configure(app);
+
+    expect(configureApp).toHaveBeenCalledWith(app, {
+      nodeEnv: 'test',
+      quietLogger: true,
+    });
+    expect(app.listen).not.toHaveBeenCalled();
+    expect(mockLoggerLog).not.toHaveBeenCalled();
+  });
+
   it('starts development apps and logs the application url', async () => {
     await new DevelopmentBootstrapStrategy().start(app);
 

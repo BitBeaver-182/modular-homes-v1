@@ -3,6 +3,7 @@ import { NodeEnv } from '../../config/env.validation';
 import { configureApp } from './configure-app';
 
 export abstract class BootstrapStrategy {
+  abstract configure(app: INestApplication): void | Promise<void>;
   abstract start(app: INestApplication): void | Promise<void>;
 }
 
@@ -16,12 +17,15 @@ abstract class BaseBootstrapStrategy extends BootstrapStrategy {
     super();
   }
 
-  async start(app: INestApplication): Promise<void> {
+  configure(app: INestApplication): void {
     configureApp(app, {
       nodeEnv: this.nodeEnv,
       quietLogger: this.quietLogger,
     });
+  }
 
+  async start(app: INestApplication): Promise<void> {
+    await this.configure(app);
     const port = Number(process.env.PORT ?? 3000);
     await app.listen(port);
     await this.logStartup(app, port);
