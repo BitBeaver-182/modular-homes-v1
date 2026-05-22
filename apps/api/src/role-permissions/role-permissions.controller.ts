@@ -62,7 +62,8 @@ export class RolePermissionsController {
   @Get()
   @ApiOperation({
     summary: 'List Role Permission',
-    description: 'Return all permissions assigned to a role in the active organization.',
+    description:
+      'Return all permissions assigned to a role in the active organization.',
   })
   @ApiBigIntIdParam('roleId', 'role')
   @ApiOkResponse({ type: RolePermissionResponse, isArray: true })

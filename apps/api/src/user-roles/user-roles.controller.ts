@@ -60,7 +60,8 @@ export class UserRolesController {
   @Get()
   @ApiOperation({
     summary: 'List User Role',
-    description: 'Return all roles assigned to a user in the active organization.',
+    description:
+      'Return all roles assigned to a user in the active organization.',
   })
   @ApiBigIntIdParam('userId', 'user')
   @ApiOkResponse({ type: UserRoleResponse, isArray: true })
