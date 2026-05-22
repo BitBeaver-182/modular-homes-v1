@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOperation,
@@ -15,8 +16,10 @@ import {
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { parseBigIntId } from '../../common/ids/parse-bigint-id';
+import { JwtGuard } from '../../auth/guard/jwt.guard';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { OrganizationId } from '../organization-id.decorator';
+import { PlatformOwnerGuard } from '../platform-owner.guard';
 import { platformPath } from '../platform.constants';
 import { PlatformOrganizationContextGuard } from '../platform-organization-context.guard';
 import {
@@ -28,8 +31,9 @@ import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { OrganizationUsersService } from './organization-users.service';
 
 @ApiTags('Organization Memberships')
+@ApiBearerAuth()
 @ApiOrganizationHeader()
-@UseGuards(PlatformOrganizationContextGuard)
+@UseGuards(JwtGuard, PlatformOrganizationContextGuard, PlatformOwnerGuard)
 @Controller(platformPath('organization-memberships'))
 export class OrganizationUsersController {
   constructor(

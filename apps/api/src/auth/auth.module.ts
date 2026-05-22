@@ -6,6 +6,7 @@ import { AppConfigService } from '../config/app-config.service';
 import { DatabaseModule } from '../database/database.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { JwtGuard } from './guard/jwt.guard';
 import { JwtStrategy } from './strategy/jwt.strategy';
 
 @Module({
@@ -22,7 +23,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtGuard, JwtStrategy],
   controllers: [AuthController],
   exports: [AuthService, JwtModule, PassportModule],
 })
