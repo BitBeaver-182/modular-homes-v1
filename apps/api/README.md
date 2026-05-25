@@ -264,7 +264,7 @@ Do not build new onboarding flows around pre-created invited memberships.
 
 ```
 /apps
-  /api      # The single entry point for all products (or one per product)
+  /moduflow-api      # The single entry point for all products (or one per product)
   /moduflow-landing    # Your landing page (uses the platform SDK)
   /moduflow-dashboard  # A unified UI that imports widgets from products
 /libs
