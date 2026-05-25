@@ -261,3 +261,13 @@ For new frontend onboarding work, prefer this canonical flow:
 4. `POST /organization-invitations/:id/accept`
 
 Do not build new onboarding flows around pre-created invited memberships.
+
+```
+/apps
+  /api      # The single entry point for all products (or one per product)
+  /moduflow-landing    # Your landing page (uses the platform SDK)
+  /moduflow-dashboard  # A unified UI that imports widgets from products
+/libs
+  /platform-core    # 100% Shared: Auth, Billing, Org-Management, Permissions
+  /moduflow-types     # Common interfaces
+```
