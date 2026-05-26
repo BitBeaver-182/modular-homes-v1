@@ -25,6 +25,16 @@ export class AppConfigurator {
         .setTitle('Moduflow API')
         .setDescription('Moduflow API documentation')
         .setVersion('1.0')
+        .addBearerAuth(
+          {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+            description:
+              'Use a raw JWT bearer token here. For Postman environments, store it as {{token}}.',
+          },
+          'bearer',
+        )
         .build(),
     );
 

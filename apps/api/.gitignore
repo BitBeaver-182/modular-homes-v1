@@ -39,7 +39,6 @@ lerna-debug.log*
 .env
 .env.*
 .env.test
-!.env.test
 .env.local
 .env.development.local
 .env.test.local

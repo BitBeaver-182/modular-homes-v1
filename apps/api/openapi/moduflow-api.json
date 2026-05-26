@@ -1,6 +1,122 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api/auth/register": {
+      "post": {
+        "description": "Create a new global user account and issue a JWT.",
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Register user",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/token": {
+      "post": {
+        "description": "Issue a JWT for an existing active user by email.",
+        "operationId": "AuthController_createToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Issue access token",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "description": "Return the authenticated actor from the bearer token.",
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current actor",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "description": "Return the current API health status.",
@@ -36,7 +152,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           }
         ],
@@ -78,7 +195,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           }
         ],
@@ -115,7 +233,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -157,7 +276,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -209,7 +329,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -234,6 +355,202 @@
         ]
       }
     },
+    "/api/organization-memberships/invitations": {
+      "post": {
+        "description": "Create an invited membership in the active organization.",
+        "operationId": "OrganizationUsersController_invite",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationMembershipResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invite Member",
+        "tags": [
+          "Organization Memberships"
+        ]
+      }
+    },
+    "/api/organization-memberships/{userId}/activations": {
+      "post": {
+        "description": "Activate an invited membership in the active organization.",
+        "operationId": "OrganizationUsersController_activate",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the user.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationMembershipResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Activate Membership",
+        "tags": [
+          "Organization Memberships"
+        ]
+      }
+    },
+    "/api/organization-memberships/{userId}/owners": {
+      "post": {
+        "description": "Grant ownership to an active membership in the active organization.",
+        "operationId": "OrganizationUsersController_grantOwner",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the user.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Grant Owner",
+        "tags": [
+          "Organization Memberships"
+        ]
+      }
+    },
+    "/api/organization-memberships/{userId}/ownership-transfers": {
+      "post": {
+        "description": "Transfer sole ownership from one active owner to another active membership in the active organization.",
+        "operationId": "OrganizationUsersController_transferOwnership",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the user.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferOwnershipDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Transfer Ownership",
+        "tags": [
+          "Organization Memberships"
+        ]
+      }
+    },
     "/api/roles": {
       "post": {
         "description": "Create a role in the active organization.",
@@ -246,7 +563,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           }
         ],
@@ -288,7 +606,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           }
         ],
@@ -325,7 +644,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -367,7 +687,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -419,7 +740,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -463,7 +785,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           }
         ],
@@ -505,7 +828,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           }
         ],
@@ -542,7 +866,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -584,7 +909,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -636,7 +962,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -668,6 +995,119 @@
         ]
       }
     },
+    "/api/organization-invitations/mine": {
+      "get": {
+        "description": "Return pending invitations for the authenticated email across organizations.",
+        "operationId": "OrganizationInvitationsController_findMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizationInvitationResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my pending invitations",
+        "tags": [
+          "Organization Invitations"
+        ]
+      }
+    },
+    "/api/organization-invitations": {
+      "post": {
+        "description": "Create a pending invitation for an email in the active organization.",
+        "operationId": "OrganizationInvitationsController_create",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationInvitationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationInvitationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create invitation",
+        "tags": [
+          "Organization Invitations"
+        ]
+      }
+    },
+    "/api/organization-invitations/{id}/accept": {
+      "post": {
+        "description": "Accept a pending invitation for the authenticated user when the invitation email matches the actor email.",
+        "operationId": "OrganizationInvitationsController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the invitation.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept invitation",
+        "tags": [
+          "Organization Invitations"
+        ]
+      }
+    },
     "/api/users/{userId}/roles": {
       "post": {
         "description": "Assign a role to a user in the active organization.",
@@ -680,7 +1120,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -732,7 +1173,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -779,7 +1221,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -833,7 +1276,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -885,7 +1329,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -932,7 +1377,8 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "1"
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
             }
           },
           {
@@ -976,7 +1422,7 @@
     },
     "/api/organizations": {
       "post": {
-        "description": "Create a new organization.",
+        "description": "Create a new organization for the authenticated user.",
         "operationId": "OrganizationsController_create",
         "parameters": [],
         "requestBody": {
@@ -1001,6 +1447,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Create Organization",
         "tags": [
           "Organizations"
@@ -1133,6 +1584,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "summary": "Delete Organization",
         "tags": [
           "Organizations"
@@ -1149,7 +1605,49 @@
   "tags": [],
   "servers": [],
   "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Use a raw JWT bearer token here. For Postman environments, store it as {{token}}."
+      }
+    },
     "schemas": {
+      "RegisterUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "owner@example.com"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "Owner User"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://example.com/avatar.png"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "CreateTokenDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "owner@example.com"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
       "HealthResponseDto": {
         "type": "object",
         "properties": {
@@ -1310,6 +1808,83 @@
           }
         }
       },
+      "MembershipUserSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "object",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "avatarUrl"
+        ]
+      },
+      "OrganizationMembershipResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "organizationId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "governanceRole": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "invited",
+              "active",
+              "removed"
+            ]
+          },
+          "user": {
+            "$ref": "#/components/schemas/MembershipUserSummary"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "governanceRole",
+          "status",
+          "user"
+        ]
+      },
+      "TransferOwnershipDto": {
+        "type": "object",
+        "properties": {
+          "fromUserId": {
+            "type": "string",
+            "description": "The current owner user id to demote after transfer.",
+            "example": "1"
+          }
+        },
+        "required": [
+          "fromUserId"
+        ]
+      },
       "CreateRoleDto": {
         "type": "object",
         "properties": {
@@ -1402,6 +1977,90 @@
             "example": "Allows managing users."
           }
         }
+      },
+      "OrganizationInvitationOrganizationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ]
+      },
+      "OrganizationInvitationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "organizationId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "email": {
+            "type": "string"
+          },
+          "governanceRole": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "expired",
+              "revoked",
+              "rejected"
+            ]
+          },
+          "organization": {
+            "$ref": "#/components/schemas/OrganizationInvitationOrganizationResponse"
+          }
+        },
+        "required": [
+          "id",
+          "organizationId",
+          "email",
+          "governanceRole",
+          "status"
+        ]
+      },
+      "CreateOrganizationInvitationDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "invitee@example.com"
+          },
+          "governanceRole": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "member"
+            ],
+            "example": "member"
+          }
+        },
+        "required": [
+          "email",
+          "governanceRole"
+        ]
       },
       "AssignUserRoleDto": {
         "type": "object",

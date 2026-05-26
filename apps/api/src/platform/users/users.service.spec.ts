@@ -85,6 +85,7 @@ describe('UsersService', () => {
           some: {
             organizationId: 2n,
             deletedAt: null,
+            status: 'active',
           },
         },
       },
@@ -93,6 +94,7 @@ describe('UsersService', () => {
           where: {
             organizationId: 2n,
             deletedAt: null,
+            status: 'active',
           },
           include: {
             organization: true,
@@ -132,6 +134,7 @@ describe('UsersService', () => {
           some: {
             organizationId: 2n,
             deletedAt: null,
+            status: 'active',
           },
         },
       },
@@ -140,6 +143,7 @@ describe('UsersService', () => {
           where: {
             organizationId: 2n,
             deletedAt: null,
+            status: 'active',
           },
           include: {
             organization: true,
@@ -183,6 +187,7 @@ describe('UsersService', () => {
           where: {
             organizationId: 2n,
             deletedAt: null,
+            status: 'active',
           },
           include: {
             organization: true,

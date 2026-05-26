@@ -9,25 +9,68 @@ describe('OrganizationsService', () => {
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    organizationUser: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    organizationInvitation: {
+      updateMany: jest.fn(),
+    },
+    $transaction: jest.fn(),
   };
 
   let service: OrganizationsService;
 
   beforeEach(() => {
     jest.resetAllMocks();
+    prisma.$transaction.mockImplementation(
+      (callback: (client: typeof prisma) => unknown) =>
+        Promise.resolve(callback(prisma)),
+    );
     service = new OrganizationsService(prisma as never);
+  });
+
+  it('creates an organization for an authenticated user and makes them owner', async () => {
+    prisma.organization.create.mockResolvedValue({
+      id: 2n,
+      name: 'Acme',
+      slug: 'acme',
+    });
+    prisma.organizationUser.create.mockResolvedValue({
+      id: 4n,
+    });
+
+    const result = await service.createForUser(7n, {
+      name: 'Acme',
+      slug: 'acme',
+    });
+
+    expect(prisma.organization.create).toHaveBeenCalledWith({
+      data: { name: 'Acme', slug: 'acme' },
+    });
+    expect(prisma.organizationUser.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: 2n,
+        userId: 7n,
+        governanceRole: 'owner',
+        status: 'active',
+      },
+    });
+    expect(result.id).toBe(2n);
   });
 
   it('does not allow duplicate organization slug', async () => {
     prisma.organization.create.mockRejectedValue({ code: 'P2002' });
 
     await expect(
-      service.create({ name: 'Acme 2', slug: 'acme' }),
+      service.createForUser(7n, { name: 'Acme 2', slug: 'acme' }),
     ).rejects.toThrow(BadRequestException);
   });
 
   it('soft deletes organization by setting deletedAt', async () => {
     prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.organizationUser.findFirst.mockResolvedValue({ id: 4n });
     prisma.organization.update.mockResolvedValue({
       id: 2n,
       name: 'Acme',
@@ -35,7 +78,7 @@ describe('OrganizationsService', () => {
       deletedAt: new Date().toISOString(),
     });
 
-    const result = await service.remove(2n);
+    const result = await service.removeForUser(7n, 2n);
 
     const updateMock = prisma.organization.update;
     const [updateArgs] = updateMock.mock.calls[0] as [
@@ -44,6 +87,15 @@ describe('OrganizationsService', () => {
     expect(updateArgs.where.id).toBe(2n);
     expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
     expect(result.deletedAt).toBeDefined();
+  });
+
+  it('rejects organization deletion when the actor is not an owner', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.organizationUser.findFirst.mockResolvedValue(null);
+
+    await expect(service.removeForUser(7n, 2n)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('returns active organizations in findAll', async () => {

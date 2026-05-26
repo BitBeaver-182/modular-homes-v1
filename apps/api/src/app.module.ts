@@ -8,10 +8,12 @@ import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serial
 import { ValidationPipe } from '@nestjs/common';
 import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
 import { PlatformModule } from './platform/platform.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
     AppConfigModule,
+    AuthModule,
     BootstrapModule,
     DatabaseModule,
     HealthModule,

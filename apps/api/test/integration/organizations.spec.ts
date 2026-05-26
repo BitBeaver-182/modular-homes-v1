@@ -27,23 +27,58 @@ describe('OrganizationsService (integration)', () => {
   });
 
   it('enforces unique organization slugs in the real database', async () => {
-    await organizationsService.create({ name: 'Acme', slug: 'acme' });
+    const owner = await prisma.user.create({
+      data: { email: 'acme-owner@example.com' },
+    });
+    await organizationsService.createForUser(owner.id, {
+      name: 'Acme',
+      slug: 'acme',
+    });
 
     await expect(
-      organizationsService.create({ name: 'Acme Two', slug: 'acme' }),
+      organizationsService.createForUser(owner.id, {
+        name: 'Acme Two',
+        slug: 'acme',
+      }),
     ).rejects.toThrow();
   });
 
   it('treats soft deleted organizations as not found', async () => {
-    const organization = await organizationsService.create({
+    const owner = await prisma.user.create({
+      data: { email: 'soft-delete-owner@example.com' },
+    });
+    const organization = await organizationsService.createForUser(owner.id, {
       name: 'Soft Delete Org',
       slug: 'soft-delete-org',
     });
 
-    await organizationsService.remove(organization.id);
+    await organizationsService.removeForUser(owner.id, organization.id);
 
     await expect(organizationsService.findOne(organization.id)).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  it('creates the creator as the first active owner membership', async () => {
+    const owner = await prisma.user.create({
+      data: { email: 'owner-membership@example.com' },
+    });
+
+    const organization = await organizationsService.createForUser(owner.id, {
+      name: 'Owned Org',
+      slug: 'owned-org',
+    });
+
+    const membership = await prisma.organizationUser.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: owner.id,
+          organizationId: organization.id,
+        },
+      },
+    });
+
+    expect(membership.governanceRole).toBe('owner');
+    expect(membership.status).toBe('active');
   });
 });

@@ -11,10 +11,23 @@ import { UpdateOrganizationDto } from './dto/update-organization.dto';
 export class OrganizationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createOrganizationDto: CreateOrganizationDto) {
-    return this.prisma.organization
-      .create({
-        data: createOrganizationDto,
+  createForUser(userId: bigint, createOrganizationDto: CreateOrganizationDto) {
+    return this.prisma
+      .$transaction(async (tx) => {
+        const organization = await tx.organization.create({
+          data: createOrganizationDto,
+        });
+
+        await tx.organizationUser.create({
+          data: {
+            organizationId: organization.id,
+            userId,
+            governanceRole: 'owner',
+            status: 'active',
+          },
+        });
+
+        return organization;
       })
       .catch((error: unknown) => {
         if (isUniqueConstraintError(error)) {
@@ -51,11 +64,52 @@ export class OrganizationsService {
     });
   }
 
-  async remove(id: bigint) {
+  async removeForUser(userId: bigint, id: bigint) {
     await this.findOne(id);
-    return this.prisma.organization.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    const ownerMembership = await this.prisma.organizationUser.findFirst({
+      where: {
+        organizationId: id,
+        userId,
+        deletedAt: null,
+        status: 'active',
+        governanceRole: 'owner',
+      },
+      select: { id: true },
+    });
+
+    if (!ownerMembership) {
+      throw new BadRequestException('Owner access required');
+    }
+
+    const deletedAt = new Date();
+    return this.prisma.$transaction(async (tx) => {
+      await tx.organizationInvitation.updateMany({
+        where: {
+          organizationId: id,
+          deletedAt: null,
+        },
+        data: {
+          deletedAt,
+          status: 'revoked',
+          revokedAt: deletedAt,
+        },
+      });
+
+      await tx.organizationUser.updateMany({
+        where: {
+          organizationId: id,
+          deletedAt: null,
+        },
+        data: {
+          deletedAt,
+          status: 'removed',
+        },
+      });
+
+      return tx.organization.update({
+        where: { id },
+        data: { deletedAt },
+      });
     });
   }
 }

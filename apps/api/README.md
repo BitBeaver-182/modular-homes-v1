@@ -1,109 +1,274 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Setup
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+Install dependencies:
 
 ```bash
-$ pnpm install
+pnpm install
 ```
 
-## Compile and run the project
+Generate Prisma client:
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm prisma:generate
 ```
 
-## Run tests
+Apply local migrations:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm prisma:deploy
 ```
 
-## API notes
+## Local development
 
-- Users must always belong to at least one organization.
-- User creation requires an organization context via `organizationId`.
-- Memberships are managed through organization routes (no memberships controller):
-  - `POST /organizations/:id/users` with body `{ "userId": "<id>" }`
-  - `DELETE /organizations/:id/users/:userId`
-- Global user CRUD is also available:
-  - `POST /users`, `GET /users`, `GET /users/:id`, `PATCH /users/:id`, `DELETE /users/:id`
-- Users and organizations use soft delete semantics via `deletedAt`.
+Required local env:
 
-## Deployment
+```env
+JWT_SECRET=secret
+```
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Start the API:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm start:local
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+`start:local` now runs `prisma migrate deploy` first, so local schema changes are applied before Nest boots.
 
-## Resources
+Swagger:
 
-Check out a few resources that may come in handy when working with NestJS:
+- UI: `http://localhost:3000/api/docs`
+- JSON: `http://localhost:3000/api/docs-json`
+- Bearer auth scheme: use `{{token}}` as your Postman environment variable value
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Generate the OpenAPI file without starting the server:
 
-## Support
+```bash
+pnpm openapi:generate
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Quality gates
 
-## Stay in touch
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test:unit
+pnpm test:integration
+pnpm test:e2e
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Important:
 
-## License
+- DB-backed Jest suites set Jest `testTimeout` from `TEST_TIMEOUT_MS`, otherwise they default to `15000`.
+- `test:integration` and `test:e2e` share the same test database.
+- Run them serially, not in parallel.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## System model
+
+- `User` is a global account.
+- `Organization` is a workspace.
+- `OrganizationUser` is the membership join table.
+- `OrganizationInvitation` is the invitation record for onboarding into an existing organization.
+
+Governance lives on `OrganizationUser.governanceRole`, not on app RBAC roles.
+
+Membership fields:
+
+- `governanceRole`: `owner | member`
+- `status`: `invited | active | removed`
+
+Invitation fields:
+
+- `status`: `pending | accepted | expired | revoked | rejected`
+
+## Current business rules
+
+- A user signs up first.
+- An authenticated user can create an organization.
+- Creating an organization automatically creates the first active owner membership for that user.
+- A user can belong to many organizations.
+- Joining another organization creates a new membership, not a new user.
+- An organization must always have at least one active owner.
+- Last active owner cannot be removed.
+- Removing a membership only affects that organization.
+- If a user loses their last active membership globally, the global user is soft deleted.
+- Deleting an organization soft-deletes the organization, its memberships, and its invitations, but does not delete global users.
+
+## Canonical frontend flow
+
+### 1. Register
+
+Create a global user account and receive a JWT:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H 'content-type: application/json' \
+  -d '{"email":"owner@example.com","name":"Owner"}'
+```
+
+Response shape:
+
+```json
+{
+  "access_token": "<jwt>",
+  "user": {
+    "id": "1",
+    "email": "owner@example.com",
+    "name": "Owner",
+    "avatarUrl": null
+  }
+}
+```
+
+### 2. Create an organization
+
+Use the JWT from registration:
+
+```bash
+curl -X POST http://localhost:3000/api/organizations \
+  -H 'content-type: application/json' \
+  -H 'authorization: Bearer <jwt>' \
+  -d '{"name":"Acme","slug":"acme"}'
+```
+
+This creates:
+
+- the organization
+- the first `OrganizationUser` membership for the creator
+- `governanceRole=owner`
+- `status=active`
+
+### 3. Invite someone else
+
+Owner token required.
+
+```bash
+curl -X POST http://localhost:3000/api/organization-invitations \
+  -H 'content-type: application/json' \
+  -H 'x-organization-id: 1' \
+  -H 'authorization: Bearer <owner-jwt>' \
+  -d '{"email":"invitee@example.com","governanceRole":"member"}'
+```
+
+This creates a pending invitation record.
+
+It does not create a membership yet.
+
+### 4. Invitee signs up or signs in
+
+If the invitee does not exist yet:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H 'content-type: application/json' \
+  -d '{"email":"invitee@example.com"}'
+```
+
+If the invitee already exists:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/token \
+  -H 'content-type: application/json' \
+  -d '{"email":"invitee@example.com"}'
+```
+
+### 5. Invitee accepts the invitation
+
+The invitee must accept with a token whose email matches the invitation email.
+
+```bash
+curl -X POST http://localhost:3000/api/organization-invitations/10/accept \
+  -H 'authorization: Bearer <invitee-jwt>'
+```
+
+On acceptance:
+
+- invitation becomes `accepted`
+- membership is created or reactivated
+- no duplicate user is created
+- no duplicate membership is created
+
+## Governance flows
+
+Grant ownership:
+
+```bash
+curl -X POST http://localhost:3000/api/organization-memberships/2/owners \
+  -H 'x-organization-id: 1' \
+  -H 'authorization: Bearer <owner-jwt>'
+```
+
+Transfer ownership:
+
+```bash
+curl -X POST http://localhost:3000/api/organization-memberships/2/ownership-transfers \
+  -H 'content-type: application/json' \
+  -H 'x-organization-id: 1' \
+  -H 'authorization: Bearer <owner-jwt>' \
+  -d '{"fromUserId":"1"}'
+```
+
+Delete organization:
+
+```bash
+curl -X DELETE http://localhost:3000/api/organizations/1 \
+  -H 'authorization: Bearer <owner-jwt>'
+```
+
+Only owners can delete organizations.
+
+## Current route surface
+
+Auth:
+
+- `POST /api/auth/register`
+- `POST /api/auth/token`
+- `GET /api/auth/me`
+
+Organizations:
+
+- `POST /api/organizations`  
+  Authenticated user creates an organization and becomes first owner.
+- `GET /api/organizations`
+- `GET /api/organizations/:id`
+- `PATCH /api/organizations/:id`
+- `DELETE /api/organizations/:id`  
+  Owner-only.
+
+Canonical invitation routes:
+
+- `POST /api/organization-invitations`
+- `POST /api/organization-invitations/:id/accept`
+
+Membership governance routes:
+
+- `POST /api/organization-memberships/:userId/owners`
+- `POST /api/organization-memberships/:userId/ownership-transfers`
+
+Org-scoped resource routes still use:
+
+- `x-organization-id: <organization-id>`
+
+## Important note about legacy routes
+
+Some older membership-management routes still exist for compatibility and tests, especially under `/api/users` and `/api/organization-memberships`.
+
+For new frontend onboarding work, prefer this canonical flow:
+
+1. `auth/register` or `auth/token`
+2. `POST /organizations`
+3. `POST /organization-invitations`
+4. `POST /organization-invitations/:id/accept`
+
+Do not build new onboarding flows around pre-created invited memberships.
+
+```
+/apps
+  /moduflow-api      # The single entry point for all products (or one per product)
+  /moduflow-landing    # Your landing page (uses the platform SDK)
+  /moduflow-dashboard  # A unified UI that imports widgets from products
+/libs
+  /platform-core    # 100% Shared: Auth, Billing, Org-Management, Permissions
+  /moduflow-types     # Common interfaces
+```

@@ -15,6 +15,7 @@ export class UserRolesService {
         organizationId,
         userId,
         deletedAt: null,
+        status: 'active',
       },
       select: { id: true },
     });
@@ -55,6 +56,7 @@ export class UserRolesService {
         organizationId,
         userId,
         deletedAt: null,
+        status: 'active',
       },
       select: { id: true },
     });
@@ -81,6 +83,7 @@ export class UserRolesService {
         organizationId,
         userId,
         deletedAt: null,
+        status: 'active',
       },
       select: { id: true },
     });

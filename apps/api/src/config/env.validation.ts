@@ -5,6 +5,7 @@ export interface AppEnv {
   NODE_ENV: NodeEnv;
   DATABASE_URL: string;
   DIRECT_URL: string;
+  JWT_SECRET?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): AppEnv {
@@ -27,11 +28,20 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
 
   const databaseUrl = getRequiredString(config.DATABASE_URL, 'DATABASE_URL');
   const directUrl = getRequiredString(config.DIRECT_URL, 'DIRECT_URL');
+  const jwtSecret =
+    typeof config.JWT_SECRET === 'string' && config.JWT_SECRET.length > 0
+      ? config.JWT_SECRET
+      : undefined;
+
+  if (rawNodeEnv === 'production' && !jwtSecret) {
+    throw new Error('JWT_SECRET is required in production');
+  }
 
   return {
     NODE_ENV: rawNodeEnv,
     DATABASE_URL: databaseUrl,
     DIRECT_URL: directUrl,
+    JWT_SECRET: jwtSecret,
   };
 }
 

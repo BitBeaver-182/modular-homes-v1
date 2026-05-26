@@ -5,11 +5,29 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum GovernanceRole {
+  owner
+  member
+}
+
+enum MembershipStatus {
+  invited
+  active
+  removed
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  expired
+  revoked
+  rejected
 }
 
 model User {
@@ -37,8 +55,30 @@ model Organization {
   deletedAt DateTime?
 
   organizationUsers OrganizationUser[]
+  invitations       OrganizationInvitation[]
   roles             Role[]
 
+  @@index([deletedAt])
+}
+
+model OrganizationInvitation {
+  id             BigInt           @id @default(autoincrement())
+  organizationId BigInt
+  email          String
+  governanceRole GovernanceRole
+  status         InvitationStatus @default(pending)
+  expiresAt      DateTime?
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  rejectedAt     DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([email])
   @@index([deletedAt])
 }
 
@@ -47,6 +87,8 @@ model OrganizationUser {
 
   userId         BigInt
   organizationId BigInt
+  governanceRole GovernanceRole   @default(member)
+  status         MembershipStatus @default(active)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

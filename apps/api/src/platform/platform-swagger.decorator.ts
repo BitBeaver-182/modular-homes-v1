@@ -8,7 +8,8 @@ export function ApiOrganizationHeader() {
     required: true,
     schema: {
       type: 'string',
-      example: '1',
+      default: '{{organizationId}}',
+      example: '{{organizationId}}',
     },
   });
 }

@@ -64,14 +64,7 @@ describe('API (e2e)', () => {
   });
 
   it('serializes organization responses without internal fields', async () => {
-    const organization = expectOrganizationResponse(
-      (
-        await request(httpServer)
-          .post('/api/organizations')
-          .send({ name: 'Acme Corp', slug: 'acme' })
-          .expect(HttpStatus.CREATED)
-      ).body,
-    );
+    const organization = await createOrganization('acme', 'Acme Corp');
 
     const fetchedOrganization = expectOrganizationResponse(
       (
@@ -91,6 +84,81 @@ describe('API (e2e)', () => {
     expect(organizations).toHaveLength(1);
     expect(organizations[0]?.id).toBe(organization.id);
     expectHiddenFieldIsAbsent(organizations[0], 'deletedAt');
+  });
+
+  it('registers a user and lets them create an owned organization', async () => {
+    const registration = (
+      await request(httpServer)
+        .post('/api/auth/register')
+        .send({ email: 'signup-owner@example.com', name: 'Signup Owner' })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      access_token: string;
+      user: { id: string; email: string; name: string | null };
+    };
+
+    expect(registration.user.email).toBe('signup-owner@example.com');
+    expect(registration.access_token).toEqual(expect.any(String));
+
+    const organization = expectOrganizationResponse(
+      (
+        await request(httpServer)
+          .post('/api/organizations')
+          .set('authorization', `Bearer ${registration.access_token}`)
+          .send({ name: 'Signup Org', slug: 'signup-org' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    const membership = await prisma.organizationUser.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(registration.user.id),
+          organizationId: BigInt(organization.id),
+        },
+      },
+    });
+
+    expect(membership.governanceRole).toBe('owner');
+    expect(membership.status).toBe('active');
+  });
+
+  it('allows an owner to delete an organization and rejects non-owners', async () => {
+    const organization = await createOrganization(
+      'deletable-org',
+      'Deletable Org',
+    );
+
+    const member = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organization.id)
+          .send({ email: 'org-member@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    const memberToken = (
+      await request(httpServer)
+        .post('/api/auth/token')
+        .send({ email: member.email })
+        .expect(HttpStatus.CREATED)
+    ).body as { access_token: string };
+
+    await request(httpServer)
+      .delete(`/api/organizations/${organization.id}`)
+      .set('authorization', `Bearer ${memberToken.access_token}`)
+      .expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer)
+      .delete(`/api/organizations/${organization.id}`)
+      .set('authorization', `Bearer ${organization.ownerToken}`)
+      .expect(HttpStatus.OK);
+
+    await request(httpServer)
+      .get(`/api/organizations/${organization.id}`)
+      .expect(HttpStatus.NOT_FOUND);
   });
 
   it('creates, lists, updates, and removes org-scoped users', async () => {
@@ -119,8 +187,10 @@ describe('API (e2e)', () => {
         .set('x-organization-id', organizationA.id)
         .expect(HttpStatus.OK)
     ).body as UserDto[];
-    expect(listedUsers).toHaveLength(1);
-    expect(listedUsers[0]?.organization?.id).toBe(organizationA.id);
+    expect(listedUsers).toHaveLength(2);
+    expect(
+      listedUsers.filter((user) => user.organization?.id === organizationA.id),
+    ).toHaveLength(2);
 
     await request(httpServer)
       .get(`/api/users/${createdUser.id}`)
@@ -141,7 +211,7 @@ describe('API (e2e)', () => {
     await request(httpServer)
       .delete(`/api/users/${createdUser.id}`)
       .set('x-organization-id', organizationA.id)
-      .expect(HttpStatus.BAD_REQUEST);
+      .expect(HttpStatus.NO_CONTENT);
   });
 
   it('reuses the same user across organizations and keeps role responses isolated by header', async () => {
@@ -240,6 +310,27 @@ describe('API (e2e)', () => {
       .send({ email: 'reactivate@example.com' })
       .expect(HttpStatus.CREATED);
 
+    const backupOwner = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organizationA.id)
+          .send({ email: 'reactivate-owner@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(backupOwner.id),
+          organizationId: BigInt(organizationA.id),
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+      },
+    });
+
     await request(httpServer)
       .delete(`/api/users/${user.id}`)
       .set('x-organization-id', organizationA.id)
@@ -255,6 +346,323 @@ describe('API (e2e)', () => {
         expect(reactivatedUser.id).toBe(user.id);
         expect(reactivatedUser.organization?.id).toBe(organizationA.id);
       });
+  });
+
+  it('removing a membership only removes the user from that organization', async () => {
+    const organizationA = await createOrganization('member-a', 'Member A');
+    const organizationB = await createOrganization('member-b', 'Member B');
+
+    const createdUser = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organizationA.id)
+          .send({ email: 'membership-only@example.com', name: 'Shared Member' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await request(httpServer)
+      .post('/api/users')
+      .set('x-organization-id', organizationB.id)
+      .send({ email: 'membership-only@example.com' })
+      .expect(HttpStatus.CREATED);
+
+    const backupOwner = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organizationA.id)
+          .send({ email: 'membership-owner@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(backupOwner.id),
+          organizationId: BigInt(organizationA.id),
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+      },
+    });
+
+    await request(httpServer)
+      .delete(`/api/users/${createdUser.id}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.NO_CONTENT);
+
+    await request(httpServer)
+      .get(`/api/users/${createdUser.id}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.NOT_FOUND);
+
+    await request(httpServer)
+      .get(`/api/users/${createdUser.id}`)
+      .set('x-organization-id', organizationB.id)
+      .expect(HttpStatus.OK);
+
+    const persistedUser = await prisma.user.findUniqueOrThrow({
+      where: { id: BigInt(createdUser.id) },
+    });
+    expect(persistedUser.deletedAt).toBeNull();
+  });
+
+  it('blocks deleting the last active owner from the organization', async () => {
+    const organization = await createOrganization('solo-owner', 'Solo Owner');
+
+    await request(httpServer)
+      .delete(`/api/users/${organization.owner.id}`)
+      .set('x-organization-id', organization.id)
+      .expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer)
+      .get(`/api/users/${organization.owner.id}`)
+      .set('x-organization-id', organization.id)
+      .expect(HttpStatus.OK);
+  });
+
+  it('allows deleting an owner when another active owner exists', async () => {
+    const organization = await createOrganization(
+      'shared-owner',
+      'Shared Owner',
+    );
+
+    const secondUser = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organization.id)
+          .send({ email: 'second-owner@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(secondUser.id),
+          organizationId: BigInt(organization.id),
+        },
+      },
+      data: {
+        governanceRole: 'owner',
+      },
+    });
+
+    await request(httpServer)
+      .delete(`/api/users/${organization.owner.id}`)
+      .set('x-organization-id', organization.id)
+      .expect(HttpStatus.NO_CONTENT);
+
+    await request(httpServer)
+      .get(`/api/users/${organization.owner.id}`)
+      .set('x-organization-id', organization.id)
+      .expect(HttpStatus.NOT_FOUND);
+
+    const deletedUser = await prisma.user.findUniqueOrThrow({
+      where: { id: BigInt(organization.owner.id) },
+    });
+    expect(deletedUser.deletedAt).toBeInstanceOf(Date);
+  });
+
+  it('grants ownership to another active member and can transfer sole ownership', async () => {
+    const organization = await createOrganization('owner-flows', 'Owner Flows');
+
+    const targetMember = expectUserResponse(
+      (
+        await request(httpServer)
+          .post('/api/users')
+          .set('x-organization-id', organization.id)
+          .send({ email: 'target-member@example.com' })
+          .expect(HttpStatus.CREATED)
+      ).body,
+    );
+    const ownerToken = organization.ownerToken;
+
+    await request(httpServer)
+      .post(`/api/organization-memberships/${targetMember.id}/owners`)
+      .set('x-organization-id', organization.id)
+      .set('authorization', `Bearer ${ownerToken}`)
+      .expect(HttpStatus.NO_CONTENT);
+
+    let targetMembership = await prisma.organizationUser.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(targetMember.id),
+          organizationId: BigInt(organization.id),
+        },
+      },
+    });
+    expect(targetMembership.governanceRole).toBe('owner');
+
+    await prisma.organizationUser.update({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(targetMember.id),
+          organizationId: BigInt(organization.id),
+        },
+      },
+      data: {
+        governanceRole: 'member',
+      },
+    });
+
+    await request(httpServer)
+      .post(
+        `/api/organization-memberships/${targetMember.id}/ownership-transfers`,
+      )
+      .set('x-organization-id', organization.id)
+      .set('authorization', `Bearer ${ownerToken}`)
+      .send({ fromUserId: organization.owner.id })
+      .expect(HttpStatus.NO_CONTENT);
+
+    const memberships = await prisma.organizationUser.findMany({
+      where: {
+        organizationId: BigInt(organization.id),
+      },
+      orderBy: { userId: 'asc' },
+    });
+    expect(
+      memberships.filter((membership) => membership.governanceRole === 'owner'),
+    ).toHaveLength(1);
+    targetMembership = await prisma.organizationUser.findUniqueOrThrow({
+      where: {
+        userId_organizationId: {
+          userId: BigInt(targetMember.id),
+          organizationId: BigInt(organization.id),
+        },
+      },
+    });
+    expect(targetMembership.governanceRole).toBe('owner');
+  });
+
+  it('supports invitation acceptance for an authenticated user with matching email', async () => {
+    const organization = await createOrganization(
+      'invitation-org',
+      'Invitation Org',
+    );
+    const ownerToken = organization.ownerToken;
+
+    const invitation = (
+      await request(httpServer)
+        .post('/api/organization-invitations')
+        .set('x-organization-id', organization.id)
+        .set('authorization', `Bearer ${ownerToken}`)
+        .send({
+          email: 'invited-member@example.com',
+          governanceRole: 'member',
+        })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      id: string;
+      email: string;
+      status: string;
+    };
+    expect(invitation.status).toBe('pending');
+
+    const listedUsersBeforeActivation = (
+      await request(httpServer)
+        .get('/api/users')
+        .set('x-organization-id', organization.id)
+        .expect(HttpStatus.OK)
+    ).body as UserDto[];
+    expect(listedUsersBeforeActivation).toHaveLength(1);
+    expect(
+      listedUsersBeforeActivation.some(
+        (user) => user.email === invitation.email,
+      ),
+    ).toBe(false);
+
+    const invitedUser = (
+      await request(httpServer)
+        .post('/api/auth/register')
+        .send({ email: 'invited-member@example.com' })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      access_token: string;
+      user: { id: string };
+    };
+
+    await request(httpServer)
+      .post(`/api/organization-invitations/${invitation.id}/accept`)
+      .set('authorization', `Bearer ${invitedUser.access_token}`)
+      .expect(HttpStatus.NO_CONTENT);
+
+    const listedUsersAfterActivation = (
+      await request(httpServer)
+        .get('/api/users')
+        .set('x-organization-id', organization.id)
+        .expect(HttpStatus.OK)
+    ).body as UserDto[];
+    expect(listedUsersAfterActivation).toHaveLength(2);
+    expect(
+      listedUsersAfterActivation.some(
+        (user) => user.id === invitedUser.user.id,
+      ),
+    ).toBe(true);
+  });
+
+  it('lists pending invitations for the authenticated user', async () => {
+    const organization = await createOrganization('invite-feed', 'Invite Feed');
+
+    const invitation = (
+      await request(httpServer)
+        .post('/api/organization-invitations')
+        .set('x-organization-id', organization.id)
+        .set('authorization', `Bearer ${organization.ownerToken}`)
+        .send({
+          email: 'pending-invitee@example.com',
+          governanceRole: 'member',
+        })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      id: string;
+      email: string;
+      governanceRole: 'owner' | 'member';
+      status: string;
+    };
+
+    const invitee = (
+      await request(httpServer)
+        .post('/api/auth/register')
+        .send({ email: 'pending-invitee@example.com' })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      access_token: string;
+    };
+
+    const invitations = (
+      await request(httpServer)
+        .get('/api/organization-invitations/mine')
+        .set('authorization', `Bearer ${invitee.access_token}`)
+        .expect(HttpStatus.OK)
+    ).body as Array<{
+      id: string;
+      email: string;
+      governanceRole: 'owner' | 'member';
+      status: string;
+      organization: {
+        id: string;
+        name: string;
+        slug: string;
+      };
+    }>;
+
+    expect(invitations).toHaveLength(1);
+    expect(invitations[0]).toMatchObject({
+      id: invitation.id,
+      email: 'pending-invitee@example.com',
+      governanceRole: 'member',
+      status: 'pending',
+      organization: {
+        id: organization.id,
+        name: 'Invite Feed',
+        slug: 'invite-feed',
+      },
+    });
   });
 
   it('keeps roles isolated per organization and rejects cross-org assignment', async () => {
@@ -393,14 +801,34 @@ describe('API (e2e)', () => {
   });
 
   async function createOrganization(slug: string, name: string) {
-    return expectOrganizationResponse(
+    const registration = (
+      await request(httpServer)
+        .post('/api/auth/register')
+        .send({
+          email: `${slug}-owner@example.com`,
+          name: `${name} Owner`,
+        })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      access_token: string;
+      user: { id: string; email: string; name: string | null };
+    };
+
+    const organization = expectOrganizationResponse(
       (
         await request(httpServer)
           .post('/api/organizations')
+          .set('authorization', `Bearer ${registration.access_token}`)
           .send({ name, slug })
           .expect(HttpStatus.CREATED)
       ).body,
     );
+
+    return {
+      ...organization,
+      owner: registration.user,
+      ownerToken: registration.access_token,
+    };
   }
 });
 

@@ -17,6 +17,7 @@ describe('OrganizationUsersService', () => {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       count: jest.fn(),
     },
     $transaction: jest.fn(),
@@ -34,11 +35,12 @@ describe('OrganizationUsersService', () => {
     service = new OrganizationUsersService(prisma as never);
   });
 
-  it('creates a new user and organization link', async () => {
+  it('first membership in an organization is created as owner', async () => {
     prisma.organization.findFirst.mockResolvedValue({ id: 2n });
     prisma.user.findUnique.mockResolvedValue(null);
     prisma.user.create.mockResolvedValue({ id: 9n });
     prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.count.mockResolvedValue(0);
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       id: 9n,
       email: 'john@example.com',
@@ -65,9 +67,66 @@ describe('OrganizationUsersService', () => {
       },
     });
     expect(prisma.organizationUser.create).toHaveBeenCalledWith({
-      data: { organizationId: 2n, userId: 9n },
+      data: {
+        organizationId: 2n,
+        userId: 9n,
+        governanceRole: 'owner',
+        status: 'active',
+      },
     });
     expect(user.organizationUsers).toHaveLength(1);
+  });
+
+  it('subsequent memberships in an organization are created as member', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({ id: 9n });
+    prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.count.mockResolvedValue(1);
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      id: 9n,
+      email: 'john@example.com',
+      organizationUsers: [],
+    });
+
+    await service.createUserInOrganization(2n, {
+      email: 'john@example.com',
+    });
+
+    expect(prisma.organizationUser.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: 2n,
+        userId: 9n,
+        governanceRole: 'member',
+        status: 'active',
+      },
+    });
+  });
+
+  it('membership defaults to active status on creation', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({ id: 9n });
+    prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.count.mockResolvedValue(1);
+    prisma.user.findUniqueOrThrow.mockResolvedValue({
+      id: 9n,
+      email: 'john@example.com',
+      organizationUsers: [],
+    });
+
+    await service.createUserInOrganization(2n, {
+      email: 'john@example.com',
+    });
+
+    expect(prisma.organizationUser.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: 2n,
+        userId: 9n,
+        governanceRole: 'member',
+        status: 'active',
+      },
+    });
   });
 
   it('reactivates a soft deleted organization link', async () => {
@@ -76,7 +135,9 @@ describe('OrganizationUsersService', () => {
     prisma.organizationUser.findUnique.mockResolvedValue({
       id: 4n,
       deletedAt: new Date(),
+      governanceRole: 'member',
     });
+    prisma.organizationUser.count.mockResolvedValue(1);
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       id: 9n,
       email: 'john@example.com',
@@ -89,7 +150,11 @@ describe('OrganizationUsersService', () => {
 
     expect(prisma.organizationUser.update).toHaveBeenCalledWith({
       where: { id: 4n },
-      data: { deletedAt: null },
+      data: {
+        deletedAt: null,
+        status: 'active',
+        governanceRole: 'member',
+      },
     });
   });
 
@@ -99,7 +164,9 @@ describe('OrganizationUsersService', () => {
     prisma.organizationUser.findUnique.mockResolvedValue({
       id: 4n,
       deletedAt: null,
+      governanceRole: 'member',
     });
+    prisma.organizationUser.count.mockResolvedValue(1);
 
     await expect(
       service.createUserInOrganization(2n, { email: 'john@example.com' }),
@@ -111,6 +178,7 @@ describe('OrganizationUsersService', () => {
     prisma.user.findUnique.mockResolvedValue({ id: 9n, deletedAt: new Date() });
     prisma.user.update.mockResolvedValue({ id: 9n, deletedAt: null });
     prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.count.mockResolvedValue(0);
     prisma.user.findUniqueOrThrow.mockResolvedValue({
       id: 9n,
       email: 'john@example.com',
@@ -148,6 +216,7 @@ describe('OrganizationUsersService', () => {
         organizationId: 2n,
         userId: 9n,
         deletedAt: null,
+        status: 'active',
       },
       include: {
         organization: true,
@@ -169,29 +238,184 @@ describe('OrganizationUsersService', () => {
     );
   });
 
-  it('blocks removing the last active organization', async () => {
-    prisma.organizationUser.findFirst.mockResolvedValue({ id: 1n });
-    prisma.organizationUser.count.mockResolvedValue(1);
+  it('last active owner cannot be removed from the organization', async () => {
+    prisma.organizationUser.findFirst.mockResolvedValue({
+      id: 1n,
+      governanceRole: 'owner',
+    });
+    prisma.organizationUser.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1);
 
     await expect(service.removeUserFromOrganization(2n, 9n)).rejects.toThrow(
       BadRequestException,
     );
+
+    expect(prisma.organizationUser.update).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
-  it('soft deletes the org-user link when another active org remains', async () => {
-    prisma.organizationUser.findFirst.mockResolvedValue({ id: 1n });
-    prisma.organizationUser.count.mockResolvedValue(2);
+  it('non-owner member can be removed while preserving owner invariant', async () => {
+    prisma.organizationUser.findFirst.mockResolvedValue({
+      id: 1n,
+      governanceRole: 'member',
+    });
+    prisma.organizationUser.count.mockResolvedValueOnce(2);
 
     await service.removeUserFromOrganization(2n, 9n);
 
-    const [updateArgs] = prisma.organizationUser.update.mock.calls[0] as [
+    const organizationUserUpdateArgs = prisma.organizationUser.update.mock
+      .calls[0] as unknown as [
       {
         where: { id: bigint };
-        data: { deletedAt: Date };
+        data: { deletedAt: Date; status: string };
       },
     ];
+    expect(organizationUserUpdateArgs[0].where.id).toBe(1n);
+    expect(organizationUserUpdateArgs[0].data.status).toBe('removed');
+    expect(organizationUserUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
 
-    expect(updateArgs.where.id).toBe(1n);
-    expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
+  it('owner can be removed when another active owner exists', async () => {
+    prisma.organizationUser.findFirst.mockResolvedValue({
+      id: 1n,
+      governanceRole: 'owner',
+    });
+    prisma.organizationUser.count
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(1);
+    prisma.user.update.mockResolvedValue({ id: 9n, deletedAt: new Date() });
+
+    await service.removeUserFromOrganization(2n, 9n);
+
+    const organizationUserUpdateArgs = prisma.organizationUser.update.mock
+      .calls[0] as unknown as [
+      {
+        where: { id: bigint };
+        data: { deletedAt: Date; status: string };
+      },
+    ];
+    expect(organizationUserUpdateArgs[0].where.id).toBe(1n);
+    expect(organizationUserUpdateArgs[0].data.status).toBe('removed');
+    expect(organizationUserUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
+    expect(prisma.user.update).toHaveBeenCalled();
+  });
+
+  it('owner can grant ownership to another active member', async () => {
+    prisma.organizationUser.updateMany.mockResolvedValue({ count: 1 });
+    prisma.organizationUser.findFirst.mockResolvedValue({ id: 4n });
+
+    await service.grantOwner(2n, 9n);
+
+    expect(prisma.organizationUser.updateMany).toHaveBeenCalledWith({
+      where: {
+        organizationId: 2n,
+        userId: 9n,
+        deletedAt: null,
+        status: 'active',
+      },
+      data: {
+        governanceRole: 'owner',
+      },
+    });
+  });
+
+  it('cannot grant ownership to a removed membership', async () => {
+    prisma.organizationUser.updateMany.mockResolvedValue({ count: 0 });
+    prisma.organizationUser.findFirst.mockResolvedValue(null);
+
+    await expect(service.grantOwner(2n, 9n)).rejects.toThrow(NotFoundException);
+  });
+
+  it('transfer sole ownership promotes target before demoting source', async () => {
+    prisma.organizationUser.findFirst
+      .mockResolvedValueOnce({ id: 1n, governanceRole: 'owner' })
+      .mockResolvedValueOnce({ id: 2n, governanceRole: 'member' });
+
+    await service.transferOwnership(2n, 1n, 2n);
+
+    expect(prisma.organizationUser.update.mock.calls[0]).toEqual([
+      {
+        where: { id: 2n },
+        data: {
+          governanceRole: 'owner',
+        },
+      },
+    ]);
+    expect(prisma.organizationUser.update.mock.calls[1]).toEqual([
+      {
+        where: { id: 1n },
+        data: {
+          governanceRole: 'member',
+        },
+      },
+    ]);
+  });
+
+  it('owner transfer is rejected when target membership does not exist', async () => {
+    prisma.organizationUser.findFirst
+      .mockResolvedValueOnce({ id: 1n, governanceRole: 'owner' })
+      .mockResolvedValueOnce(null);
+
+    await expect(service.transferOwnership(2n, 1n, 2n)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('owner transfer is rejected when source is not an owner', async () => {
+    prisma.organizationUser.findFirst
+      .mockResolvedValueOnce({ id: 1n, governanceRole: 'member' })
+      .mockResolvedValueOnce({ id: 2n, governanceRole: 'member' });
+
+    await expect(service.transferOwnership(2n, 1n, 2n)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('invited membership is excluded from active membership queries', async () => {
+    prisma.organization.findFirst.mockResolvedValue({ id: 2n });
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({ id: 9n });
+    prisma.organizationUser.findUnique.mockResolvedValue(null);
+    prisma.organizationUser.create.mockResolvedValue({
+      id: 3n,
+      organizationId: 2n,
+      governanceRole: 'member',
+      status: 'invited',
+      user: {
+        id: 9n,
+        email: 'invited@example.com',
+        name: null,
+        avatarUrl: null,
+      },
+    });
+
+    const membership = await service.inviteUserToOrganization(2n, {
+      email: 'invited@example.com',
+    });
+
+    expect(prisma.organizationUser.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: 2n,
+        userId: 9n,
+        governanceRole: 'member',
+        status: 'invited',
+      },
+      include: {
+        user: true,
+      },
+    });
+    expect(membership.status).toBe('invited');
+  });
+
+  it('ownership cannot be transferred to invited memberships', async () => {
+    prisma.organizationUser.findFirst
+      .mockResolvedValueOnce({ id: 1n, governanceRole: 'owner' })
+      .mockResolvedValueOnce(null);
+
+    await expect(service.transferOwnership(2n, 1n, 2n)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });
