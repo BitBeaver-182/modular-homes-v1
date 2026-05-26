@@ -60,6 +60,7 @@ pnpm test:e2e
 
 Important:
 
+- DB-backed Jest suites set Jest `testTimeout` from `TEST_TIMEOUT_MS`, otherwise they default to `15000`.
 - `test:integration` and `test:e2e` share the same test database.
 - Run them serially, not in parallel.
 
