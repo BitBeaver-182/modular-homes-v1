@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -51,9 +59,11 @@ export class AuthController {
 
   @Public()
   @Post('token')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Issue access token',
-    description: 'Issue a JWT for an existing active user by email.',
+    description:
+      'Issue a JWT for an existing active user with email and password credentials.',
   })
   @ApiBody({ type: CreateTokenDto })
   @ApiOkResponse({
@@ -67,7 +77,38 @@ export class AuthController {
     },
   })
   async createToken(@Body() createTokenDto: CreateTokenDto) {
-    return this.authService.issueTokenForEmail(createTokenDto.email);
+    return this.authService.issueTokenForCredentials(createTokenDto);
+  }
+
+  @Public()
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Login user',
+    description: 'Authenticate with email and password and issue a JWT.',
+  })
+  @ApiBody({ type: CreateTokenDto })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        access_token: {
+          type: 'string',
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            name: { type: 'string', nullable: true },
+            avatarUrl: { type: 'string', nullable: true },
+          },
+        },
+      },
+    },
+  })
+  async login(@Body() createTokenDto: CreateTokenDto) {
+    return this.authService.login(createTokenDto);
   }
 
   @UseGuards(JwtGuard)
@@ -82,5 +123,51 @@ export class AuthController {
       userId: user.userId.toString(),
       email: user.email,
     };
+  }
+
+  @UseGuards(JwtGuard)
+  @Get('session')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get current session',
+    description:
+      'Return the authenticated user and active organization memberships.',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            name: { type: 'string', nullable: true },
+            avatarUrl: { type: 'string', nullable: true },
+          },
+        },
+        memberships: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              governanceRole: { type: 'string', enum: ['owner', 'member'] },
+              organization: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  slug: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  session(@CurrentUser() user: AuthUser) {
+    return this.authService.getSession(user);
   }
 }

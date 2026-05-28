@@ -55,7 +55,6 @@ describe('bootstrap strategies', () => {
     jest.clearAllMocks();
     mockListen.mockResolvedValue(undefined);
     mockGetUrl.mockResolvedValue('http://[::1]:3000');
-    delete process.env.PORT;
   });
 
   it('exposes a shared bootstrap strategy base type', () => {
@@ -96,10 +95,9 @@ describe('bootstrap strategies', () => {
   });
 
   it('starts local apps and logs application and swagger urls', async () => {
-    process.env.PORT = '4100';
     mockGetUrl.mockResolvedValue('http://127.0.0.1:4100');
 
-    await new LocalBootstrapStrategy().start(app);
+    await new LocalBootstrapStrategy(4100).start(app);
 
     expect(AppConfigurator).toHaveBeenCalledWith(app);
     expect(configuratorMethods.withQuietLogger).not.toHaveBeenCalled();

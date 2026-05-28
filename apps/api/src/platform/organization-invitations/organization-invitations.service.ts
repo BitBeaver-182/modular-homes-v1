@@ -124,4 +124,35 @@ export class OrganizationInvitationsService {
       });
     });
   }
+
+  async rejectInvitation(invitationId: bigint, user: AuthUser): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const invitation = await tx.organizationInvitation.findUnique({
+        where: { id: invitationId },
+      });
+
+      if (
+        !invitation ||
+        invitation.deletedAt ||
+        invitation.status !== 'pending' ||
+        (invitation.expiresAt != null && invitation.expiresAt <= new Date())
+      ) {
+        throw new NotFoundException('Invitation not found');
+      }
+
+      if (invitation.email !== user.email) {
+        throw new ForbiddenException('Invitation email does not match actor');
+      }
+
+      const rejectedAt = new Date();
+      await tx.organizationInvitation.update({
+        where: { id: invitation.id },
+        data: {
+          status: 'rejected',
+          rejectedAt,
+          deletedAt: rejectedAt,
+        },
+      });
+    });
+  }
 }

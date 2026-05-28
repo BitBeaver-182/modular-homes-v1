@@ -20,6 +20,10 @@ export class AppConfigService {
     return this.configService.getOrThrow<AppEnv['DIRECT_URL']>('DIRECT_URL');
   }
 
+  get port(): number {
+    return this.configService.getOrThrow<AppEnv['PORT']>('PORT');
+  }
+
   get jwtSecret(): string {
     return (
       this.configService.get<AppEnv['JWT_SECRET']>('JWT_SECRET') ??

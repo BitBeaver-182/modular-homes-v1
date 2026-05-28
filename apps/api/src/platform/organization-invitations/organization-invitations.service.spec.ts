@@ -234,4 +234,57 @@ describe('OrganizationInvitationsService', () => {
       }),
     ).rejects.toThrow(NotFoundException);
   });
+
+  it('rejects a valid invitation for the authenticated user', async () => {
+    prisma.organizationInvitation.findUnique.mockResolvedValue({
+      id: 1n,
+      organizationId: 2n,
+      email: 'invitee@example.com',
+      governanceRole: 'member',
+      status: 'pending',
+      expiresAt: null,
+      deletedAt: null,
+    });
+    prisma.organizationInvitation.update.mockResolvedValue({
+      id: 1n,
+      status: 'rejected',
+    });
+
+    await service.rejectInvitation(1n, {
+      userId: 9n,
+      email: 'invitee@example.com',
+    });
+
+    const invitationUpdateArgs = prisma.organizationInvitation.update.mock
+      .calls[0] as unknown as [
+      {
+        where: { id: bigint };
+        data: { status: string; rejectedAt: Date; deletedAt: Date };
+      },
+    ];
+    expect(invitationUpdateArgs[0].where.id).toBe(1n);
+    expect(invitationUpdateArgs[0].data.status).toBe('rejected');
+    expect(invitationUpdateArgs[0].data.rejectedAt).toBeInstanceOf(Date);
+    expect(invitationUpdateArgs[0].data.deletedAt).toBeInstanceOf(Date);
+    expect(prisma.organizationUser.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects rejecting an invitation for a different email', async () => {
+    prisma.organizationInvitation.findUnique.mockResolvedValue({
+      id: 1n,
+      organizationId: 2n,
+      email: 'invitee@example.com',
+      governanceRole: 'member',
+      status: 'pending',
+      expiresAt: null,
+      deletedAt: null,
+    });
+
+    await expect(
+      service.rejectInvitation(1n, {
+        userId: 9n,
+        email: 'other@example.com',
+      }),
+    ).rejects.toThrow(ForbiddenException);
+  });
 });

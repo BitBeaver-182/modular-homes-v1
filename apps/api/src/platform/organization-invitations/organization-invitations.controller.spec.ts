@@ -6,6 +6,7 @@ describe('OrganizationInvitationsController', () => {
     findPendingInvitationsForEmail: jest.fn(),
     createInvitation: jest.fn(),
     acceptInvitation: jest.fn(),
+    rejectInvitation: jest.fn(),
   };
 
   let controller: OrganizationInvitationsController;
@@ -44,6 +45,9 @@ describe('OrganizationInvitationsController', () => {
     organizationInvitationsService.acceptInvitation.mockResolvedValue(
       undefined,
     );
+    organizationInvitationsService.rejectInvitation.mockResolvedValue(
+      undefined,
+    );
 
     const invitations = await controller.findMine({
       userId: 9n,
@@ -54,6 +58,7 @@ describe('OrganizationInvitationsController', () => {
       governanceRole: 'member',
     });
     await controller.accept('1', { userId: 9n, email: 'invitee@example.com' });
+    await controller.reject('1', { userId: 9n, email: 'invitee@example.com' });
 
     expect(
       organizationInvitationsService.createInvitation,
@@ -66,6 +71,12 @@ describe('OrganizationInvitationsController', () => {
     ).toHaveBeenCalledWith('invitee@example.com');
     expect(
       organizationInvitationsService.acceptInvitation,
+    ).toHaveBeenCalledWith(1n, {
+      userId: 9n,
+      email: 'invitee@example.com',
+    });
+    expect(
+      organizationInvitationsService.rejectInvitation,
     ).toHaveBeenCalledWith(1n, {
       userId: 9n,
       email: 'invitee@example.com',
