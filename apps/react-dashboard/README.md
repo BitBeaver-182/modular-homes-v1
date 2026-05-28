@@ -7,8 +7,10 @@ workspace and should be run from the monorepo root.
 
 ```bash
 pnpm install
-pnpm dev:dashboard
+pnpm dev
 ```
+
+Use `pnpm dev:dashboard` to start only this app.
 
 The dashboard reads browser-exposed environment variables from `.env`:
 
@@ -22,8 +24,10 @@ VITE_MODUFLOW_API_URL=http://localhost:3001/api
 ## Build
 
 ```bash
-pnpm build:dashboard
+pnpm build
 ```
+
+Use `pnpm build:dashboard` to build only this app.
 
 The production build is emitted to `apps/react-dashboard/dist`.
 
