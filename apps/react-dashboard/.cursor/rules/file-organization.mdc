@@ -1,0 +1,7 @@
+---
+description: Defines the file organization structure for TypeScript projects, emphasizing modularity and separation of concerns.
+globs: **/*.{ts,tsx,js,jsx}
+---
+- Group related functionality into modules (features)
+- Use index files to simplify imports
+- Separate concerns: keep business logic, UI components, and utilities in different directories (it can be within the same module if related)

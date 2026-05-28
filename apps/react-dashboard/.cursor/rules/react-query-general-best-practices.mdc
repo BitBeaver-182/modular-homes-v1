@@ -1,0 +1,14 @@
+---
+description: This rule outlines the general best practices for using React Query throughout the React project.
+globs: "src/**/*.{ts,tsx,js,jsx}"
+---
+- Use QueryClient and QueryClientProvider at the root of your app
+- Implement custom hooks for queries and mutations
+- Utilize query keys for effective caching
+- Use prefetching for improved performance
+- Implement proper error and loading states
+- Use TypeScript for type safety with React Query
+- Utilize React Query DevTools for debugging
+- Use stale-while-revalidate strategy for data freshness
+- Use query invalidation for data refetching
+- Follow React Query naming conventions for consistency
