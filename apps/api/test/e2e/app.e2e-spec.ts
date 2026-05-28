@@ -12,6 +12,7 @@ import {
 } from '../helpers/db-test-harness';
 
 describe('API (e2e)', () => {
+  const testPassword = 'password-123';
   let app: INestApplication;
   let httpServer: Server;
   let prisma: PrismaService;
@@ -90,7 +91,11 @@ describe('API (e2e)', () => {
     const registration = (
       await request(httpServer)
         .post('/api/auth/register')
-        .send({ email: 'signup-owner@example.com', name: 'Signup Owner' })
+        .send({
+          email: 'signup-owner@example.com',
+          password: testPassword,
+          name: 'Signup Owner',
+        })
         .expect(HttpStatus.CREATED)
     ).body as {
       access_token: string;
@@ -99,6 +104,26 @@ describe('API (e2e)', () => {
 
     expect(registration.user.email).toBe('signup-owner@example.com');
     expect(registration.access_token).toEqual(expect.any(String));
+
+    await request(httpServer)
+      .post('/api/auth/token')
+      .send({ email: 'signup-owner@example.com' })
+      .expect(HttpStatus.BAD_REQUEST);
+
+    const login = (
+      await request(httpServer)
+        .post('/api/auth/login')
+        .send({
+          email: 'signup-owner@example.com',
+          password: testPassword,
+        })
+        .expect(HttpStatus.OK)
+    ).body as {
+      access_token: string;
+      user: { id: string; email: string };
+    };
+    expect(login.user.id).toBe(registration.user.id);
+    expect(login.access_token).toEqual(expect.any(String));
 
     const organization = expectOrganizationResponse(
       (
@@ -121,6 +146,33 @@ describe('API (e2e)', () => {
 
     expect(membership.governanceRole).toBe('owner');
     expect(membership.status).toBe('active');
+
+    const session = (
+      await request(httpServer)
+        .get('/api/auth/session')
+        .set('authorization', `Bearer ${registration.access_token}`)
+        .expect(HttpStatus.OK)
+    ).body as {
+      user: { id: string; email: string };
+      memberships: Array<{
+        id: string;
+        governanceRole: string;
+        organization: { id: string; name: string; slug: string };
+      }>;
+    };
+
+    expect(session.user.id).toBe(registration.user.id);
+    expect(session.memberships).toEqual([
+      {
+        id: membership.id.toString(),
+        governanceRole: 'owner',
+        organization: {
+          id: organization.id,
+          name: 'Signup Org',
+          slug: 'signup-org',
+        },
+      },
+    ]);
   });
 
   it('allows an owner to delete an organization and rejects non-owners', async () => {
@@ -129,26 +181,34 @@ describe('API (e2e)', () => {
       'Deletable Org',
     );
 
+    const memberRegistration = (
+      await request(httpServer)
+        .post('/api/auth/register')
+        .send({
+          email: 'org-member@example.com',
+          password: testPassword,
+          name: 'Org Member',
+        })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      access_token: string;
+      user: { id: string; email: string; name: string | null };
+    };
+
     const member = expectUserResponse(
       (
         await request(httpServer)
           .post('/api/users')
           .set('x-organization-id', organization.id)
-          .send({ email: 'org-member@example.com' })
+          .send({ email: memberRegistration.user.email })
           .expect(HttpStatus.CREATED)
       ).body,
     );
-
-    const memberToken = (
-      await request(httpServer)
-        .post('/api/auth/token')
-        .send({ email: member.email })
-        .expect(HttpStatus.CREATED)
-    ).body as { access_token: string };
+    expect(member.id).toBe(memberRegistration.user.id);
 
     await request(httpServer)
       .delete(`/api/organizations/${organization.id}`)
-      .set('authorization', `Bearer ${memberToken.access_token}`)
+      .set('authorization', `Bearer ${memberRegistration.access_token}`)
       .expect(HttpStatus.BAD_REQUEST);
 
     await request(httpServer)
@@ -579,7 +639,10 @@ describe('API (e2e)', () => {
     const invitedUser = (
       await request(httpServer)
         .post('/api/auth/register')
-        .send({ email: 'invited-member@example.com' })
+        .send({
+          email: 'invited-member@example.com',
+          password: testPassword,
+        })
         .expect(HttpStatus.CREATED)
     ).body as {
       access_token: string;
@@ -628,7 +691,10 @@ describe('API (e2e)', () => {
     const invitee = (
       await request(httpServer)
         .post('/api/auth/register')
-        .send({ email: 'pending-invitee@example.com' })
+        .send({
+          email: 'pending-invitee@example.com',
+          password: testPassword,
+        })
         .expect(HttpStatus.CREATED)
     ).body as {
       access_token: string;
@@ -663,6 +729,62 @@ describe('API (e2e)', () => {
         slug: 'invite-feed',
       },
     });
+  });
+
+  it('rejects a pending invitation for the authenticated user', async () => {
+    const organization = await createOrganization(
+      'reject-invite',
+      'Reject Invite',
+    );
+
+    const invitation = (
+      await request(httpServer)
+        .post('/api/organization-invitations')
+        .set('x-organization-id', organization.id)
+        .set('authorization', `Bearer ${organization.ownerToken}`)
+        .send({
+          email: 'reject-invitee@example.com',
+          governanceRole: 'member',
+        })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      id: string;
+      email: string;
+      status: string;
+    };
+
+    const invitee = (
+      await request(httpServer)
+        .post('/api/auth/register')
+        .send({
+          email: 'reject-invitee@example.com',
+          password: testPassword,
+        })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      access_token: string;
+    };
+
+    await request(httpServer)
+      .post(`/api/organization-invitations/${invitation.id}/reject`)
+      .set('authorization', `Bearer ${invitee.access_token}`)
+      .expect(HttpStatus.NO_CONTENT);
+
+    const invitations = (
+      await request(httpServer)
+        .get('/api/organization-invitations/mine')
+        .set('authorization', `Bearer ${invitee.access_token}`)
+        .expect(HttpStatus.OK)
+    ).body as Array<{ id: string }>;
+
+    const rejectedInvitation =
+      await prisma.organizationInvitation.findUniqueOrThrow({
+        where: { id: BigInt(invitation.id) },
+      });
+
+    expect(rejectedInvitation.status).toBe('rejected');
+    expect(rejectedInvitation.rejectedAt).toBeInstanceOf(Date);
+    expect(invitations).toHaveLength(0);
   });
 
   it('keeps roles isolated per organization and rejects cross-org assignment', async () => {
@@ -806,6 +928,7 @@ describe('API (e2e)', () => {
         .post('/api/auth/register')
         .send({
           email: `${slug}-owner@example.com`,
+          password: testPassword,
           name: `${name} Owner`,
         })
         .expect(HttpStatus.CREATED)

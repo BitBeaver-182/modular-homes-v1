@@ -152,4 +152,46 @@ describe('OrganizationInvitationsService (integration)', () => {
       }),
     ).rejects.toThrow(ForbiddenException);
   });
+
+  it('rejects an invitation and removes it from pending invitations', async () => {
+    const organization = await prisma.organization.create({
+      data: {
+        name: 'Reject Org',
+        slug: 'reject-org',
+      },
+    });
+    const user = await prisma.user.create({
+      data: { email: 'invitee@example.com' },
+    });
+    const invitation = await invitationsService.createInvitation(
+      organization.id,
+      {
+        email: 'invitee@example.com',
+        governanceRole: 'member',
+      },
+    );
+
+    await invitationsService.rejectInvitation(invitation.id, {
+      userId: user.id,
+      email: user.email,
+    });
+
+    const rejectedInvitation =
+      await prisma.organizationInvitation.findUniqueOrThrow({
+        where: { id: invitation.id },
+      });
+    const memberships = await prisma.organizationUser.findMany({
+      where: {
+        organizationId: organization.id,
+      },
+    });
+    const pendingInvitations =
+      await invitationsService.findPendingInvitationsForEmail(user.email);
+
+    expect(rejectedInvitation.status).toBe('rejected');
+    expect(rejectedInvitation.rejectedAt).toBeInstanceOf(Date);
+    expect(rejectedInvitation.deletedAt).toBeInstanceOf(Date);
+    expect(memberships).toHaveLength(0);
+    expect(pendingInvitations).toHaveLength(0);
+  });
 });

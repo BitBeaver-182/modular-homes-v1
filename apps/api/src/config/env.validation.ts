@@ -5,6 +5,7 @@ export interface AppEnv {
   NODE_ENV: NodeEnv;
   DATABASE_URL: string;
   DIRECT_URL: string;
+  PORT: number;
   JWT_SECRET?: string;
 }
 
@@ -41,6 +42,7 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     NODE_ENV: rawNodeEnv,
     DATABASE_URL: databaseUrl,
     DIRECT_URL: directUrl,
+    PORT: getOptionalPort(config.PORT),
     JWT_SECRET: jwtSecret,
   };
 }
@@ -57,4 +59,18 @@ function getRequiredString(rawValue: unknown, keyName: string): string {
   }
 
   throw new Error(`${keyName} is required`);
+}
+
+function getOptionalPort(rawValue: unknown): number {
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return 3000;
+  }
+
+  const port = typeof rawValue === 'number' ? rawValue : Number(rawValue);
+
+  if (Number.isInteger(port) && port >= 1 && port <= 65_535) {
+    return port;
+  }
+
+  throw new Error('PORT must be an integer between 1 and 65535');
 }

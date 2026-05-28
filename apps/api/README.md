@@ -26,6 +26,8 @@ Required local env:
 
 ```env
 JWT_SECRET=secret
+# Optional when another local app already uses 3000.
+PORT=3001
 ```
 
 Start the API:
@@ -41,6 +43,9 @@ Swagger:
 - UI: `http://localhost:3000/api/docs`
 - JSON: `http://localhost:3000/api/docs-json`
 - Bearer auth scheme: use `{{token}}` as your Postman environment variable value
+
+If `PORT=3001` is set, use `http://localhost:3001/api/docs` and point
+the React dashboard at `http://localhost:3001/api`.
 
 Generate the OpenAPI file without starting the server:
 

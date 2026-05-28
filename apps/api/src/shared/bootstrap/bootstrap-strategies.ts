@@ -7,7 +7,7 @@ export abstract class BootstrapStrategy {
 }
 
 abstract class BaseBootstrapStrategy extends BootstrapStrategy {
-  protected constructor() {
+  protected constructor(protected readonly port = 3000) {
     super();
   }
 
@@ -18,8 +18,7 @@ abstract class BaseBootstrapStrategy extends BootstrapStrategy {
 
   async start(app: INestApplication): Promise<void> {
     await this.configure(app);
-    const port = Number(process.env.PORT ?? 3000);
-    await app.listen(port);
+    await app.listen(this.port);
   }
 
   protected createConfigurator(app: INestApplication): AppConfigurator {
@@ -34,23 +33,22 @@ abstract class BaseBootstrapStrategy extends BootstrapStrategy {
 export class DevelopmentBootstrapStrategy extends BaseBootstrapStrategy {
   private readonly logger = new Logger(BootstrapStrategy.name);
 
-  constructor() {
-    super();
+  constructor(port?: number) {
+    super(port);
   }
 
   override async start(app: INestApplication): Promise<void> {
     await super.start(app);
-    const port = Number(process.env.PORT ?? 3000);
     const appUrl = this.normalizeLocalUrl(await app.getUrl());
-    this.logger.log(`API running on port ${port}: ${appUrl}`);
+    this.logger.log(`API running on port ${this.port}: ${appUrl}`);
   }
 }
 
 export class LocalBootstrapStrategy extends BaseBootstrapStrategy {
   private readonly logger = new Logger(BootstrapStrategy.name);
 
-  constructor() {
-    super();
+  constructor(port?: number) {
+    super(port);
   }
 
   override configure(app: INestApplication): Promise<void> {
@@ -64,23 +62,22 @@ export class LocalBootstrapStrategy extends BaseBootstrapStrategy {
 
   override async start(app: INestApplication): Promise<void> {
     await super.start(app);
-    const port = Number(process.env.PORT ?? 3000);
     const appUrl = this.normalizeLocalUrl(await app.getUrl());
-    this.logger.log(`API running on port ${port}: ${appUrl}`);
+    this.logger.log(`API running on port ${this.port}: ${appUrl}`);
     this.logger.log(`Swagger UI: ${appUrl}/docs`);
     this.logger.log(`OpenAPI JSON: ${appUrl}/docs-json`);
   }
 }
 
 export class ProductionBootstrapStrategy extends BaseBootstrapStrategy {
-  constructor() {
-    super();
+  constructor(port?: number) {
+    super(port);
   }
 }
 
 export class TestBootstrapStrategy extends BaseBootstrapStrategy {
-  constructor() {
-    super();
+  constructor(port?: number) {
+    super(port);
   }
 
   override configure(app: INestApplication): Promise<void> {

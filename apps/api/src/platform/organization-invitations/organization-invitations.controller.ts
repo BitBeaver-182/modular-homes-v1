@@ -102,4 +102,22 @@ export class OrganizationInvitationsController {
       user,
     );
   }
+
+  @Post(':id/reject')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Reject invitation',
+    description:
+      'Reject a pending invitation for the authenticated user when the invitation email matches the actor email.',
+  })
+  @ApiBigIntIdParam('id', 'invitation')
+  @ApiNoContentResponse()
+  async reject(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    await this.organizationInvitationsService.rejectInvitation(
+      parseBigIntId(id, 'invitationId'),
+      user,
+    );
+  }
 }

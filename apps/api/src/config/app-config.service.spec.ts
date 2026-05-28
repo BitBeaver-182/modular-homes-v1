@@ -37,6 +37,13 @@ describe('AppConfigService', () => {
     expect(configService.getOrThrow).toHaveBeenCalledWith('DIRECT_URL');
   });
 
+  it('returns port from the config service', () => {
+    configService.getOrThrow.mockReturnValue(3001);
+
+    expect(service.port).toBe(3001);
+    expect(configService.getOrThrow).toHaveBeenCalledWith('PORT');
+  });
+
   it('returns jwtSecret from config when present', () => {
     configService.get.mockReturnValue('jwt-secret');
 

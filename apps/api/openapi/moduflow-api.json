@@ -60,7 +60,7 @@
     },
     "/api/auth/token": {
       "post": {
-        "description": "Issue a JWT for an existing active user by email.",
+        "description": "Issue a JWT for an existing active user with email and password credentials.",
         "operationId": "AuthController_createToken",
         "parameters": [],
         "requestBody": {
@@ -96,6 +96,63 @@
         ]
       }
     },
+    "/api/auth/login": {
+      "post": {
+        "description": "Authenticate with email and password and issue a JWT.",
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Login user",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/auth/me": {
       "get": {
         "description": "Return the authenticated actor from the bearer token.",
@@ -112,6 +169,87 @@
           }
         ],
         "summary": "Get current actor",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/session": {
+      "get": {
+        "description": "Return the authenticated user and active organization memberships.",
+        "operationId": "AuthController_session",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "avatarUrl": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "memberships": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "governanceRole": {
+                            "type": "string",
+                            "enum": [
+                              "owner",
+                              "member"
+                            ]
+                          },
+                          "organization": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "slug": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current session",
         "tags": [
           "Auth"
         ]
@@ -1108,6 +1246,38 @@
         ]
       }
     },
+    "/api/organization-invitations/{id}/reject": {
+      "post": {
+        "description": "Reject a pending invitation for the authenticated user when the invitation email matches the actor email.",
+        "operationId": "OrganizationInvitationsController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the invitation.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject invitation",
+        "tags": [
+          "Organization Invitations"
+        ]
+      }
+    },
     "/api/users/{userId}/roles": {
       "post": {
         "description": "Assign a role to a user in the active organization.",
@@ -1621,6 +1791,13 @@
             "type": "string",
             "example": "owner@example.com"
           },
+          "password": {
+            "type": "string",
+            "example": "correct-horse-battery-staple",
+            "minLength": 8,
+            "maxLength": 256,
+            "format": "password"
+          },
           "name": {
             "type": "string",
             "nullable": true,
@@ -1633,7 +1810,8 @@
           }
         },
         "required": [
-          "email"
+          "email",
+          "password"
         ]
       },
       "CreateTokenDto": {
@@ -1642,10 +1820,18 @@
           "email": {
             "type": "string",
             "example": "owner@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "correct-horse-battery-staple",
+            "minLength": 8,
+            "maxLength": 256,
+            "format": "password"
           }
         },
         "required": [
-          "email"
+          "email",
+          "password"
         ]
       },
       "HealthResponseDto": {

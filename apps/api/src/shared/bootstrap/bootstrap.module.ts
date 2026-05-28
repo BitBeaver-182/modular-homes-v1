@@ -16,16 +16,18 @@ import {
       provide: BootstrapStrategy,
       inject: [AppConfigService],
       useFactory: (configService: AppConfigService): BootstrapStrategy => {
+        const port = configService.port;
+
         switch (configService.nodeEnv) {
           case 'local':
-            return new LocalBootstrapStrategy();
+            return new LocalBootstrapStrategy(port);
           case 'development':
-            return new DevelopmentBootstrapStrategy();
+            return new DevelopmentBootstrapStrategy(port);
           case 'test':
-            return new TestBootstrapStrategy();
+            return new TestBootstrapStrategy(port);
           case 'production':
           default:
-            return new ProductionBootstrapStrategy();
+            return new ProductionBootstrapStrategy(port);
         }
       },
     },
