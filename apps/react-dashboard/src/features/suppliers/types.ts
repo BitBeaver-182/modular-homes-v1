@@ -35,7 +35,6 @@ export interface SupplierWriteInput {
 }
 
 export interface SupplierAddressWriteInput {
-	fullAddress: string;
 	line1: string;
 	line2: string;
 	city: string;

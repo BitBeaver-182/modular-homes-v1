@@ -53,7 +53,6 @@ describe("supplier Moduflow API", () => {
 			phoneNumber: " 555 ",
 			email: " orders@example.com ",
 			address: {
-				fullAddress: " Main Street, Austin, TX ",
 				line1: " Main Street ",
 				line2: " Suite 2 ",
 				city: " Austin ",
@@ -68,7 +67,6 @@ describe("supplier Moduflow API", () => {
 			phoneNumber: "",
 			email: "",
 			address: {
-				fullAddress: "",
 				line1: "",
 				line2: "",
 				city: "",
@@ -86,7 +84,6 @@ describe("supplier Moduflow API", () => {
 				phoneNumber: "555",
 				email: "orders@example.com",
 				address: {
-					fullAddress: "Main Street, Austin, TX",
 					line1: "Main Street",
 					line2: "Suite 2",
 					city: "Austin",
@@ -105,7 +102,6 @@ describe("supplier Moduflow API", () => {
 				phoneNumber: "",
 				email: "",
 				address: {
-					fullAddress: "",
 					line1: "",
 					line2: "",
 					city: "",

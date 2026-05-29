@@ -48,7 +48,6 @@ const EMPTY_VALUES: SupplierFormValues = {
 	phoneNumber: "",
 	email: "",
 	address: {
-		fullAddress: "",
 		line1: "",
 		line2: "",
 		city: "",
@@ -63,9 +62,7 @@ const FIELD_MAP: Record<string, FieldPath<SupplierFormValues>> = {
 	name: "name",
 	phoneNumber: "phoneNumber",
 	email: "email",
-	address: "address.fullAddress",
-	fullAddress: "address.fullAddress",
-	"address.fullAddress": "address.fullAddress",
+	address: "address.line1",
 	line1: "address.line1",
 	"address.line1": "address.line1",
 	line2: "address.line2",
@@ -100,7 +97,6 @@ const toFormValues = (
 		phoneNumber: supplier.phoneNumber ?? "",
 		email: supplier.email ?? "",
 		address: {
-			fullAddress: supplier.address?.fullAddress ?? "",
 			line1: supplier.address?.line1 ?? "",
 			line2: supplier.address?.line2 ?? "",
 			city: supplier.address?.city ?? "",
@@ -163,7 +159,6 @@ export const SupplierFormDialog = ({
 	const nameError = errors.name?.message;
 	const phoneError = errors.phoneNumber?.message;
 	const emailError = errors.email?.message;
-	const addressFullError = errors.address?.fullAddress?.message;
 	const addressLine1Error = errors.address?.line1?.message;
 	const addressLine2Error = errors.address?.line2?.message;
 	const cityError = errors.address?.city?.message;
@@ -239,23 +234,8 @@ export const SupplierFormDialog = ({
 
 							<Field
 								className="sm:col-span-2"
-								data-invalid={Boolean(addressFullError) || undefined}
+								data-invalid={Boolean(addressLine1Error) || undefined}
 							>
-								<FieldLabel htmlFor="supplier-address-full">
-									{t("suppliers.fieldAddressFull")}
-								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(addressFullError)}
-									id="supplier-address-full"
-									placeholder={t("suppliers.placeAddressFull")}
-									{...register("address.fullAddress")}
-								/>
-								{addressFullError ? (
-									<FieldError>{addressFullError}</FieldError>
-								) : null}
-							</Field>
-
-							<Field data-invalid={Boolean(addressLine1Error) || undefined}>
 								<FieldLabel htmlFor="supplier-address-line-1">
 									{t("suppliers.fieldAddressLine1")}
 								</FieldLabel>

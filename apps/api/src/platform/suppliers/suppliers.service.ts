@@ -25,18 +25,22 @@ type SupplierSortField = (typeof SORT_FIELDS)[number];
 type SupplierQuery = Record<string, unknown>;
 type SupplierWriteData = Pick<
   Prisma.SupplierUncheckedCreateInput,
-  | 'name'
-  | 'phoneNumber'
-  | 'email'
-  | 'addressFull'
-  | 'addressLine1'
-  | 'addressLine2'
+  'name' | 'phoneNumber' | 'email' | 'website'
+>;
+type SupplierWithAddress = Prisma.SupplierGetPayload<{
+  include: { address: true };
+}>;
+type AddressWriteData = Pick<
+  Prisma.AddressUncheckedCreateInput,
+  | 'organizationId'
+  | 'line1'
+  | 'line2'
   | 'city'
   | 'region'
   | 'postalCode'
   | 'countryCode'
-  | 'website'
 >;
+type AddressUpdateData = Omit<AddressWriteData, 'organizationId'>;
 
 export interface ListSuppliersResult {
   data: Awaited<ReturnType<SuppliersService['findOne']>>[];
@@ -57,18 +61,33 @@ export class SuppliersService {
     private readonly querybuilder: QuerybuilderService<PrismaService>,
   ) {}
 
-  async create(organizationId: bigint, createSupplierDto: CreateSupplierDto) {
+  async create(
+    organizationId: bigint,
+    createSupplierDto: CreateSupplierDto,
+  ): Promise<SupplierWithAddress> {
     const data = sanitizeWriteInput(createSupplierDto) as SupplierWriteData & {
       name: string;
     };
+    const addressData = sanitizeAddressInput(
+      organizationId,
+      createSupplierDto.address,
+    );
     await this.assertNameAvailable(organizationId, data.name);
 
     try {
-      return await this.prisma.supplier.create({
-        data: {
-          organizationId,
-          ...data,
-        },
+      return await this.prisma.$transaction(async (tx) => {
+        const address = addressData
+          ? await tx.address.create({ data: addressData })
+          : null;
+
+        return tx.supplier.create({
+          data: {
+            organizationId,
+            addressId: address?.id ?? null,
+            ...data,
+          },
+          include: { address: true },
+        });
       });
     } catch (error) {
       if (isUniqueConstraintError(error)) {
@@ -102,6 +121,7 @@ export class SuppliersService {
         orderBy,
         skip,
         take,
+        include: { address: true },
       }),
       this.prisma.supplier.count({ where }),
     ]);
@@ -119,13 +139,17 @@ export class SuppliersService {
     };
   }
 
-  async findOne(organizationId: bigint, id: bigint) {
+  async findOne(
+    organizationId: bigint,
+    id: bigint,
+  ): Promise<SupplierWithAddress> {
     const supplier = await this.prisma.supplier.findFirst({
       where: {
         id,
         organizationId,
         deletedAt: null,
       },
+      include: { address: true },
     });
 
     if (!supplier) {
@@ -139,18 +163,54 @@ export class SuppliersService {
     organizationId: bigint,
     id: bigint,
     updateSupplierDto: UpdateSupplierDto,
-  ) {
-    await this.findOne(organizationId, id);
+  ): Promise<SupplierWithAddress> {
+    const supplier = await this.findOne(organizationId, id);
     const data = sanitizeWriteInput(updateSupplierDto);
+    const shouldUpdateAddress = 'address' in updateSupplierDto;
+    const addressData = shouldUpdateAddress
+      ? sanitizeAddressInput(organizationId, updateSupplierDto.address)
+      : undefined;
 
     if (typeof data.name === 'string') {
       await this.assertNameAvailable(organizationId, data.name, id);
     }
 
     try {
-      return await this.prisma.supplier.update({
-        where: { id },
-        data,
+      return await this.prisma.$transaction(async (tx) => {
+        let addressId = supplier.addressId;
+
+        if (shouldUpdateAddress) {
+          if (addressData) {
+            const addressUpdateData = toAddressUpdateData(addressData);
+
+            if (supplier.addressId) {
+              await tx.address.update({
+                where: { id: supplier.addressId },
+                data: addressUpdateData,
+              });
+            } else {
+              const address = await tx.address.create({ data: addressData });
+              addressId = address.id;
+            }
+          } else {
+            if (supplier.addressId) {
+              await tx.address.update({
+                where: { id: supplier.addressId },
+                data: { deletedAt: new Date() },
+              });
+            }
+            addressId = null;
+          }
+        }
+
+        return tx.supplier.update({
+          where: { id },
+          data: {
+            ...data,
+            ...(shouldUpdateAddress ? { addressId } : {}),
+          },
+          include: { address: true },
+        });
       });
     } catch (error) {
       if (isUniqueConstraintError(error)) {
@@ -230,22 +290,53 @@ function sanitizeWriteInput(
     }
   }
 
-  if ('address' in input && input.address !== undefined) {
-    data.addressFull = normalizeOptionalString(input.address?.fullAddress);
-    data.addressLine1 = normalizeOptionalString(input.address?.line1);
-    data.addressLine2 = normalizeOptionalString(input.address?.line2);
-    data.city = normalizeOptionalString(input.address?.city);
-    data.region = normalizeOptionalString(input.address?.region);
-    data.postalCode = normalizeOptionalString(input.address?.postalCode);
-    data.countryCode = normalizeOptionalString(
-      input.address?.countryCode,
-    )?.toUpperCase();
-  }
-
   return data;
 }
 
-function normalizeOptionalString(value: string | undefined): string | null {
+function sanitizeAddressInput(
+  organizationId: bigint,
+  input: CreateSupplierDto['address'],
+): AddressWriteData | undefined {
+  if (input === undefined) {
+    return undefined;
+  }
+
+  const line1 = normalizeOptionalString(input.line1);
+  const line2 = normalizeOptionalString(input.line2);
+  const city = normalizeOptionalString(input.city);
+  const region = normalizeOptionalString(input.region);
+  const postalCode = normalizeOptionalString(input.postalCode);
+  const countryCode = normalizeOptionalString(input.countryCode)?.toUpperCase();
+
+  if (!line1 && !line2 && !city && !region && !postalCode && !countryCode) {
+    return undefined;
+  }
+
+  return {
+    organizationId,
+    line1,
+    line2,
+    city,
+    region,
+    postalCode,
+    countryCode,
+  };
+}
+
+function toAddressUpdateData(addressData: AddressWriteData): AddressUpdateData {
+  return {
+    line1: addressData.line1,
+    line2: addressData.line2,
+    city: addressData.city,
+    region: addressData.region,
+    postalCode: addressData.postalCode,
+    countryCode: addressData.countryCode,
+  };
+}
+
+function normalizeOptionalString(
+  value: string | undefined | null,
+): string | null {
   const trimmedValue = value?.trim();
   return trimmedValue ? trimmedValue : null;
 }
@@ -261,24 +352,31 @@ function buildSupplierWhere(
   };
 
   if (search) {
-    where.OR = [
-      'name',
-      'email',
-      'phoneNumber',
-      'addressFull',
-      'addressLine1',
-      'addressLine2',
-      'city',
-      'region',
-      'postalCode',
-      'countryCode',
-      'website',
-    ].map((field) => ({
+    where.OR = ['name', 'email', 'phoneNumber', 'website'].map((field) => ({
       [field]: {
         contains: search,
         mode: 'insensitive',
       },
     }));
+    where.OR.push({
+      address: {
+        is: {
+          OR: [
+            'line1',
+            'line2',
+            'city',
+            'region',
+            'postalCode',
+            'countryCode',
+          ].map((field) => ({
+            [field]: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          })),
+        },
+      },
+    });
   }
 
   return where;

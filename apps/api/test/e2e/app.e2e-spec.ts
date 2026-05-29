@@ -957,7 +957,6 @@ describe('API (e2e)', () => {
           phoneNumber: ' +1 415 555 2671 ',
           email: ' orders@acme.example ',
           address: {
-            fullAddress: ' 100 Main Street, Austin, TX 78701, US ',
             line1: ' 100 Main Street ',
             city: ' Austin ',
             region: ' TX ',

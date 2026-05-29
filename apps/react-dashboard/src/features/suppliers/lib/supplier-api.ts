@@ -29,7 +29,6 @@ const sanitizeWriteInput = (input: SupplierWriteInput): SupplierWriteInput => ({
 	phoneNumber: input.phoneNumber.trim(),
 	email: input.email.trim(),
 	address: {
-		fullAddress: input.address.fullAddress.trim(),
 		line1: input.address.line1.trim(),
 		line2: input.address.line2.trim(),
 		city: input.address.city.trim(),

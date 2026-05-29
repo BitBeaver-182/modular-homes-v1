@@ -20,19 +20,23 @@ export class SupplierResponse {
 
   @ApiPropertyOptional({ example: '100 Main Street', nullable: true })
   @Expose()
-  @Transform(({ obj }: { obj: SupplierAddressSource }) =>
-    obj.addressFull
-      ? {
-          fullAddress: obj.addressFull,
-          line1: obj.addressLine1 ?? null,
-          line2: obj.addressLine2 ?? null,
-          city: obj.city ?? null,
-          region: obj.region ?? null,
-          postalCode: obj.postalCode ?? null,
-          countryCode: obj.countryCode ?? null,
-        }
-      : null,
-  )
+  @Transform(({ obj }: { obj: SupplierAddressSource }) => {
+    const address = obj.address;
+
+    if (!address || address.deletedAt) {
+      return null;
+    }
+
+    return {
+      fullAddress: formatFullAddress(address),
+      line1: address.line1 ?? null,
+      line2: address.line2 ?? null,
+      city: address.city ?? null,
+      region: address.region ?? null,
+      postalCode: address.postalCode ?? null,
+      countryCode: address.countryCode ?? null,
+    };
+  })
   @Type(() => SupplierAddressResponse)
   address!: SupplierAddressResponse | null;
 
@@ -50,13 +54,31 @@ export class SupplierResponse {
 }
 
 interface SupplierAddressSource {
-  addressFull?: string | null;
-  addressLine1?: string | null;
-  addressLine2?: string | null;
+  address?: SupplierAddressRecord | null;
+}
+
+interface SupplierAddressRecord {
+  line1?: string | null;
+  line2?: string | null;
   city?: string | null;
   region?: string | null;
   postalCode?: string | null;
   countryCode?: string | null;
+  deletedAt?: Date | null;
+}
+
+function formatFullAddress(address: SupplierAddressRecord): string {
+  return [
+    address.line1,
+    address.line2,
+    address.city,
+    address.region,
+    address.postalCode,
+    address.countryCode,
+  ]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(', ');
 }
 
 export class SupplierAddressResponse {

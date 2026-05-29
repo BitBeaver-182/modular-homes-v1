@@ -1,8 +1,28 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { SuppliersService } from './suppliers.service';
 
+interface PrismaMock {
+  $transaction: jest.Mock;
+  address: {
+    create: jest.Mock;
+    update: jest.Mock;
+  };
+  supplier: {
+    count: jest.Mock;
+    create: jest.Mock;
+    findFirst: jest.Mock;
+    findMany: jest.Mock;
+    update: jest.Mock;
+  };
+}
+
 describe('SuppliersService', () => {
-  const prisma = {
+  const prisma: PrismaMock = {
+    $transaction: jest.fn(),
+    address: {
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     supplier: {
       count: jest.fn(),
       create: jest.fn(),
@@ -19,6 +39,9 @@ describe('SuppliersService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    prisma.$transaction.mockImplementation(
+      (callback: (client: PrismaMock) => unknown) => callback(prisma),
+    );
     service = new SuppliersService(prisma as never, querybuilder as never);
     querybuilder.query.mockResolvedValue({
       orderBy: { name: 'asc' },
@@ -30,13 +53,13 @@ describe('SuppliersService', () => {
   it('creates suppliers scoped to an organization and normalizes blanks', async () => {
     prisma.supplier.findFirst.mockResolvedValue(null);
     prisma.supplier.create.mockResolvedValue({ id: 1n });
+    prisma.address.create.mockResolvedValue({ id: 10n });
 
     await service.create(2n, {
       name: '  Acme Supply  ',
       phoneNumber: '   ',
       email: ' orders@example.com ',
       address: {
-        fullAddress: ' 100 Main Street, Austin, TX ',
         line1: ' 100 Main Street ',
         line2: '',
         city: ' Austin ',
@@ -47,21 +70,27 @@ describe('SuppliersService', () => {
       website: ' https://example.com ',
     });
 
-    expect(prisma.supplier.create).toHaveBeenCalledWith({
+    expect(prisma.address.create).toHaveBeenCalledWith({
       data: {
         organizationId: 2n,
-        name: 'Acme Supply',
-        phoneNumber: null,
-        email: 'orders@example.com',
-        addressFull: '100 Main Street, Austin, TX',
-        addressLine1: '100 Main Street',
-        addressLine2: null,
+        line1: '100 Main Street',
+        line2: null,
         city: 'Austin',
         region: 'TX',
         postalCode: '78701',
         countryCode: 'US',
+      },
+    });
+    expect(prisma.supplier.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: 2n,
+        addressId: 10n,
+        name: 'Acme Supply',
+        phoneNumber: null,
+        email: 'orders@example.com',
         website: 'https://example.com',
       },
+      include: { address: true },
     });
   });
 
@@ -99,19 +128,27 @@ describe('SuppliersService', () => {
           { name: { contains: 'acme', mode: 'insensitive' } },
           { email: { contains: 'acme', mode: 'insensitive' } },
           { phoneNumber: { contains: 'acme', mode: 'insensitive' } },
-          { addressFull: { contains: 'acme', mode: 'insensitive' } },
-          { addressLine1: { contains: 'acme', mode: 'insensitive' } },
-          { addressLine2: { contains: 'acme', mode: 'insensitive' } },
-          { city: { contains: 'acme', mode: 'insensitive' } },
-          { region: { contains: 'acme', mode: 'insensitive' } },
-          { postalCode: { contains: 'acme', mode: 'insensitive' } },
-          { countryCode: { contains: 'acme', mode: 'insensitive' } },
           { website: { contains: 'acme', mode: 'insensitive' } },
+          {
+            address: {
+              is: {
+                OR: [
+                  { line1: { contains: 'acme', mode: 'insensitive' } },
+                  { line2: { contains: 'acme', mode: 'insensitive' } },
+                  { city: { contains: 'acme', mode: 'insensitive' } },
+                  { region: { contains: 'acme', mode: 'insensitive' } },
+                  { postalCode: { contains: 'acme', mode: 'insensitive' } },
+                  { countryCode: { contains: 'acme', mode: 'insensitive' } },
+                ],
+              },
+            },
+          },
         ],
       },
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
       skip: 0,
       take: 15,
+      include: { address: true },
     });
     expect(prisma.supplier.count).toHaveBeenCalledWith({
       // Jest asymmetric matchers are typed as any.
@@ -167,6 +204,7 @@ describe('SuppliersService', () => {
         organizationId: 2n,
         deletedAt: null,
       },
+      include: { address: true },
     });
   });
 

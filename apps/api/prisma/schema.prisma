@@ -59,23 +59,42 @@ model Organization {
   invitations       OrganizationInvitation[]
   roles             Role[]
   suppliers         Supplier[]
+  addresses         Address[]
 
   @@index([deletedAt])
+}
+
+model Address {
+  id             BigInt @id @default(autoincrement())
+  organizationId BigInt
+  line1          String?
+  line2          String?
+  city           String?
+  region         String?
+  postalCode     String?
+  countryCode    String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  suppliers    Supplier[]
+
+  @@index([organizationId])
+  @@index([deletedAt])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, city])
+  @@index([organizationId, countryCode])
 }
 
 model Supplier {
   id             BigInt @id @default(autoincrement())
   organizationId BigInt
+  addressId      BigInt?
   name           String
   phoneNumber    String?
   email          String?
-  addressFull    String?
-  addressLine1   String?
-  addressLine2   String?
-  city           String?
-  region         String?
-  postalCode     String?
-  countryCode    String?
   website        String?
 
   createdAt DateTime  @default(now())
@@ -83,16 +102,15 @@ model Supplier {
   deletedAt DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id])
+  address      Address?     @relation(fields: [addressId], references: [id])
 
   @@index([organizationId])
+  @@index([addressId])
   @@index([deletedAt])
   @@index([organizationId, deletedAt])
   @@index([organizationId, name])
   @@index([organizationId, email])
   @@index([organizationId, phoneNumber])
-  @@index([organizationId, addressFull])
-  @@index([organizationId, city])
-  @@index([organizationId, countryCode])
   @@index([organizationId, createdAt])
 }
 

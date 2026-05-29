@@ -1,10 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsISO31661Alpha2,
   IsNotEmpty,
   IsOptional,
   IsString,
-  Length,
   MaxLength,
 } from 'class-validator';
 
@@ -14,25 +14,19 @@ const emptyToUndefined = ({ value }: { value: unknown }): unknown =>
 const trimString = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
 
+const trimUppercaseString = ({ value }: { value: unknown }): unknown =>
+  typeof value === 'string' ? value.trim().toUpperCase() : value;
+
 export class SupplierAddressDto {
   @ApiProperty({
-    description: 'Complete human-readable address.',
-    example: '100 Main Street, Austin, TX 78701, US',
-    maxLength: 500,
+    example: '100 Main Street',
+    maxLength: 200,
   })
   @Transform(trimString)
   @IsString()
   @IsNotEmpty()
-  @MaxLength(500)
-  fullAddress!: string;
-
-  @ApiPropertyOptional({ example: '100 Main Street', maxLength: 200 })
-  @Transform(emptyToUndefined)
-  @Transform(trimString)
-  @IsOptional()
-  @IsString()
   @MaxLength(200)
-  line1?: string;
+  line1!: string;
 
   @ApiPropertyOptional({ example: 'Suite 200', maxLength: 200 })
   @Transform(emptyToUndefined)
@@ -71,9 +65,9 @@ export class SupplierAddressDto {
     example: 'US',
   })
   @Transform(emptyToUndefined)
-  @Transform(trimString)
+  @Transform(trimUppercaseString)
   @IsOptional()
   @IsString()
-  @Length(2, 2)
+  @IsISO31661Alpha2()
   countryCode?: string;
 }
