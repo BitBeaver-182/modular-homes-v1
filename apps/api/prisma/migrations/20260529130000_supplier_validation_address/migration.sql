@@ -29,23 +29,26 @@ CREATE INDEX IF NOT EXISTS "Supplier_organizationId_addressFull_idx" ON "Supplie
 CREATE INDEX IF NOT EXISTS "Supplier_organizationId_city_idx" ON "Supplier"("organizationId", "city");
 CREATE INDEX IF NOT EXISTS "Supplier_organizationId_countryCode_idx" ON "Supplier"("organizationId", "countryCode");
 
-WITH duplicate_suppliers AS (
-  SELECT
-    id,
-    ROW_NUMBER() OVER (
-      PARTITION BY "organizationId", LOWER("name")
-      ORDER BY id ASC
-    ) AS row_number
-  FROM "Supplier"
-  WHERE "deletedAt" IS NULL
-)
-UPDATE "Supplier"
-SET "deletedAt" = CURRENT_TIMESTAMP
-WHERE id IN (
-  SELECT id
-  FROM duplicate_suppliers
-  WHERE row_number > 1
-);
+DO $$
+DECLARE duplicate_count BIGINT;
+BEGIN
+  SELECT COUNT(*)
+  INTO duplicate_count
+  FROM (
+    SELECT 1
+    FROM "Supplier"
+    WHERE "deletedAt" IS NULL
+    GROUP BY "organizationId", LOWER("name")
+    HAVING COUNT(*) > 1
+  ) AS duplicate_groups;
+
+  IF duplicate_count > 0 THEN
+    RAISE EXCEPTION USING
+      MESSAGE = 'Cannot enforce supplier name uniqueness while duplicate active suppliers exist',
+      DETAIL = 'Resolve duplicate supplier names within each organization before applying this migration.',
+      HINT = 'Inspect active suppliers grouped by organizationId and LOWER(name).';
+  END IF;
+END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "Supplier_organizationId_name_active_unique"
 ON "Supplier" ("organizationId", LOWER("name"))
