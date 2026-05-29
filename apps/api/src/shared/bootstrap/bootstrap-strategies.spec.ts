@@ -2,6 +2,7 @@ const mockLoggerLog = jest.fn();
 const configuratorMethods = {
   withQuietLogger: jest.fn(),
   withApiPrefix: jest.fn(),
+  withHelmet: jest.fn(),
   withCors: jest.fn(),
   withShutdownHooks: jest.fn(),
   withSwagger: jest.fn(),
@@ -11,6 +12,7 @@ jest.mock('./app-configurator', () => {
   const instance = {
     withQuietLogger: configuratorMethods.withQuietLogger.mockReturnThis(),
     withApiPrefix: configuratorMethods.withApiPrefix.mockReturnThis(),
+    withHelmet: configuratorMethods.withHelmet.mockReturnThis(),
     withCors: configuratorMethods.withCors.mockReturnThis(),
     withShutdownHooks: configuratorMethods.withShutdownHooks.mockReturnThis(),
     withSwagger: configuratorMethods.withSwagger.mockReturnThis(),
@@ -72,6 +74,7 @@ describe('bootstrap strategies', () => {
     expect(AppConfigurator).toHaveBeenCalledWith(app);
     expect(configuratorMethods.withQuietLogger).toHaveBeenCalled();
     expect(configuratorMethods.withApiPrefix).toHaveBeenCalled();
+    expect(configuratorMethods.withHelmet).toHaveBeenCalled();
     expect(configuratorMethods.withCors).toHaveBeenCalled();
     expect(configuratorMethods.withShutdownHooks).toHaveBeenCalled();
     expect(configuratorMethods.withSwagger).not.toHaveBeenCalled();
@@ -85,6 +88,7 @@ describe('bootstrap strategies', () => {
     expect(AppConfigurator).toHaveBeenCalledWith(app);
     expect(configuratorMethods.withQuietLogger).not.toHaveBeenCalled();
     expect(configuratorMethods.withApiPrefix).toHaveBeenCalled();
+    expect(configuratorMethods.withHelmet).toHaveBeenCalled();
     expect(configuratorMethods.withCors).toHaveBeenCalled();
     expect(configuratorMethods.withShutdownHooks).toHaveBeenCalled();
     expect(configuratorMethods.withSwagger).not.toHaveBeenCalled();
@@ -102,6 +106,7 @@ describe('bootstrap strategies', () => {
     expect(AppConfigurator).toHaveBeenCalledWith(app);
     expect(configuratorMethods.withQuietLogger).not.toHaveBeenCalled();
     expect(configuratorMethods.withApiPrefix).toHaveBeenCalled();
+    expect(configuratorMethods.withHelmet).toHaveBeenCalled();
     expect(configuratorMethods.withCors).toHaveBeenCalled();
     expect(configuratorMethods.withShutdownHooks).toHaveBeenCalled();
     expect(configuratorMethods.withSwagger).toHaveBeenCalled();
@@ -126,6 +131,7 @@ describe('bootstrap strategies', () => {
     expect(AppConfigurator).toHaveBeenCalledWith(app);
     expect(configuratorMethods.withQuietLogger).not.toHaveBeenCalled();
     expect(configuratorMethods.withApiPrefix).toHaveBeenCalled();
+    expect(configuratorMethods.withHelmet).toHaveBeenCalled();
     expect(configuratorMethods.withCors).toHaveBeenCalled();
     expect(configuratorMethods.withShutdownHooks).toHaveBeenCalled();
     expect(configuratorMethods.withSwagger).not.toHaveBeenCalled();
@@ -139,6 +145,7 @@ describe('bootstrap strategies', () => {
     expect(AppConfigurator).toHaveBeenCalledWith(app);
     expect(configuratorMethods.withQuietLogger).toHaveBeenCalled();
     expect(configuratorMethods.withApiPrefix).toHaveBeenCalled();
+    expect(configuratorMethods.withHelmet).toHaveBeenCalled();
     expect(configuratorMethods.withCors).toHaveBeenCalled();
     expect(configuratorMethods.withShutdownHooks).toHaveBeenCalled();
     expect(configuratorMethods.withSwagger).not.toHaveBeenCalled();

@@ -12,7 +12,11 @@ abstract class BaseBootstrapStrategy extends BootstrapStrategy {
   }
 
   configure(app: INestApplication): Promise<void> {
-    this.createConfigurator(app).withApiPrefix().withCors().withShutdownHooks();
+    this.createConfigurator(app)
+      .withApiPrefix()
+      .withHelmet()
+      .withCors()
+      .withShutdownHooks();
     return Promise.resolve();
   }
 
@@ -54,6 +58,7 @@ export class LocalBootstrapStrategy extends BaseBootstrapStrategy {
   override configure(app: INestApplication): Promise<void> {
     this.createConfigurator(app)
       .withApiPrefix()
+      .withHelmet()
       .withCors()
       .withShutdownHooks()
       .withSwagger();
@@ -84,6 +89,7 @@ export class TestBootstrapStrategy extends BaseBootstrapStrategy {
     this.createConfigurator(app)
       .withQuietLogger()
       .withApiPrefix()
+      .withHelmet()
       .withCors()
       .withShutdownHooks();
     return Promise.resolve();

@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -15,6 +16,16 @@ export class AppConfigurator {
     options: Parameters<INestApplication['enableCors']>[0] = true,
   ): this {
     this.app.enableCors(options);
+    return this;
+  }
+
+  withHelmet(): this {
+    this.app.use(
+      helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false,
+      }),
+    );
     return this;
   }
 
