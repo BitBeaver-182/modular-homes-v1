@@ -13,6 +13,7 @@ describe('AppConfigurator', () => {
     setGlobalPrefix: jest.fn(),
     enableCors: jest.fn(),
     enableShutdownHooks: jest.fn(),
+    use: jest.fn(),
     useLogger: jest.fn(),
   };
 
@@ -45,6 +46,11 @@ describe('AppConfigurator', () => {
   it('enables cors with the default setting when no options are provided', () => {
     configurator.withCors();
     expect(app.enableCors).toHaveBeenCalledWith(true);
+  });
+
+  it('registers helmet middleware and returns itself', () => {
+    expect(configurator.withHelmet()).toBe(configurator);
+    expect(app.use).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it('configures swagger and returns itself', () => {

@@ -6,6 +6,10 @@ export interface AppEnv {
   DATABASE_URL: string;
   DIRECT_URL: string;
   PORT: number;
+  CORS_ORIGINS?: string;
+  CORS_ALLOW_CREDENTIALS?: boolean;
+  THROTTLE_TTL_MS?: number;
+  THROTTLE_LIMIT?: number;
   JWT_SECRET?: string;
 }
 
@@ -33,6 +37,10 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     typeof config.JWT_SECRET === 'string' && config.JWT_SECRET.length > 0
       ? config.JWT_SECRET
       : undefined;
+  const corsOrigins =
+    typeof config.CORS_ORIGINS === 'string' && config.CORS_ORIGINS.length > 0
+      ? config.CORS_ORIGINS
+      : undefined;
 
   if (rawNodeEnv === 'production' && !jwtSecret) {
     throw new Error('JWT_SECRET is required in production');
@@ -43,6 +51,16 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     DATABASE_URL: databaseUrl,
     DIRECT_URL: directUrl,
     PORT: getOptionalPort(config.PORT),
+    CORS_ORIGINS: corsOrigins,
+    CORS_ALLOW_CREDENTIALS: getOptionalBoolean(config.CORS_ALLOW_CREDENTIALS),
+    THROTTLE_TTL_MS: getOptionalPositiveInteger(
+      config.THROTTLE_TTL_MS,
+      'THROTTLE_TTL_MS',
+    ),
+    THROTTLE_LIMIT: getOptionalPositiveInteger(
+      config.THROTTLE_LIMIT,
+      'THROTTLE_LIMIT',
+    ),
     JWT_SECRET: jwtSecret,
   };
 }
@@ -73,4 +91,46 @@ function getOptionalPort(rawValue: unknown): number {
   }
 
   throw new Error('PORT must be an integer between 1 and 65535');
+}
+
+function getOptionalBoolean(rawValue: unknown): boolean | undefined {
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return undefined;
+  }
+
+  if (typeof rawValue === 'boolean') {
+    return rawValue;
+  }
+
+  if (rawValue === 'true') {
+    return true;
+  }
+
+  if (rawValue === 'false') {
+    return false;
+  }
+
+  throw new Error('CORS_ALLOW_CREDENTIALS must be true or false');
+}
+
+function getOptionalPositiveInteger(
+  rawValue: unknown,
+  keyName: string,
+): number | undefined {
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return undefined;
+  }
+
+  if (typeof rawValue !== 'number' && typeof rawValue !== 'string') {
+    throw new Error(`${keyName} must be a positive integer`);
+  }
+
+  const parsedValue =
+    typeof rawValue === 'number' ? rawValue : Number.parseInt(rawValue, 10);
+
+  if (Number.isInteger(parsedValue) && parsedValue > 0) {
+    return parsedValue;
+  }
+
+  throw new Error(`${keyName} must be a positive integer`);
 }

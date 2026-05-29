@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HealthResponseDto } from './dto/health-response.dto';
 import { HealthService } from './health.service';
@@ -9,6 +10,7 @@ export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Get()
+  @SkipThrottle()
   @ApiOperation({
     summary: 'Get Health',
     description: 'Return the current API health status.',
