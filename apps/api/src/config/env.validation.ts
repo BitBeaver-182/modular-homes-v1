@@ -10,6 +10,7 @@ export interface AppEnv {
   CORS_ALLOW_CREDENTIALS?: boolean;
   THROTTLE_TTL_MS?: number;
   THROTTLE_LIMIT?: number;
+  CSRF_SECRET?: string;
   JWT_SECRET?: string;
 }
 
@@ -37,6 +38,10 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     typeof config.JWT_SECRET === 'string' && config.JWT_SECRET.length > 0
       ? config.JWT_SECRET
       : undefined;
+  const csrfSecret =
+    typeof config.CSRF_SECRET === 'string' && config.CSRF_SECRET.length > 0
+      ? config.CSRF_SECRET
+      : undefined;
   const corsOrigins =
     typeof config.CORS_ORIGINS === 'string' && config.CORS_ORIGINS.length > 0
       ? config.CORS_ORIGINS
@@ -44,6 +49,10 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
 
   if (rawNodeEnv === 'production' && !jwtSecret) {
     throw new Error('JWT_SECRET is required in production');
+  }
+
+  if (rawNodeEnv === 'production' && !csrfSecret) {
+    throw new Error('CSRF_SECRET is required in production');
   }
 
   return {
@@ -61,6 +70,7 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       config.THROTTLE_LIMIT,
       'THROTTLE_LIMIT',
     ),
+    CSRF_SECRET: csrfSecret,
     JWT_SECRET: jwtSecret,
   };
 }

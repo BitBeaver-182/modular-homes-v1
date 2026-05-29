@@ -22,6 +22,7 @@ describe('validateEnv', () => {
       CORS_ALLOW_CREDENTIALS: undefined,
       THROTTLE_TTL_MS: undefined,
       THROTTLE_LIMIT: undefined,
+      CSRF_SECRET: undefined,
       JWT_SECRET: undefined,
     });
   });
@@ -72,6 +73,17 @@ describe('validateEnv', () => {
     ).toThrow('JWT_SECRET is required in production');
   });
 
+  it('requires CSRF_SECRET in production', () => {
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+        JWT_SECRET: 'super-secret',
+      }),
+    ).toThrow('CSRF_SECRET is required in production');
+  });
+
   it('includes JWT_SECRET when provided', () => {
     const result = validateEnv({
       NODE_ENV: 'test',
@@ -81,6 +93,17 @@ describe('validateEnv', () => {
     });
 
     expect(result.JWT_SECRET).toBe('super-secret');
+  });
+
+  it('includes CSRF_SECRET when provided', () => {
+    const result = validateEnv({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+      DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+      CSRF_SECRET: 'csrf-secret',
+    });
+
+    expect(result.CSRF_SECRET).toBe('csrf-secret');
   });
 
   it('uses PORT when provided', () => {
