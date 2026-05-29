@@ -375,6 +375,7 @@ function buildSupplierWhere(
     where.OR.push({
       address: {
         is: {
+          deletedAt: null,
           OR: [
             'line1',
             'line2',

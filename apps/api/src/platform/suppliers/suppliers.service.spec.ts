@@ -132,6 +132,7 @@ describe('SuppliersService', () => {
           {
             address: {
               is: {
+                deletedAt: null,
                 OR: [
                   { line1: { contains: 'acme', mode: 'insensitive' } },
                   { line2: { contains: 'acme', mode: 'insensitive' } },
