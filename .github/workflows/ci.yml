@@ -17,8 +17,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  lint:
-    name: lint
+  api-lint:
+    name: api / lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,10 +28,10 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
+      - run: pnpm lint:api
 
-  typecheck:
-    name: typecheck
+  dashboard-lint:
+    name: dashboard / lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,14 +41,40 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
+      - run: pnpm lint:dashboard
 
-  unit-tests:
-    name: unit-tests
+  api-typecheck:
+    name: api / typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck:api
+
+  dashboard-typecheck:
+    name: dashboard / typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck:dashboard
+
+  api-unit-tests:
+    name: api / unit tests
     runs-on: ubuntu-latest
     needs:
-      - lint
-      - typecheck
+      - api-lint
+      - api-typecheck
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -57,14 +83,30 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter api test:unit
+      - run: pnpm test:api
 
-  integration-tests:
-    name: integration-tests
+  dashboard-unit-tests:
+    name: dashboard / unit tests
     runs-on: ubuntu-latest
     needs:
-      - lint
-      - typecheck
+      - dashboard-lint
+      - dashboard-typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:dashboard
+
+  api-integration-tests:
+    name: api / integration tests
+    runs-on: ubuntu-latest
+    needs:
+      - api-lint
+      - api-typecheck
     environment: testing
     env:
       NODE_ENV: test
@@ -80,12 +122,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter api test:integration
 
-  e2e-tests:
-    name: e2e-tests
+  api-e2e-tests:
+    name: api / e2e tests
     runs-on: ubuntu-latest
     needs:
-      - unit-tests
-      - integration-tests
+      - api-unit-tests
+      - api-integration-tests
     environment: testing
     env:
       NODE_ENV: test
@@ -99,4 +141,20 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter api test:e2e
+      - run: pnpm test:api:e2e
+
+  dashboard-e2e-tests:
+    name: dashboard / e2e tests
+    runs-on: ubuntu-latest
+    needs:
+      - dashboard-unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter react-dashboard exec playwright install --with-deps
+      - run: pnpm test:dashboard:e2e
