@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { QuerybuilderModule } from 'nestjs-prisma-querybuilder';
 import { HealthModule } from './global/health/health.module';
 import { AppConfigModule } from './config/app-config.module';
 import { AppConfigService } from './config/app-config.service';
 import { DatabaseModule } from './database/database.module';
+import { PrismaService } from './database/prisma.service';
 import { OrganizationsModule } from './global/organizations/organizations.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 import { ValidationPipe } from '@nestjs/common';
@@ -24,6 +26,14 @@ import { AuthModule } from './auth/auth.module';
           limit: configService.throttleLimit,
         },
       ],
+    }),
+    QuerybuilderModule.forRootAsync({
+      imports: [DatabaseModule],
+      inject: [PrismaService],
+      useFactory: (...args: unknown[]) => ({
+        prisma: args[0] as PrismaService,
+        maxTake: 100,
+      }),
     }),
     AuthModule,
     BootstrapModule,
