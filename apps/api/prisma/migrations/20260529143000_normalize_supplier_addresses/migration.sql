@@ -19,6 +19,7 @@ CREATE INDEX IF NOT EXISTS "Address_deletedAt_idx" ON "Address"("deletedAt");
 CREATE INDEX IF NOT EXISTS "Address_organizationId_deletedAt_idx" ON "Address"("organizationId", "deletedAt");
 CREATE INDEX IF NOT EXISTS "Address_organizationId_city_idx" ON "Address"("organizationId", "city");
 CREATE INDEX IF NOT EXISTS "Address_organizationId_countryCode_idx" ON "Address"("organizationId", "countryCode");
+CREATE UNIQUE INDEX IF NOT EXISTS "Address_id_organizationId_key" ON "Address"("id", "organizationId");
 
 DO $$
 BEGIN
@@ -34,16 +35,17 @@ END $$;
 
 ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "addressId" BIGINT;
 CREATE INDEX IF NOT EXISTS "Supplier_addressId_idx" ON "Supplier"("addressId");
+ALTER TABLE "Supplier" DROP CONSTRAINT IF EXISTS "Supplier_addressId_fkey";
 
 DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM pg_constraint
-    WHERE conname = 'Supplier_addressId_fkey'
+    WHERE conname = 'Supplier_addressId_organizationId_fkey'
   ) THEN
-    ALTER TABLE "Supplier" ADD CONSTRAINT "Supplier_addressId_fkey"
-    FOREIGN KEY ("addressId") REFERENCES "Address"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    ALTER TABLE "Supplier" ADD CONSTRAINT "Supplier_addressId_organizationId_fkey"
+    FOREIGN KEY ("addressId", "organizationId") REFERENCES "Address"("id", "organizationId") ON DELETE SET NULL ON UPDATE CASCADE;
   END IF;
 END $$;
 
