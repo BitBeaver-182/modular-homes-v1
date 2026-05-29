@@ -11,7 +11,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
 import { PlatformModule } from './platform/platform.module';
 import { AuthModule } from './auth/auth.module';
-import { SecurityModule } from './security/security.module';
 
 @Module({
   imports: [
@@ -32,7 +31,6 @@ import { SecurityModule } from './security/security.module';
     HealthModule,
     PlatformModule,
     OrganizationsModule,
-    SecurityModule,
   ],
   providers: [
     {

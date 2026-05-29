@@ -129,19 +129,6 @@ describe('AppConfigService', () => {
     expect(service.throttleLimit).toBe(10);
   });
 
-  it('returns csrfSecret from config when present', () => {
-    configService.get.mockReturnValue('csrf-secret');
-
-    expect(service.csrfSecret).toBe('csrf-secret');
-    expect(configService.get).toHaveBeenCalledWith('CSRF_SECRET');
-  });
-
-  it('falls back to the local default csrf secret when absent', () => {
-    configService.get.mockReturnValue(undefined);
-
-    expect(service.csrfSecret).toBe('moduflow-local-csrf-secret');
-  });
-
   it('returns jwtSecret from config when present', () => {
     configService.get.mockReturnValue('jwt-secret');
 

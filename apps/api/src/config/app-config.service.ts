@@ -20,7 +20,6 @@ const DEFAULT_CORS_ORIGINS = [
 ];
 const DEFAULT_THROTTLE_TTL_MS = 60_000;
 const DEFAULT_THROTTLE_LIMIT = 20;
-const DEFAULT_CSRF_SECRET = 'moduflow-local-csrf-secret';
 
 @Injectable()
 export class AppConfigService {
@@ -104,13 +103,6 @@ export class AppConfigService {
     return (
       this.configService.get<AppEnv['THROTTLE_LIMIT']>('THROTTLE_LIMIT') ??
       DEFAULT_THROTTLE_LIMIT
-    );
-  }
-
-  get csrfSecret(): string {
-    return (
-      this.configService.get<AppEnv['CSRF_SECRET']>('CSRF_SECRET') ??
-      DEFAULT_CSRF_SECRET
     );
   }
 
