@@ -1,0 +1,13 @@
+---
+globs:
+  - "**/components/**/*.tsx"
+alwaysApply: true
+---
+
+## UI Components (STRICT)
+
+- components/ui and components/reui are READ-ONLY
+- DO NOT modify or recreate them
+
+- DO NOT copy shadcn examples into pages
+- ONLY compose existing components

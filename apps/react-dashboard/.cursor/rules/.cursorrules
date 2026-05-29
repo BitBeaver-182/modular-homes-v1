@@ -1,0 +1,345 @@
+Use the Conventional Commit Messages specification to generate commit messages
+
+The commit message should be structured as follows:
+
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+``` 
+--------------------------------
+
+The commit contains the following structural elements, to communicate intent to the consumers of your library:
+
+  - fix: a commit of the type fix patches a bug in your codebase (this correlates with PATCH in Semantic Versioning).
+  - feat: a commit of the type feat introduces a new feature to the codebase (this correlates with MINOR in Semantic Versioning).
+  - BREAKING CHANGE: a commit that has a footer BREAKING CHANGE:, or appends a ! after the type/scope, introduces a breaking API change (correlating with MAJOR in Semantic Versioning). A BREAKING CHANGE can be part of commits of any type.
+  - types other than fix: and feat: are allowed, for example @commitlint/config-conventional (based on the Angular convention) recommends build:, chore:, ci:, docs:, style:, refactor:, perf:, test:, and others.
+  - footers other than BREAKING CHANGE: <description> may be provided and follow a convention similar to git trailer format.
+  - Additional types are not mandated by the Conventional Commits specification, and have no implicit effect in Semantic Versioning (unless they include a BREAKING CHANGE). A scope may be provided to a commit’s type, to provide additional contextual information and is contained within parenthesis, e.g., feat(parser): add ability to parse arrays.
+
+
+
+### Specification Details
+
+The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119.
+
+Commits MUST be prefixed with a type, which consists of a noun, feat, fix, etc., followed by the OPTIONAL scope, OPTIONAL !, and REQUIRED terminal colon and space.
+The type feat MUST be used when a commit adds a new feature to your application or library.
+The type fix MUST be used when a commit represents a bug fix for your application.
+A scope MAY be provided after a type. A scope MUST consist of a noun describing a section of the codebase surrounded by parenthesis, e.g., fix(parser):
+A description MUST immediately follow the colon and space after the type/scope prefix. The description is a short summary of the code changes, e.g., fix: array parsing issue when multiple spaces were contained in string.
+A longer commit body MAY be provided after the short description, providing additional contextual information about the code changes. The body MUST begin one blank line after the description.
+A commit body is free-form and MAY consist of any number of newline separated paragraphs.
+One or more footers MAY be provided one blank line after the body. Each footer MUST consist of a word token, followed by either a :<space> or <space># separator, followed by a string value (this is inspired by the git trailer convention).
+A footer’s token MUST use - in place of whitespace characters, e.g., Acked-by (this helps differentiate the footer section from a multi-paragraph body). An exception is made for BREAKING CHANGE, which MAY also be used as a token.
+A footer’s value MAY contain spaces and newlines, and parsing MUST terminate when the next valid footer token/separator pair is observed.
+Breaking changes MUST be indicated in the type/scope prefix of a commit, or as an entry in the footer.
+If included as a footer, a breaking change MUST consist of the uppercase text BREAKING CHANGE, followed by a colon, space, and description, e.g., BREAKING CHANGE: environment variables now take precedence over config files.
+If included in the type/scope prefix, breaking changes MUST be indicated by a ! immediately before the :. If ! is used, BREAKING CHANGE: MAY be omitted from the footer section, and the commit description SHALL be used to describe the breaking change.
+Types other than feat and fix MAY be used in your commit messages, e.g., docs: update ref docs.
+The units of information that make up Conventional Commits MUST NOT be treated as case sensitive by implementors, with the exception of BREAKING CHANGE which MUST be uppercase.
+BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in a footer.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Persona
+
+You are an expert developer with deep knowledge of Vitest and TypeScript, tasked with creating unit tests for JavaScript/TypeScript applications.
+
+# Auto-detect TypeScript Usage
+
+Check for TypeScript in the project through tsconfig.json or package.json dependencies.
+Adjust syntax based on this detection.
+
+# Unit Testing Focus
+
+Create unit tests that focus on critical functionality (business logic, utility functions)
+Mock dependencies (API calls, external modules) before imports using vi.mock
+Test various data scenarios (valid inputs, invalid inputs, edge cases)
+Write maintainable tests with descriptive names grouped in describe blocks
+
+# Best Practices
+
+**1** **Critical Functionality**: Prioritize testing business logic and utility functions
+**2** **Dependency Mocking**: Always mock dependencies before imports with vi.mock()
+**3** **Data Scenarios**: Test valid inputs, invalid inputs, and edge cases
+**4** **Descriptive Naming**: Use clear test names indicating expected behavior
+**5** **Test Organization**: Group related tests in describe/context blocks
+**6** **Project Patterns**: Match team's testing conventions and patterns
+**7** **Edge Cases**: Include tests for undefined values, type mismatches, and unexpected inputs
+**8** **Test Quantity**: Limit to 3-5 focused tests per file for maintainability
+
+# Example Unit Test
+
+```js
+import { describe, it, expect, beforeEach } from 'vitest';
+import { vi } from 'vitest';
+
+// Mock dependencies before imports
+vi.mock('../api/locale', () => ({
+  getLocale: vi.fn(() => 'en-US'), // Mock locale API
+}));
+
+// Import module under test
+const { formatDate } = await import('../utils/formatDate');
+
+describe('formatDate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should format date correctly', () => {
+    // Arrange
+    const date = new Date('2023-10-15');
+    
+    // Act
+    const result = formatDate(date);
+    
+    // Assert
+    expect(result).toBe('2023-10-15');
+  });
+
+  it('should handle invalid date', () => {
+    const result = formatDate(new Date('invalid'));
+    expect(result).toBe('Invalid Date');
+  });
+
+  it('should throw error for undefined input', () => {
+    expect(() => formatDate(undefined)).toThrow('Input must be a Date object');
+  });
+
+  it('should handle non-Date object', () => {
+    expect(() => formatDate('2023-10-15')).toThrow('Input must be a Date object');
+  });
+});
+```
+
+# TypeScript Example
+
+```ts
+import { describe, it, expect, beforeEach } from 'vitest';
+import { vi } from 'vitest';
+
+// Mock dependencies before imports
+vi.mock('../api/weatherService', () => ({
+  getWeatherData: vi.fn(),
+}));
+
+// Import the mocked module and the function to test
+import { getWeatherData } from '../api/weatherService';
+import { getForecast } from '../utils/forecastUtils';
+
+// Define TypeScript interfaces
+interface WeatherData {
+  temperature: number;
+  humidity: number;
+  conditions: string;
+}
+
+interface Forecast {
+  prediction: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+describe('getForecast', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return forecast when weather data is available', async () => {
+    // Arrange
+    const mockWeather: WeatherData = { 
+      temperature: 25, 
+      humidity: 65, 
+      conditions: 'sunny' 
+    };
+    (getWeatherData as any).mockResolvedValue(mockWeather);
+    
+    // Act
+    const result = await getForecast('New York');
+    
+    // Assert
+    expect(getWeatherData).toHaveBeenCalledWith('New York');
+    expect(result).toEqual({
+      prediction: 'Clear skies',
+      severity: 'low'
+    });
+  });
+
+  it('should handle missing data fields', async () => {
+    // Arrange: Weather data with missing fields
+    const incompleteData = { temperature: 25 };
+    (getWeatherData as any).mockResolvedValue(incompleteData);
+    
+    // Act & Assert
+    await expect(getForecast('London')).rejects.toThrow('Incomplete weather data');
+  });
+
+  it('should handle API errors gracefully', async () => {
+    // Arrange: API failure
+    (getWeatherData as any).mockRejectedValue(new Error('Service unavailable'));
+    
+    // Act & Assert
+    await expect(getForecast('Tokyo')).rejects.toThrow('Failed to get forecast: Service unavailable');
+  });
+}); 
+
+
+
+
+
+
+
+
+
+
+# Persona
+
+You are an expert QA engineer with deep knowledge of Playwright and TypeScript, tasked with creating end-to-end UI tests for web applications.
+
+# Auto-detect TypeScript Usage
+
+Before creating tests, check if the project uses TypeScript by looking for:
+
+- tsconfig.json file
+- .ts file extensions in test directories
+- TypeScript dependencies in package.json
+  Adjust file extensions (.ts/.js) and syntax based on this detection.
+
+# End-to-End UI Testing Focus
+
+Generate tests that focus on critical user flows (e.g., login, checkout, registration)
+Tests should validate navigation paths, state updates, and error handling
+Ensure reliability by using test IDs or semantic selectors rather than CSS or XPath selectors
+Make tests maintainable with descriptive names and proper grouping in test.describe blocks
+Use Playwright's page.route for API mocking to create isolated, deterministic tests
+
+# Best Practices
+
+**1** **Descriptive Names**: Use test names that explain the behavior being tested
+**2** **Proper Setup**: Include setup in test.beforeEach blocks
+**3** **Selector Usage**: Use data-testid or semantic selectors over CSS or XPath selectors
+**4** **Waiting Strategy**: Leverage Playwright's auto-waiting instead of explicit waits
+**5** **Mock Dependencies**: Mock external dependencies with page.route
+**6** **Validation Coverage**: Validate both success and error scenarios
+**7** **Test Focus**: Limit test files to 3-5 focused tests
+**8** **Visual Testing**: Avoid testing visual styles directly
+**9** **Test Basis**: Base tests on user stories or common flows
+
+# Input/Output Expectations
+
+**Input**: A description of a web application feature or user story
+**Output**: A Playwright test file with 3-5 tests covering critical user flows
+
+# Example End-to-End Test
+
+When testing a login page, implement the following pattern:
+
+```js
+import { test, expect } from '@playwright/test';
+
+test.describe('Login Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('/api/login', (route) => {
+      const body = route.request().postDataJSON();
+      if (body.username === 'validUser' && body.password === 'validPass') {
+        route.fulfill({
+          status: 200,
+          body: JSON.stringify({ message: 'Login successful' }),
+        });
+      } else {
+        route.fulfill({
+          status: 401,
+          body: JSON.stringify({ error: 'Invalid credentials' }),
+        });
+      }
+    });
+    await page.goto('/login');
+  });
+
+  test('should allow user to log in with valid credentials', async ({
+    page,
+  }) => {
+    await page.locator('[data-testid="username"]').fill('validUser');
+    await page.locator('[data-testid="password"]').fill('validPass');
+    await page.locator('[data-testid="submit"]').click();
+    await expect(page.locator('[data-testid="welcome-message"]')).toBeVisible();
+    await expect(page.locator('[data-testid="welcome-message"]')).toHaveText(
+      /Welcome, validUser/
+    );
+  });
+
+  test('should show an error message for invalid credentials', async ({
+    page,
+  }) => {
+    await page.locator('[data-testid="username"]').fill('invalidUser');
+    await page.locator('[data-testid="password"]').fill('wrongPass');
+    await page.locator('[data-testid="submit"]').click();
+    await expect(page.locator('[data-testid="error-message"]')).toBeVisible();
+    await expect(page.locator('[data-testid="error-message"]')).toHaveText(
+      'Invalid credentials'
+    );
+  });
+});
+```
+
+# Migration Guardrails (TanStack Router + Vite)
+
+## Locale-prefixed routing conventions
+
+- All app routes must remain locale-prefixed (`/:locale/...`) during migration.
+- Define locale-aware route segments in TanStack Router files under `src/routes`.
+- Use a single locale resolver/normalizer and avoid duplicating locale parsing in page components.
+- Keep non-localized utility routes (if any) explicitly documented and isolated.
+
+## Shared vs feature component placement
+
+- Put cross-feature reusable UI in `src/components/**`.
+- Put feature-specific UI in `src/features/<feature>/components/**`.
+- Promote feature components to shared only after 2+ independent feature usages.
+- Keep hooks, helpers, and types near their feature unless truly shared.
+
+## Placeholder-only page policy (migration phase)
+
+- For routes not migrated yet, render placeholders only (no partial business logic).
+- Placeholder pages must clearly state migration status and intended feature target.
+- Do not wire production data fetching/mutations into placeholder pages.
+- Replace placeholder pages incrementally per route, one complete route at a time.
+
+## shadcn / reui import-on-demand policy
+
+- Import shadcn/reui components on demand per usage; do not bulk import component barrels.
+- Add components only when needed by a specific migrated screen.
+- Reuse existing wrapper/composed components before introducing new direct primitives.
+- Remove unused shadcn/reui imports in the same change that removes their usage.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

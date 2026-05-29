@@ -1,0 +1,18 @@
+---
+description: Enforces the established list-page architecture (URL state + DataGrid + feature hooks), as implemented in src/features/quotes and src/features/suppliers.
+globs: src/features/**/index.tsx,src/features/**/hooks/use-*-table.tsx,src/hooks/use-*-handler.ts
+---
+
+## List pages (STRICT)
+
+These rules codify the patterns used by the most solid list pages: `src/features/quotes/index.tsx` and `src/features/suppliers/index.tsx`.
+
+- **URL is the source of truth**: list state (search, filters, sorting, pagination) MUST be read from `Route.useSearch()` and written via `Route.useNavigate()` using `search: (prev) => ({ ...prev, ...patch })`.
+- **Reset page on list-shaping changes**: changing search text or filters MUST set `page: 1` (and keep other params merged).
+- **Sorting & pagination handlers**: list pages MUST use `useSortingHandler` and `usePaginationHandler` to keep TanStack Table state synced with URL params.
+- **DataGrid only**: list pages MUST render tables via `components/reui/data-grid` composition (`DataGrid`, `DataGridTable`, `DataGridPagination`, `DataGridScrollArea`, etc.). Do not introduce other table implementations.
+- **Columns live in `use-*-table.tsx` hooks**: columns MUST be defined in `src/features/<feature>/hooks/use-<feature>-table.tsx` and should only emit callbacks (`onEdit`, `onDelete`, etc.). No mutations, navigation, or data fetching inside column definitions.
+- **Mutation/query boundary**: network reads/writes MUST be in feature-scoped hooks (`use-get-*`, `use-create-*`, `use-update-*`, `use-delete-*`) with feature query keys. Pages orchestrate these hooks.
+- **Dialog ownership**: create/edit/delete/status-confirm dialogs belong to the page (or the closest owning UI scope) and should emit `onConfirm`/`onSubmit` back to the page where the actual mutation is called.
+- **i18n in hooks**: in non-component modules (e.g. `use-*-table.tsx`) use `t` from `i18next` (not `useTranslation()`), matching existing patterns.
+

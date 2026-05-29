@@ -1,0 +1,2 @@
+export const QUOTE_MAX_ATTACHMENT_FILES = 1;
+export const QUOTE_MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10MB

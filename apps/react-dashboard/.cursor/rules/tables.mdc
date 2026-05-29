@@ -1,0 +1,17 @@
+---
+globs:
+  - "**/app/**/*.tsx"
+  - "**/components/**/*.tsx"
+alwaysApply: true
+---
+
+## Tables (STRICT)
+
+- ALWAYS use components/reui/data-grid
+- NEVER create tables using shadcn Table primitives
+
+- DO NOT recreate tables from scratch
+- DO NOT copy examples from shadcn
+
+- If functionality is missing:
+  → extend existing table components
