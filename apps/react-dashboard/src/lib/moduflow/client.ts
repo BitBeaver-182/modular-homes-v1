@@ -23,9 +23,8 @@ const sanitizeBaseUrl = (rawBaseUrl?: string): string => {
 	return rawBaseUrl.replace(/\/+$/, "");
 };
 
-const moduflowApiBaseUrl = sanitizeBaseUrl(
-	import.meta.env.VITE_MODUFLOW_API_URL
-);
+const getModuflowApiBaseUrl = (): string =>
+	sanitizeBaseUrl(import.meta.env.VITE_MODUFLOW_API_URL);
 
 const readErrorMessage = async (response: Response): Promise<string> => {
 	const text = await response.text();
@@ -72,7 +71,7 @@ export const moduflowRequest = async <T>(
 		}
 	}
 
-	const response = await fetch(`${moduflowApiBaseUrl}${cleanPath}`, {
+	const response = await fetch(`${getModuflowApiBaseUrl()}${cleanPath}`, {
 		...init,
 		body:
 			body != null && !(body instanceof FormData) ? JSON.stringify(body) : body,
