@@ -68,14 +68,12 @@ interface SupplierAddressRecord {
 }
 
 function formatFullAddress(address: SupplierAddressRecord): string {
-  return [
-    address.line1,
-    address.line2,
-    address.city,
-    address.region,
-    address.postalCode,
-    address.countryCode,
-  ]
+  const regionPostalCode = [address.region, address.postalCode]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(' ');
+
+  return [address.line1, address.line2, address.city, regionPostalCode, address.countryCode]
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(', ');
