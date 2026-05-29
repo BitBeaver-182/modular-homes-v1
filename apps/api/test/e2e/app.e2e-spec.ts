@@ -954,9 +954,16 @@ describe('API (e2e)', () => {
         .set('x-organization-id', organizationA.id)
         .send({
           name: ' Acme Supply ',
-          phoneNumber: ' 555-0100 ',
+          phoneNumber: ' +1 415 555 2671 ',
           email: ' orders@acme.example ',
-          address: ' 100 Main Street ',
+          address: {
+            fullAddress: ' 100 Main Street, Austin, TX 78701, US ',
+            line1: ' 100 Main Street ',
+            city: ' Austin ',
+            region: ' TX ',
+            postalCode: ' 78701 ',
+            countryCode: ' us ',
+          },
           website: ' https://acme.example ',
         })
         .expect(HttpStatus.CREATED)
@@ -965,14 +972,17 @@ describe('API (e2e)', () => {
       name: string;
       phoneNumber: string | null;
       email: string | null;
-      address: string | null;
+      address: { fullAddress: string; city: string | null } | null;
       website: string | null;
     };
     expect(supplierA).toMatchObject({
       name: 'Acme Supply',
-      phoneNumber: '555-0100',
+      phoneNumber: '+1 415 555 2671',
       email: 'orders@acme.example',
-      address: '100 Main Street',
+      address: {
+        fullAddress: '100 Main Street, Austin, TX 78701, US',
+        city: 'Austin',
+      },
       website: 'https://acme.example',
     });
     expectHiddenFieldIsAbsent(supplierA, 'organizationId');

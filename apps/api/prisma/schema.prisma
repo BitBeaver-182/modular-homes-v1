@@ -69,7 +69,13 @@ model Supplier {
   name           String
   phoneNumber    String?
   email          String?
-  address        String?
+  addressFull    String?
+  addressLine1   String?
+  addressLine2   String?
+  city           String?
+  region         String?
+  postalCode     String?
+  countryCode    String?
   website        String?
 
   createdAt DateTime  @default(now())
@@ -84,6 +90,9 @@ model Supplier {
   @@index([organizationId, name])
   @@index([organizationId, email])
   @@index([organizationId, phoneNumber])
+  @@index([organizationId, addressFull])
+  @@index([organizationId, city])
+  @@index([organizationId, countryCode])
   @@index([organizationId, createdAt])
 }
 

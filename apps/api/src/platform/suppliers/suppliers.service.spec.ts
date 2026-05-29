@@ -28,13 +28,22 @@ describe('SuppliersService', () => {
   });
 
   it('creates suppliers scoped to an organization and normalizes blanks', async () => {
+    prisma.supplier.findFirst.mockResolvedValue(null);
     prisma.supplier.create.mockResolvedValue({ id: 1n });
 
     await service.create(2n, {
       name: '  Acme Supply  ',
       phoneNumber: '   ',
       email: ' orders@example.com ',
-      address: '',
+      address: {
+        fullAddress: ' 100 Main Street, Austin, TX ',
+        line1: ' 100 Main Street ',
+        line2: '',
+        city: ' Austin ',
+        region: ' TX ',
+        postalCode: ' 78701 ',
+        countryCode: ' us ',
+      },
       website: ' https://example.com ',
     });
 
@@ -44,10 +53,26 @@ describe('SuppliersService', () => {
         name: 'Acme Supply',
         phoneNumber: null,
         email: 'orders@example.com',
-        address: null,
+        addressFull: '100 Main Street, Austin, TX',
+        addressLine1: '100 Main Street',
+        addressLine2: null,
+        city: 'Austin',
+        region: 'TX',
+        postalCode: '78701',
+        countryCode: 'US',
         website: 'https://example.com',
       },
     });
+  });
+
+  it('rejects duplicate active supplier names inside an organization', async () => {
+    prisma.supplier.findFirst.mockResolvedValue({ id: 1n });
+
+    await expect(service.create(2n, { name: 'Acme Supply' })).rejects.toThrow(
+      BadRequestException,
+    );
+
+    expect(prisma.supplier.create).not.toHaveBeenCalled();
   });
 
   it('lists suppliers with mandatory organization and deleted scopes', async () => {
@@ -74,7 +99,13 @@ describe('SuppliersService', () => {
           { name: { contains: 'acme', mode: 'insensitive' } },
           { email: { contains: 'acme', mode: 'insensitive' } },
           { phoneNumber: { contains: 'acme', mode: 'insensitive' } },
-          { address: { contains: 'acme', mode: 'insensitive' } },
+          { addressFull: { contains: 'acme', mode: 'insensitive' } },
+          { addressLine1: { contains: 'acme', mode: 'insensitive' } },
+          { addressLine2: { contains: 'acme', mode: 'insensitive' } },
+          { city: { contains: 'acme', mode: 'insensitive' } },
+          { region: { contains: 'acme', mode: 'insensitive' } },
+          { postalCode: { contains: 'acme', mode: 'insensitive' } },
+          { countryCode: { contains: 'acme', mode: 'insensitive' } },
           { website: { contains: 'acme', mode: 'insensitive' } },
         ],
       },

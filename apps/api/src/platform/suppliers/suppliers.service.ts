@@ -25,7 +25,17 @@ type SupplierSortField = (typeof SORT_FIELDS)[number];
 type SupplierQuery = Record<string, unknown>;
 type SupplierWriteData = Pick<
   Prisma.SupplierUncheckedCreateInput,
-  'name' | 'phoneNumber' | 'email' | 'address' | 'website'
+  | 'name'
+  | 'phoneNumber'
+  | 'email'
+  | 'addressFull'
+  | 'addressLine1'
+  | 'addressLine2'
+  | 'city'
+  | 'region'
+  | 'postalCode'
+  | 'countryCode'
+  | 'website'
 >;
 
 export interface ListSuppliersResult {
@@ -48,14 +58,24 @@ export class SuppliersService {
   ) {}
 
   async create(organizationId: bigint, createSupplierDto: CreateSupplierDto) {
-    return this.prisma.supplier.create({
-      data: {
-        organizationId,
-        ...(sanitizeWriteInput(createSupplierDto) as SupplierWriteData & {
-          name: string;
-        }),
-      },
-    });
+    const data = sanitizeWriteInput(createSupplierDto) as SupplierWriteData & {
+      name: string;
+    };
+    await this.assertNameAvailable(organizationId, data.name);
+
+    try {
+      return await this.prisma.supplier.create({
+        data: {
+          organizationId,
+          ...data,
+        },
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throwSupplierNameTaken();
+      }
+      throw error;
+    }
   }
 
   async findAll(
@@ -121,11 +141,23 @@ export class SuppliersService {
     updateSupplierDto: UpdateSupplierDto,
   ) {
     await this.findOne(organizationId, id);
+    const data = sanitizeWriteInput(updateSupplierDto);
 
-    return this.prisma.supplier.update({
-      where: { id },
-      data: sanitizeWriteInput(updateSupplierDto),
-    });
+    if (typeof data.name === 'string') {
+      await this.assertNameAvailable(organizationId, data.name, id);
+    }
+
+    try {
+      return await this.prisma.supplier.update({
+        where: { id },
+        data,
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throwSupplierNameTaken();
+      }
+      throw error;
+    }
   }
 
   async remove(organizationId: bigint, id: bigint) {
@@ -136,6 +168,46 @@ export class SuppliersService {
       data: { deletedAt: new Date() },
     });
   }
+
+  private async assertNameAvailable(
+    organizationId: bigint,
+    name: string,
+    currentSupplierId?: bigint,
+  ): Promise<void> {
+    const existingSupplier = await this.prisma.supplier.findFirst({
+      where: {
+        organizationId,
+        deletedAt: null,
+        name: {
+          equals: name,
+          mode: 'insensitive',
+        },
+        ...(currentSupplierId ? { id: { not: currentSupplierId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existingSupplier) {
+      throwSupplierNameTaken();
+    }
+  }
+}
+
+function throwSupplierNameTaken(): never {
+  throw new BadRequestException({
+    message: ['name must be unique inside the active organization'],
+    error: 'Bad Request',
+    statusCode: 400,
+  });
+}
+
+function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  );
 }
 
 function sanitizeWriteInput(
@@ -151,14 +223,31 @@ function sanitizeWriteInput(
     data.name = name;
   }
 
-  for (const field of ['phoneNumber', 'email', 'address', 'website'] as const) {
+  for (const field of ['phoneNumber', 'email', 'website'] as const) {
     if (field in input && input[field] !== undefined) {
       const value = input[field]?.trim();
       data[field] = value ? value : null;
     }
   }
 
+  if ('address' in input && input.address !== undefined) {
+    data.addressFull = normalizeOptionalString(input.address?.fullAddress);
+    data.addressLine1 = normalizeOptionalString(input.address?.line1);
+    data.addressLine2 = normalizeOptionalString(input.address?.line2);
+    data.city = normalizeOptionalString(input.address?.city);
+    data.region = normalizeOptionalString(input.address?.region);
+    data.postalCode = normalizeOptionalString(input.address?.postalCode);
+    data.countryCode = normalizeOptionalString(
+      input.address?.countryCode,
+    )?.toUpperCase();
+  }
+
   return data;
+}
+
+function normalizeOptionalString(value: string | undefined): string | null {
+  const trimmedValue = value?.trim();
+  return trimmedValue ? trimmedValue : null;
 }
 
 function buildSupplierWhere(
@@ -172,14 +261,24 @@ function buildSupplierWhere(
   };
 
   if (search) {
-    where.OR = ['name', 'email', 'phoneNumber', 'address', 'website'].map(
-      (field) => ({
-        [field]: {
-          contains: search,
-          mode: 'insensitive',
-        },
-      }),
-    );
+    where.OR = [
+      'name',
+      'email',
+      'phoneNumber',
+      'addressFull',
+      'addressLine1',
+      'addressLine2',
+      'city',
+      'region',
+      'postalCode',
+      'countryCode',
+      'website',
+    ].map((field) => ({
+      [field]: {
+        contains: search,
+        mode: 'insensitive',
+      },
+    }));
   }
 
   return where;

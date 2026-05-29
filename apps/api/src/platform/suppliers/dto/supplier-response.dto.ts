@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
 export class SupplierResponse {
   @ApiProperty({ example: '1' })
@@ -20,7 +20,8 @@ export class SupplierResponse {
 
   @ApiPropertyOptional({ example: '100 Main Street', nullable: true })
   @Expose()
-  address!: string | null;
+  @Type(() => SupplierAddressResponse)
+  address!: SupplierAddressResponse | null;
 
   @ApiPropertyOptional({ example: 'https://example.com', nullable: true })
   @Expose()
@@ -33,6 +34,36 @@ export class SupplierResponse {
   @ApiProperty()
   @Expose()
   updatedAt!: Date;
+}
+
+export class SupplierAddressResponse {
+  @ApiProperty({ example: '100 Main Street, Austin, TX 78701, US' })
+  @Expose()
+  fullAddress!: string;
+
+  @ApiPropertyOptional({ example: '100 Main Street', nullable: true })
+  @Expose()
+  line1!: string | null;
+
+  @ApiPropertyOptional({ example: 'Suite 200', nullable: true })
+  @Expose()
+  line2!: string | null;
+
+  @ApiPropertyOptional({ example: 'Austin', nullable: true })
+  @Expose()
+  city!: string | null;
+
+  @ApiPropertyOptional({ example: 'TX', nullable: true })
+  @Expose()
+  region!: string | null;
+
+  @ApiPropertyOptional({ example: '78701', nullable: true })
+  @Expose()
+  postalCode!: string | null;
+
+  @ApiPropertyOptional({ example: 'US', nullable: true })
+  @Expose()
+  countryCode!: string | null;
 }
 
 export class SupplierPaginationResponse {

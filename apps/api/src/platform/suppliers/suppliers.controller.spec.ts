@@ -26,7 +26,13 @@ describe('SuppliersController', () => {
       name: 'Acme Supply',
       phoneNumber: null,
       email: 'orders@example.com',
-      address: null,
+      addressFull: '100 Main Street, Austin, TX',
+      addressLine1: '100 Main Street',
+      addressLine2: null,
+      city: 'Austin',
+      region: 'TX',
+      postalCode: '78701',
+      countryCode: 'US',
       website: null,
       deletedAt: null,
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -63,6 +69,13 @@ describe('SuppliersController', () => {
         id: 1n,
         name: 'Acme Supply',
         email: 'orders@example.com',
+        // Jest asymmetric matchers are typed as any.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        address: expect.objectContaining({
+          fullAddress: '100 Main Street, Austin, TX',
+          city: 'Austin',
+          countryCode: 'US',
+        }),
       }),
     );
     expect(list.meta.pagination.total).toBe(1);
