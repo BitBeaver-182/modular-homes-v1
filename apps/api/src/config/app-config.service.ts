@@ -70,7 +70,12 @@ export class AppConfigService {
     const allowedOrigins = new Set(this.corsOrigins);
 
     return {
-      allowedHeaders: ['Authorization', 'Content-Type', 'X-CSRF-Token'],
+      allowedHeaders: [
+        'Authorization',
+        'Content-Type',
+        'X-CSRF-Token',
+        'X-Organization-Id',
+      ],
       credentials: this.corsAllowCredentials,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
       optionsSuccessStatus: 204,
