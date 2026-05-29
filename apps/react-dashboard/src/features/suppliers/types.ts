@@ -1,12 +1,9 @@
 export interface Supplier {
-	id: number;
-	documentId: string;
+	id: string;
 	createdAt: string;
 	updatedAt: string;
-	publishedAt: string;
-	slug: string;
 	name: string;
-	phone_number?: string | null;
+	phoneNumber: string | null;
 	email: string | null;
 	address: string | null;
 	website: string | null;
@@ -16,12 +13,12 @@ export const SUPPLIER_SORT_FIELDS = [
 	"createdAt",
 	"name",
 	"email",
-	"phone_number",
+	"phoneNumber",
 ] as const;
 
 export interface SupplierWriteInput {
 	name: string;
-	phone_number: string;
+	phoneNumber: string;
 	email: string;
 	address: string;
 	website: string;

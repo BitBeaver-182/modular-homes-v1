@@ -2,10 +2,14 @@ import type { SuppliersQueryParams } from "@/routes/$locale.o.$organizationSlug.
 
 export const supplierKeys = {
 	all: ["suppliers"] as const,
-	lists: () => [...supplierKeys.all, "list"] as const,
-	list: (params: SuppliersQueryParams) =>
-		[...supplierKeys.lists(), params] as const,
-	details: () => [...supplierKeys.all, "detail"] as const,
-	detail: (documentId: string) =>
-		[...supplierKeys.details(), documentId] as const,
+	organization: (organizationId: string) =>
+		[...supplierKeys.all, organizationId] as const,
+	lists: (organizationId: string) =>
+		[...supplierKeys.organization(organizationId), "list"] as const,
+	list: (organizationId: string, params: SuppliersQueryParams) =>
+		[...supplierKeys.lists(organizationId), params] as const,
+	details: (organizationId: string) =>
+		[...supplierKeys.organization(organizationId), "detail"] as const,
+	detail: (organizationId: string, id: string) =>
+		[...supplierKeys.details(organizationId), id] as const,
 };

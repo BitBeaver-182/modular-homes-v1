@@ -8,11 +8,12 @@ import { getSuppliers } from "../lib/supplier-api";
 import type { PaginatedResult, Supplier } from "../types";
 
 export const useGetSuppliers = (
+	organizationId: string,
 	params: SuppliersQueryParams
 ): UseQueryResult<PaginatedResult<Supplier>, Error> => {
 	return useQuery({
-		queryKey: supplierKeys.list(params),
-		queryFn: () => getSuppliers(params),
+		queryKey: supplierKeys.list(organizationId, params),
+		queryFn: () => getSuppliers({ organizationId }, params),
 		placeholderData: (previousData) => previousData,
 	});
 };

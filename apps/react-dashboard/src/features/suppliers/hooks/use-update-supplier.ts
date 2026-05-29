@@ -10,11 +10,13 @@ import { updateSupplier } from "../lib/supplier-api";
 import type { Supplier, SupplierWriteInput } from "../types";
 
 export interface UpdateSupplierVariables {
-	documentId: string;
+	id: string;
 	input: SupplierWriteInput;
 }
 
-export const useUpdateSupplier = (): UseMutationResult<
+export const useUpdateSupplier = (
+	organizationId: string
+): UseMutationResult<
 	Supplier,
 	Error,
 	UpdateSupplierVariables
@@ -22,13 +24,15 @@ export const useUpdateSupplier = (): UseMutationResult<
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({ documentId, input }: UpdateSupplierVariables) =>
-			updateSupplier(documentId, input),
+		mutationFn: ({ id, input }: UpdateSupplierVariables) =>
+			updateSupplier({ organizationId }, id, input),
 		onSuccess: async (_data, variables): Promise<void> => {
 			await Promise.all([
-				queryClient.invalidateQueries({ queryKey: supplierKeys.lists() }),
 				queryClient.invalidateQueries({
-					queryKey: supplierKeys.detail(variables.documentId),
+					queryKey: supplierKeys.lists(organizationId),
+				}),
+				queryClient.invalidateQueries({
+					queryKey: supplierKeys.detail(organizationId, variables.id),
 				}),
 			]);
 		},

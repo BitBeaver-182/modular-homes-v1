@@ -9,7 +9,9 @@ import { createSupplier } from "../lib/supplier-api";
 
 import type { Supplier, SupplierWriteInput } from "../types";
 
-export const useCreateSupplier = (): UseMutationResult<
+export const useCreateSupplier = (
+	organizationId: string
+): UseMutationResult<
 	Supplier,
 	Error,
 	SupplierWriteInput
@@ -17,9 +19,12 @@ export const useCreateSupplier = (): UseMutationResult<
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (input: SupplierWriteInput) => createSupplier(input),
+		mutationFn: (input: SupplierWriteInput) =>
+			createSupplier({ organizationId }, input),
 		onSuccess: async (): Promise<void> => {
-			await queryClient.invalidateQueries({ queryKey: supplierKeys.lists() });
+			await queryClient.invalidateQueries({
+				queryKey: supplierKeys.lists(organizationId),
+			});
 		},
 	});
 };

@@ -6,11 +6,12 @@ import { getSupplier } from "../lib/supplier-api";
 import type { Supplier } from "../types";
 
 export const useGetSupplier = (
-	documentId: string | undefined | null,
+	organizationId: string,
+	id: string | undefined | null
 ): UseQueryResult<Supplier, Error> => {
 	return useQuery({
-		queryKey: supplierKeys.detail(documentId ?? ""),
-		queryFn: () => getSupplier(documentId!),
-		enabled: Boolean(documentId),
+		queryKey: supplierKeys.detail(organizationId, id ?? ""),
+		queryFn: () => getSupplier({ organizationId }, id!),
+		enabled: Boolean(id),
 	});
 };
