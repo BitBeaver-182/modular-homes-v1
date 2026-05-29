@@ -35,6 +35,8 @@ END $$;
 
 ALTER TABLE "Supplier" ADD COLUMN IF NOT EXISTS "addressId" BIGINT;
 CREATE INDEX IF NOT EXISTS "Supplier_addressId_idx" ON "Supplier"("addressId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Supplier_addressId_key" ON "Supplier"("addressId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Supplier_addressId_organizationId_key" ON "Supplier"("addressId", "organizationId");
 ALTER TABLE "Supplier" DROP CONSTRAINT IF EXISTS "Supplier_addressId_fkey";
 
 DO $$

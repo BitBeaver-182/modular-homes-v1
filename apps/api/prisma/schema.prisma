@@ -79,7 +79,7 @@ model Address {
   deletedAt DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id])
-  suppliers    Supplier[]
+  supplier     Supplier?
 
   @@index([organizationId])
   @@index([deletedAt])
@@ -92,7 +92,7 @@ model Address {
 model Supplier {
   id             BigInt @id @default(autoincrement())
   organizationId BigInt
-  addressId      BigInt?
+  addressId      BigInt? @unique
   name           String
   phoneNumber    String?
   email          String?
@@ -113,6 +113,7 @@ model Supplier {
   @@index([organizationId, email])
   @@index([organizationId, phoneNumber])
   @@index([organizationId, createdAt])
+  @@unique([addressId, organizationId])
 }
 
 model OrganizationInvitation {
