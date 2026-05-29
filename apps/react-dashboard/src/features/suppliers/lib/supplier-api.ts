@@ -28,7 +28,15 @@ const sanitizeWriteInput = (input: SupplierWriteInput): SupplierWriteInput => ({
 	name: input.name.trim(),
 	phoneNumber: input.phoneNumber.trim(),
 	email: input.email.trim(),
-	address: input.address.trim(),
+	address: {
+		fullAddress: input.address.fullAddress.trim(),
+		line1: input.address.line1.trim(),
+		line2: input.address.line2.trim(),
+		city: input.address.city.trim(),
+		region: input.address.region.trim(),
+		postalCode: input.address.postalCode.trim(),
+		countryCode: input.address.countryCode.trim().toUpperCase(),
+	},
 	website: input.website.trim(),
 });
 

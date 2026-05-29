@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 
 export class SupplierResponse {
   @ApiProperty({ example: '1' })
@@ -20,6 +20,19 @@ export class SupplierResponse {
 
   @ApiPropertyOptional({ example: '100 Main Street', nullable: true })
   @Expose()
+  @Transform(({ obj }: { obj: SupplierAddressSource }) =>
+    obj.addressFull
+      ? {
+          fullAddress: obj.addressFull,
+          line1: obj.addressLine1 ?? null,
+          line2: obj.addressLine2 ?? null,
+          city: obj.city ?? null,
+          region: obj.region ?? null,
+          postalCode: obj.postalCode ?? null,
+          countryCode: obj.countryCode ?? null,
+        }
+      : null,
+  )
   @Type(() => SupplierAddressResponse)
   address!: SupplierAddressResponse | null;
 
@@ -34,6 +47,16 @@ export class SupplierResponse {
   @ApiProperty()
   @Expose()
   updatedAt!: Date;
+}
+
+interface SupplierAddressSource {
+  addressFull?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  region?: string | null;
+  postalCode?: string | null;
+  countryCode?: string | null;
 }
 
 export class SupplierAddressResponse {

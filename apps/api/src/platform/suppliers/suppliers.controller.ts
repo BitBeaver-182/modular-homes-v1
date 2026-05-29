@@ -73,7 +73,7 @@ export class SuppliersController {
     const result = await this.suppliersService.findAll(organizationId, query);
 
     return {
-      data: plainToInstance(SupplierResponse, result.data.map(toSupplierDto), {
+      data: plainToInstance(SupplierResponse, result.data, {
         excludeExtraneousValues: true,
       }),
       meta: result.meta,
@@ -138,34 +138,7 @@ export class SuppliersController {
 }
 
 function toSupplierResponse(supplier: object): SupplierResponse {
-  return plainToInstance(SupplierResponse, toSupplierDto(supplier), {
+  return plainToInstance(SupplierResponse, supplier, {
     excludeExtraneousValues: true,
   });
-}
-
-function toSupplierDto(supplier: object): object {
-  const rawSupplier = supplier as {
-    addressFull?: string | null;
-    addressLine1?: string | null;
-    addressLine2?: string | null;
-    city?: string | null;
-    region?: string | null;
-    postalCode?: string | null;
-    countryCode?: string | null;
-  };
-
-  return {
-    ...supplier,
-    address: rawSupplier.addressFull
-      ? {
-          fullAddress: rawSupplier.addressFull,
-          line1: rawSupplier.addressLine1 ?? null,
-          line2: rawSupplier.addressLine2 ?? null,
-          city: rawSupplier.city ?? null,
-          region: rawSupplier.region ?? null,
-          postalCode: rawSupplier.postalCode ?? null,
-          countryCode: rawSupplier.countryCode ?? null,
-        }
-      : null,
-  };
 }
