@@ -4,6 +4,10 @@
   "description": "Moduflow React dashboard",
   "license": "MIT",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.29.1",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "type": "module",
   "scripts": {
     "format": "prettier \"src/**/*.{ts,tsx}\" --write",
