@@ -6,10 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import {
-  ApiErrorDetail,
-  isApiErrorHttpResponse,
-} from '../errors/api-error';
+import { ApiErrorDetail, isApiErrorHttpResponse } from '../errors/api-error';
 
 interface ApiErrorResponse {
   data: null;
@@ -43,7 +40,12 @@ function toApiErrorResponse(
   if (exception instanceof HttpException) {
     const rawResponse = exception.getResponse();
     const message = getMessage(rawResponse) ?? exception.message;
-    const errors = getErrorDetails(rawResponse, exception.name, status, message);
+    const errors = getErrorDetails(
+      rawResponse,
+      exception.name,
+      status,
+      message,
+    );
 
     return {
       data: null,
@@ -104,7 +106,10 @@ function getErrorDetails(
     return response.errors;
   }
 
-  if (typeof response !== 'string' && hasStringArrayProperty(response, 'message')) {
+  if (
+    typeof response !== 'string' &&
+    hasStringArrayProperty(response, 'message')
+  ) {
     return response.message.map((detailMessage) => ({
       path: getPathFromValidationMessage(detailMessage),
       message: detailMessage,
@@ -156,16 +161,21 @@ function hasStringArrayProperty<T extends string>(
 }
 
 function getHttpErrorKey(status: number): string {
-  switch (status) {
-    case HttpStatus.BAD_REQUEST:
-      return 'http.badRequest';
-    case HttpStatus.UNAUTHORIZED:
-      return 'http.unauthorized';
-    case HttpStatus.FORBIDDEN:
-      return 'http.forbidden';
-    case HttpStatus.NOT_FOUND:
-      return 'http.notFound';
-    default:
-      return 'http.error';
+  if (status === 400) {
+    return 'http.badRequest';
   }
+
+  if (status === 401) {
+    return 'http.unauthorized';
+  }
+
+  if (status === 403) {
+    return 'http.forbidden';
+  }
+
+  if (status === 404) {
+    return 'http.notFound';
+  }
+
+  return 'http.error';
 }

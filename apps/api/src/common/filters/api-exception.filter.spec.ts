@@ -22,14 +22,17 @@ describe('ApiExceptionFilter', () => {
 
   it('returns Strapi-style field errors for structured bad requests', () => {
     const filter = new ApiExceptionFilter();
-    const exception = createBadRequestException('Supplier name must be unique', [
-      createApiErrorDetail({
-        path: ['name'],
-        message: 'name must be unique inside the active organization',
-        name: 'ValidationError',
-        key: 'validation.unique',
-      }),
-    ]);
+    const exception = createBadRequestException(
+      'Supplier name must be unique',
+      [
+        createApiErrorDetail({
+          path: ['name'],
+          message: 'name must be unique inside the active organization',
+          name: 'ValidationError',
+          key: 'validation.unique',
+        }),
+      ],
+    );
 
     filter.catch(exception, host);
 

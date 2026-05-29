@@ -13,9 +13,7 @@ export interface ApiErrorHttpResponse {
   errors?: ApiErrorDetail[];
 }
 
-export function createApiErrorDetail(
-  detail: ApiErrorDetail,
-): ApiErrorDetail {
+export function createApiErrorDetail(detail: ApiErrorDetail): ApiErrorDetail {
   return detail;
 }
 

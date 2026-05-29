@@ -73,7 +73,13 @@ function formatFullAddress(address: SupplierAddressRecord): string {
     .filter(Boolean)
     .join(' ');
 
-  return [address.line1, address.line2, address.city, regionPostalCode, address.countryCode]
+  return [
+    address.line1,
+    address.line2,
+    address.city,
+    regionPostalCode,
+    address.countryCode,
+  ]
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(', ');
