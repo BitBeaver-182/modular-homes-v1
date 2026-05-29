@@ -5,18 +5,8 @@ export interface Supplier {
 	name: string;
 	phoneNumber: string | null;
 	email: string | null;
-	address: SupplierAddress | null;
+	address: string | null;
 	website: string | null;
-}
-
-export interface SupplierAddress {
-	fullAddress: string;
-	line1: string | null;
-	line2: string | null;
-	city: string | null;
-	region: string | null;
-	postalCode: string | null;
-	countryCode: string | null;
 }
 
 export const SUPPLIER_SORT_FIELDS = [
@@ -30,18 +20,8 @@ export interface SupplierWriteInput {
 	name: string;
 	phoneNumber: string;
 	email: string;
-	address: SupplierAddressWriteInput;
+	address: string;
 	website: string;
-}
-
-export interface SupplierAddressWriteInput {
-	fullAddress: string;
-	line1: string;
-	line2: string;
-	city: string;
-	region: string;
-	postalCode: string;
-	countryCode: string;
 }
 
 export interface PaginatedResult<T> {

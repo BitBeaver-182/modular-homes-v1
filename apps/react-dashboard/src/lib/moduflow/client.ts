@@ -1,8 +1,4 @@
 import { authStorage } from "@/features/auth/lib/auth-storage";
-import {
-	StrapiRequestError,
-	isStrapiErrorResponse,
-} from "@/lib/strapi/error";
 
 type ModuflowRequestOptions = Omit<RequestInit, "body"> & {
 	auth?: boolean;
@@ -38,10 +34,6 @@ const readErrorMessage = async (response: Response): Promise<string> => {
 
 	try {
 		const parsed: unknown = JSON.parse(text);
-
-		if (isStrapiErrorResponse(parsed)) {
-			throw new StrapiRequestError(parsed.error);
-		}
 
 		if (typeof parsed === "object" && parsed !== null && "message" in parsed) {
 			const { message } = parsed;

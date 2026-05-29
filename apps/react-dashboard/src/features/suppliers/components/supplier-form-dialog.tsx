@@ -1,5 +1,5 @@
 import { type JSX, useEffect } from "react";
-import { FormProvider, type FieldPath } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { useStrapiForm } from "@/lib/strapi";
+import { Textarea } from "@/components/ui/textarea";
 
 import type { Supplier, SupplierWriteInput } from "../types";
 
@@ -23,15 +23,7 @@ const EMPTY_VALUES: SupplierFormValues = {
 	name: "",
 	phoneNumber: "",
 	email: "",
-	address: {
-		fullAddress: "",
-		line1: "",
-		line2: "",
-		city: "",
-		region: "",
-		postalCode: "",
-		countryCode: "",
-	},
+	address: "",
 	website: "",
 };
 
@@ -46,60 +38,9 @@ const toFormValues = (
 		name: supplier.name ?? "",
 		phoneNumber: supplier.phoneNumber ?? "",
 		email: supplier.email ?? "",
-		address: {
-			fullAddress: supplier.address?.fullAddress ?? "",
-			line1: supplier.address?.line1 ?? "",
-			line2: supplier.address?.line2 ?? "",
-			city: supplier.address?.city ?? "",
-			region: supplier.address?.region ?? "",
-			postalCode: supplier.address?.postalCode ?? "",
-			countryCode: supplier.address?.countryCode ?? "",
-		},
+		address: supplier.address ?? "",
 		website: supplier.website ?? "",
 	};
-};
-
-const isValidPhoneNumber = (value: string): boolean => {
-	if (!value.trim()) {
-		return true;
-	}
-
-	return /^\+?[0-9().\-\s]{7,30}$/.test(value.trim());
-};
-
-const isValidOptionalWebsite = (value: string): boolean => {
-	if (!value.trim()) {
-		return true;
-	}
-
-	try {
-		const url = new URL(value.trim());
-		return url.protocol === "http:" || url.protocol === "https:";
-	} catch {
-		return false;
-	}
-};
-
-const FIELD_MAP: Record<string, FieldPath<SupplierFormValues>> = {
-	name: "name",
-	phoneNumber: "phoneNumber",
-	email: "email",
-	fullAddress: "address.fullAddress",
-	"address.fullAddress": "address.fullAddress",
-	line1: "address.line1",
-	"address.line1": "address.line1",
-	line2: "address.line2",
-	"address.line2": "address.line2",
-	city: "address.city",
-	"address.city": "address.city",
-	region: "address.region",
-	"address.region": "address.region",
-	postalCode: "address.postalCode",
-	"address.postalCode": "address.postalCode",
-	countryCode: "address.countryCode",
-	"address.countryCode": "address.countryCode",
-	website: "website",
-	root: "root",
 };
 
 export interface SupplierFormDialogProps {
@@ -120,15 +61,15 @@ export const SupplierFormDialog = ({
 	onSubmit,
 }: SupplierFormDialogProps): JSX.Element => {
 	const { t } = useTranslation();
-	const form = useStrapiForm<SupplierFormValues>({
+	const form = useForm<SupplierFormValues>({
 		defaultValues: EMPTY_VALUES,
-		mapField: (key) => FIELD_MAP[key],
 		mode: "onSubmit",
 	});
 	const {
 		register,
 		reset,
-		submit,
+		handleSubmit,
+		setError,
 		formState: { errors },
 	} = form;
 
@@ -143,8 +84,17 @@ export const SupplierFormDialog = ({
 	const handleValid = async (values: SupplierFormValues): Promise<void> => {
 		const { root: _root, ...payload } = values;
 		void _root;
-		await onSubmit(payload);
-		onOpenChange(false);
+		try {
+			await onSubmit(payload);
+			onOpenChange(false);
+		} catch (error) {
+			setError("root", {
+				message:
+					error instanceof Error
+						? error.message
+						: t("suppliers.toastRequestFailed"),
+			});
+		}
 	};
 
 	const isCreate = mode === "create";
@@ -152,20 +102,14 @@ export const SupplierFormDialog = ({
 	const nameError = errors.name?.message;
 	const phoneError = errors.phoneNumber?.message;
 	const emailError = errors.email?.message;
-	const addressFullError = errors.address?.fullAddress?.message;
-	const addressLine1Error = errors.address?.line1?.message;
-	const addressLine2Error = errors.address?.line2?.message;
-	const cityError = errors.address?.city?.message;
-	const regionError = errors.address?.region?.message;
-	const postalCodeError = errors.address?.postalCode?.message;
-	const countryCodeError = errors.address?.countryCode?.message;
+	const addressError = errors.address?.message;
 	const websiteError = errors.website?.message;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-2xl">
+			<DialogContent className="sm:max-w-md">
 				<FormProvider {...form}>
-					<form className="contents" onSubmit={submit(handleValid)}>
+					<form className="contents" onSubmit={handleSubmit(handleValid)}>
 						<DialogHeader>
 							<DialogTitle>
 								{isCreate
@@ -183,11 +127,8 @@ export const SupplierFormDialog = ({
 								{rootError}
 							</p>
 						) : null}
-						<div className="grid gap-3 sm:grid-cols-2">
-							<Field
-								className="sm:col-span-2"
-								data-invalid={Boolean(nameError) || undefined}
-							>
+						<div className="space-y-3">
+							<Field data-invalid={Boolean(nameError) || undefined}>
 								<FieldLabel htmlFor="supplier-name">
 									{t("suppliers.fieldName")}
 								</FieldLabel>
@@ -212,11 +153,7 @@ export const SupplierFormDialog = ({
 									aria-invalid={Boolean(phoneError)}
 									id="supplier-phone"
 									placeholder={t("suppliers.placePhone")}
-									{...register("phoneNumber", {
-										validate: (value) =>
-											isValidPhoneNumber(value) ||
-											t("errors.validation.phone"),
-									})}
+									{...register("phoneNumber")}
 								/>
 								{phoneError ? <FieldError>{phoneError}</FieldError> : null}
 							</Field>
@@ -229,119 +166,24 @@ export const SupplierFormDialog = ({
 									aria-invalid={Boolean(emailError)}
 									id="supplier-email"
 									placeholder={t("suppliers.placeEmail")}
-									type="email"
+									// type="email"
 									{...register("email")}
 								/>
 								{emailError ? <FieldError>{emailError}</FieldError> : null}
 							</Field>
 
-							<Field
-								className="sm:col-span-2"
-								data-invalid={Boolean(addressFullError) || undefined}
-							>
-								<FieldLabel htmlFor="supplier-address-full">
-									{t("suppliers.fieldAddressFull")}
+							<Field data-invalid={Boolean(addressError) || undefined}>
+								<FieldLabel htmlFor="supplier-address">
+									{t("suppliers.fieldAddress")}
 								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(addressFullError)}
-									id="supplier-address-full"
-									placeholder={t("suppliers.placeAddressFull")}
-									{...register("address.fullAddress", {
-										required: t("suppliers.fieldRequired"),
-										validate: (value) =>
-											value.trim().length > 0 || t("suppliers.fieldRequired"),
-									})}
+								<Textarea
+									aria-invalid={Boolean(addressError)}
+									className="min-h-20 resize-y"
+									id="supplier-address"
+									placeholder={t("suppliers.placeAddress")}
+									{...register("address")}
 								/>
-								{addressFullError ? (
-									<FieldError>{addressFullError}</FieldError>
-								) : null}
-							</Field>
-
-							<Field data-invalid={Boolean(addressLine1Error) || undefined}>
-								<FieldLabel htmlFor="supplier-address-line-1">
-									{t("suppliers.fieldAddressLine1")}
-								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(addressLine1Error)}
-									id="supplier-address-line-1"
-									placeholder={t("suppliers.placeAddressLine1")}
-									{...register("address.line1")}
-								/>
-								{addressLine1Error ? (
-									<FieldError>{addressLine1Error}</FieldError>
-								) : null}
-							</Field>
-
-							<Field data-invalid={Boolean(addressLine2Error) || undefined}>
-								<FieldLabel htmlFor="supplier-address-line-2">
-									{t("suppliers.fieldAddressLine2")}
-								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(addressLine2Error)}
-									id="supplier-address-line-2"
-									placeholder={t("suppliers.placeAddressLine2")}
-									{...register("address.line2")}
-								/>
-								{addressLine2Error ? (
-									<FieldError>{addressLine2Error}</FieldError>
-								) : null}
-							</Field>
-
-							<Field data-invalid={Boolean(cityError) || undefined}>
-								<FieldLabel htmlFor="supplier-city">
-									{t("suppliers.fieldCity")}
-								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(cityError)}
-									id="supplier-city"
-									placeholder={t("suppliers.placeCity")}
-									{...register("address.city")}
-								/>
-								{cityError ? <FieldError>{cityError}</FieldError> : null}
-							</Field>
-
-							<Field data-invalid={Boolean(regionError) || undefined}>
-								<FieldLabel htmlFor="supplier-region">
-									{t("suppliers.fieldRegion")}
-								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(regionError)}
-									id="supplier-region"
-									placeholder={t("suppliers.placeRegion")}
-									{...register("address.region")}
-								/>
-								{regionError ? <FieldError>{regionError}</FieldError> : null}
-							</Field>
-
-							<Field data-invalid={Boolean(postalCodeError) || undefined}>
-								<FieldLabel htmlFor="supplier-postal-code">
-									{t("suppliers.fieldPostalCode")}
-								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(postalCodeError)}
-									id="supplier-postal-code"
-									placeholder={t("suppliers.placePostalCode")}
-									{...register("address.postalCode")}
-								/>
-								{postalCodeError ? (
-									<FieldError>{postalCodeError}</FieldError>
-								) : null}
-							</Field>
-
-							<Field data-invalid={Boolean(countryCodeError) || undefined}>
-								<FieldLabel htmlFor="supplier-country-code">
-									{t("suppliers.fieldCountryCode")}
-								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(countryCodeError)}
-									id="supplier-country-code"
-									maxLength={2}
-									placeholder={t("suppliers.placeCountryCode")}
-									{...register("address.countryCode")}
-								/>
-								{countryCodeError ? (
-									<FieldError>{countryCodeError}</FieldError>
-								) : null}
+								{addressError ? <FieldError>{addressError}</FieldError> : null}
 							</Field>
 
 							<Field data-invalid={Boolean(websiteError) || undefined}>
@@ -352,11 +194,7 @@ export const SupplierFormDialog = ({
 									aria-invalid={Boolean(websiteError)}
 									id="supplier-website"
 									placeholder={t("suppliers.placeWebsite")}
-									{...register("website", {
-										validate: (value) =>
-											isValidOptionalWebsite(value) ||
-											t("errors.validation.url"),
-									})}
+									{...register("website")}
 								/>
 								{websiteError ? <FieldError>{websiteError}</FieldError> : null}
 							</Field>

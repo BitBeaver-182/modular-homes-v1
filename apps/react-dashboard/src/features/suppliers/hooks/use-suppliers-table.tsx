@@ -99,8 +99,7 @@ export const useSuppliersTable = ({
 						title={t("suppliers.columnAddress")}
 					/>
 				),
-				cell: ({ row }): string =>
-					row.original.address?.fullAddress ?? t("suppliers.dash"),
+				cell: ({ row }): string => row.original.address ?? t("suppliers.dash"),
 			},
 			{
 				id: "actions",
