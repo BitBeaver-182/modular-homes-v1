@@ -1035,6 +1035,31 @@ describe('API (e2e)', () => {
       phoneNumber: null,
     });
 
+    const clearedAddress = (
+      await request(httpServer)
+        .patch(`/api/suppliers/${supplierA.id}`)
+        .set('authorization', `Bearer ${organizationA.ownerToken}`)
+        .set('x-organization-id', organizationA.id)
+        .send({
+          address: {
+            line1: '',
+            line2: '',
+            city: '',
+            region: '',
+            postalCode: '',
+            countryCode: '',
+          },
+        })
+        .expect(HttpStatus.OK)
+    ).body as {
+      id: string;
+      address: null;
+    };
+    expect(clearedAddress).toMatchObject({
+      id: supplierA.id,
+      address: null,
+    });
+
     await request(httpServer)
       .get('/api/suppliers?select=all')
       .set('authorization', `Bearer ${organizationA.ownerToken}`)

@@ -11,7 +11,10 @@ import {
   createBadRequestException,
 } from '../../common/errors/api-error';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
-import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import {
+  UpdateSupplierAddressDto,
+  UpdateSupplierDto,
+} from './dto/update-supplier.dto';
 
 const SORT_FIELDS = ['createdAt', 'name', 'email', 'phoneNumber'] as const;
 const BLOCKED_QUERY_KEYS = [
@@ -309,7 +312,7 @@ function sanitizeWriteInput(
 
 function sanitizeAddressInput(
   organizationId: bigint,
-  input: CreateSupplierDto['address'],
+  input: CreateSupplierDto['address'] | UpdateSupplierAddressDto | undefined,
 ): AddressWriteData | undefined {
   if (input === undefined) {
     return undefined;
