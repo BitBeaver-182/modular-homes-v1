@@ -75,9 +75,6 @@ jobs:
     needs:
       - api-lint
       - api-typecheck
-    env:
-      THROTTLE_LIMIT: ${{ vars.THROTTLE_LIMIT }}
-      THROTTLE_TTL_MS: ${{ vars.THROTTLE_TTL_MS }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -115,8 +112,8 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
-      THROTTLE_LIMIT: ${{ vars.THROTTLE_LIMIT || '1000' }}
-      THROTTLE_TTL_MS: ${{ vars.THROTTLE_TTL_MS || '60000' }}
+      THROTTLE_LIMIT: ${{ vars.THROTTLE_LIMIT }}
+      THROTTLE_TTL_MS: ${{ vars.THROTTLE_TTL_MS }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -138,8 +135,8 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
-      THROTTLE_LIMIT: ${{ vars.THROTTLE_LIMIT || '1000' }}
-      THROTTLE_TTL_MS: ${{ vars.THROTTLE_TTL_MS || '60000' }}
+      THROTTLE_LIMIT: ${{ vars.THROTTLE_LIMIT }}
+      THROTTLE_TTL_MS: ${{ vars.THROTTLE_TTL_MS }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
