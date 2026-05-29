@@ -18,6 +18,8 @@ const DEFAULT_CORS_ORIGINS = [
   'http://localhost:4173',
   'http://127.0.0.1:4173',
 ];
+const DEFAULT_THROTTLE_TTL_MS = 60_000;
+const DEFAULT_THROTTLE_LIMIT = 20;
 
 @Injectable()
 export class AppConfigService {
@@ -88,6 +90,20 @@ export class AppConfigService {
         callback(new Error(`Origin ${origin} is not allowed by CORS`), false);
       },
     };
+  }
+
+  get throttleTtlMs(): number {
+    return (
+      this.configService.get<AppEnv['THROTTLE_TTL_MS']>('THROTTLE_TTL_MS') ??
+      DEFAULT_THROTTLE_TTL_MS
+    );
+  }
+
+  get throttleLimit(): number {
+    return (
+      this.configService.get<AppEnv['THROTTLE_LIMIT']>('THROTTLE_LIMIT') ??
+      DEFAULT_THROTTLE_LIMIT
+    );
   }
 
   get jwtSecret(): string {

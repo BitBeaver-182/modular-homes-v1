@@ -105,6 +105,30 @@ describe('AppConfigService', () => {
     ]);
   });
 
+  it('returns default throttle settings when not configured', () => {
+    configService.get.mockReturnValue(undefined);
+
+    expect(service.throttleTtlMs).toBe(60000);
+    expect(service.throttleLimit).toBe(20);
+  });
+
+  it('returns configured throttle settings', () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'THROTTLE_TTL_MS') {
+        return 30000;
+      }
+
+      if (key === 'THROTTLE_LIMIT') {
+        return 10;
+      }
+
+      return undefined;
+    });
+
+    expect(service.throttleTtlMs).toBe(30000);
+    expect(service.throttleLimit).toBe(10);
+  });
+
   it('returns jwtSecret from config when present', () => {
     configService.get.mockReturnValue('jwt-secret');
 

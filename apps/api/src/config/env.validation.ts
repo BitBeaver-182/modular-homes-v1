@@ -8,6 +8,8 @@ export interface AppEnv {
   PORT: number;
   CORS_ORIGINS?: string;
   CORS_ALLOW_CREDENTIALS?: boolean;
+  THROTTLE_TTL_MS?: number;
+  THROTTLE_LIMIT?: number;
   JWT_SECRET?: string;
 }
 
@@ -51,6 +53,14 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     PORT: getOptionalPort(config.PORT),
     CORS_ORIGINS: corsOrigins,
     CORS_ALLOW_CREDENTIALS: getOptionalBoolean(config.CORS_ALLOW_CREDENTIALS),
+    THROTTLE_TTL_MS: getOptionalPositiveInteger(
+      config.THROTTLE_TTL_MS,
+      'THROTTLE_TTL_MS',
+    ),
+    THROTTLE_LIMIT: getOptionalPositiveInteger(
+      config.THROTTLE_LIMIT,
+      'THROTTLE_LIMIT',
+    ),
     JWT_SECRET: jwtSecret,
   };
 }
@@ -101,4 +111,26 @@ function getOptionalBoolean(rawValue: unknown): boolean | undefined {
   }
 
   throw new Error('CORS_ALLOW_CREDENTIALS must be true or false');
+}
+
+function getOptionalPositiveInteger(
+  rawValue: unknown,
+  keyName: string,
+): number | undefined {
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return undefined;
+  }
+
+  if (typeof rawValue !== 'number' && typeof rawValue !== 'string') {
+    throw new Error(`${keyName} must be a positive integer`);
+  }
+
+  const parsedValue =
+    typeof rawValue === 'number' ? rawValue : Number.parseInt(rawValue, 10);
+
+  if (Number.isInteger(parsedValue) && parsedValue > 0) {
+    return parsedValue;
+  }
+
+  throw new Error(`${keyName} must be a positive integer`);
 }

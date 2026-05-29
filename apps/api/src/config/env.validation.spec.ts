@@ -20,6 +20,8 @@ describe('validateEnv', () => {
       PORT: 3000,
       CORS_ORIGINS: undefined,
       CORS_ALLOW_CREDENTIALS: undefined,
+      THROTTLE_TTL_MS: undefined,
+      THROTTLE_LIMIT: undefined,
       JWT_SECRET: undefined,
     });
   });
@@ -107,6 +109,19 @@ describe('validateEnv', () => {
     expect(result.CORS_ALLOW_CREDENTIALS).toBe(false);
   });
 
+  it('includes throttle env values when provided', () => {
+    const result = validateEnv({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+      DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+      THROTTLE_TTL_MS: '30000',
+      THROTTLE_LIMIT: '10',
+    });
+
+    expect(result.THROTTLE_TTL_MS).toBe(30000);
+    expect(result.THROTTLE_LIMIT).toBe(10);
+  });
+
   it('throws when PORT is invalid', () => {
     expect(() =>
       validateEnv({
@@ -127,5 +142,25 @@ describe('validateEnv', () => {
         CORS_ALLOW_CREDENTIALS: 'yes',
       }),
     ).toThrow('CORS_ALLOW_CREDENTIALS must be true or false');
+  });
+
+  it('throws when throttle env values are invalid', () => {
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'test',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+        THROTTLE_TTL_MS: '0',
+      }),
+    ).toThrow('THROTTLE_TTL_MS must be a positive integer');
+
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'test',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+        THROTTLE_LIMIT: '-1',
+      }),
+    ).toThrow('THROTTLE_LIMIT must be a positive integer');
   });
 });
