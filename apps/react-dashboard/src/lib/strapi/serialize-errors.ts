@@ -24,9 +24,11 @@ export const serializeStrapiErrors = (
 	}
 
 	const out: Record<string, string> = {};
+	let rootMessage: string | undefined;
 	for (const item of items) {
 		const {path} = item;
 		if (!path?.length) {
+			rootMessage = format?.detailMessage?.(item) ?? item.message;
 			continue;
 		}
 
@@ -35,5 +37,8 @@ export const serializeStrapiErrors = (
 
 	return Object.keys(out).length > 0
 		? out
-		: { root: format?.rootMessage?.(error.message) ?? error.message };
+		: {
+			root:
+				rootMessage ?? format?.rootMessage?.(error.message) ?? error.message,
+		};
 };

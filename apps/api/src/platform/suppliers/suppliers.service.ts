@@ -6,6 +6,10 @@ import {
 import { Prisma } from '@prisma/client';
 import { QuerybuilderService } from 'nestjs-prisma-querybuilder';
 import { PrismaService } from '../../database/prisma.service';
+import {
+  createApiErrorDetail,
+  createBadRequestException,
+} from '../../common/errors/api-error';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 
@@ -254,11 +258,14 @@ export class SuppliersService {
 }
 
 function throwSupplierNameTaken(): never {
-  throw new BadRequestException({
-    message: ['name must be unique inside the active organization'],
-    error: 'Bad Request',
-    statusCode: 400,
-  });
+  throw createBadRequestException('Supplier name must be unique', [
+    createApiErrorDetail({
+      path: ['name'],
+      message: 'name must be unique inside the active organization',
+      name: 'ValidationError',
+      key: 'validation.unique',
+    }),
+  ]);
 }
 
 function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {
@@ -278,7 +285,14 @@ function sanitizeWriteInput(
   if ('name' in input && input.name !== undefined) {
     const name = input.name.trim();
     if (!name) {
-      throw new BadRequestException('Supplier name is required');
+      throw createBadRequestException('Supplier name is required', [
+        createApiErrorDetail({
+          path: ['name'],
+          message: 'Supplier name is required',
+          name: 'ValidationError',
+          key: 'validation.required',
+        }),
+      ]);
     }
     data.name = name;
   }

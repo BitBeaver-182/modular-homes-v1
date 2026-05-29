@@ -312,6 +312,14 @@
 		"sidebarOrderStatus": "Order status"
 	},
 	"errors": {
+		"http": {
+			"badRequest": "The request is invalid",
+			"unauthorized": "You need to sign in to continue",
+			"forbidden": "You do not have access to this resource",
+			"notFound": "The requested resource was not found",
+			"error": "The request could not be completed",
+			"internalServerError": "An unexpected server error occurred"
+		},
 		"validation": {
 			"required": "This field is required",
 			"string": "This field must be a string",
@@ -320,6 +328,8 @@
 			"maxLength": "Must be at most {{max}} characters",
 			"url": "Please enter a valid URL",
 			"phone": "Please enter a valid phone number",
+			"countryCode": "Please enter a valid country code",
+			"unique": "This value must be unique",
 			"quotePdfInvalid": "Only PDF files are allowed",
 			"unknown": "{{message}}"
 		}

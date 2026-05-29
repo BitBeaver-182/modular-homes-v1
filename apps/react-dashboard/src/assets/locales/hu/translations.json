@@ -312,6 +312,14 @@
 		"sidebarOrderStatus": "Rendeles allapota"
 	},
 	"errors": {
+		"http": {
+			"badRequest": "A keres ervenytelen",
+			"unauthorized": "A folytatashoz jelentkezzen be",
+			"forbidden": "Nincs jogosultsaga ehhez az eroforrashoz",
+			"notFound": "A kert eroforras nem talalhato",
+			"error": "A keres nem teljesitheto",
+			"internalServerError": "Varatlan szerverhiba tortent"
+		},
 		"validation": {
 			"required": "Ez a mezo kotelezo",
 			"string": "A mezonek szovegnek kell lennie",
@@ -320,6 +328,8 @@
 			"maxLength": "Legfeljebb {{max}} karakter lehet",
 			"url": "Adjon meg ervenyes URL-t",
 			"phone": "Adjon meg ervenyes telefonszamot",
+			"countryCode": "Adjon meg ervenyes orszagkodot",
+			"unique": "Ennek az erteknek egyedinek kell lennie",
 			"quotePdfInvalid": "Csak PDF fajl engedelyezett",
 			"unknown": "{{message}}"
 		}

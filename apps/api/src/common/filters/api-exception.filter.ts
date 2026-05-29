@@ -6,12 +6,10 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import type { Response } from 'express';
-
-interface ApiErrorDetail {
-  path: Array<string | number>;
-  message: string;
-  name: string;
-}
+import {
+  ApiErrorDetail,
+  isApiErrorHttpResponse,
+} from '../errors/api-error';
 
 interface ApiErrorResponse {
   data: null;
@@ -19,7 +17,7 @@ interface ApiErrorResponse {
     status: number;
     name: string;
     message: string;
-    details?: {
+    details: {
       errors: ApiErrorDetail[];
     };
   };
@@ -45,7 +43,7 @@ function toApiErrorResponse(
   if (exception instanceof HttpException) {
     const rawResponse = exception.getResponse();
     const message = getMessage(rawResponse) ?? exception.message;
-    const errors = getValidationErrors(rawResponse);
+    const errors = getErrorDetails(rawResponse, exception.name, status, message);
 
     return {
       data: null,
@@ -53,17 +51,29 @@ function toApiErrorResponse(
         status,
         name: exception.name,
         message,
-        ...(errors.length > 0 ? { details: { errors } } : {}),
+        details: { errors },
       },
     };
   }
+
+  const message = 'Internal server error';
 
   return {
     data: null,
     error: {
       status,
       name: 'InternalServerError',
-      message: 'Internal server error',
+      message,
+      details: {
+        errors: [
+          {
+            path: [],
+            message,
+            name: 'InternalServerError',
+            key: 'http.internalServerError',
+          },
+        ],
+      },
     },
   };
 }
@@ -84,19 +94,33 @@ function getMessage(response: string | object): string | undefined {
   return undefined;
 }
 
-function getValidationErrors(response: string | object): ApiErrorDetail[] {
-  if (
-    typeof response === 'string' ||
-    !hasStringArrayProperty(response, 'message')
-  ) {
-    return [];
+function getErrorDetails(
+  response: string | object,
+  exceptionName: string,
+  status: number,
+  message: string,
+): ApiErrorDetail[] {
+  if (isApiErrorHttpResponse(response) && response.errors?.length) {
+    return response.errors;
   }
 
-  return response.message.map((message) => ({
-    path: getPathFromValidationMessage(message),
-    message,
-    name: 'ValidationError',
-  }));
+  if (typeof response !== 'string' && hasStringArrayProperty(response, 'message')) {
+    return response.message.map((detailMessage) => ({
+      path: getPathFromValidationMessage(detailMessage),
+      message: detailMessage,
+      name: 'ValidationError',
+      key: 'validation.unknown',
+    }));
+  }
+
+  return [
+    {
+      path: [],
+      message,
+      name: exceptionName,
+      key: getHttpErrorKey(status),
+    },
+  ];
 }
 
 function getPathFromValidationMessage(message: string): string[] {
@@ -129,4 +153,19 @@ function hasStringArrayProperty<T extends string>(
     Array.isArray(propertyValue) &&
     propertyValue.every((item: unknown) => typeof item === 'string')
   );
+}
+
+function getHttpErrorKey(status: number): string {
+  switch (status) {
+    case HttpStatus.BAD_REQUEST:
+      return 'http.badRequest';
+    case HttpStatus.UNAUTHORIZED:
+      return 'http.unauthorized';
+    case HttpStatus.FORBIDDEN:
+      return 'http.forbidden';
+    case HttpStatus.NOT_FOUND:
+      return 'http.notFound';
+    default:
+      return 'http.error';
+  }
 }

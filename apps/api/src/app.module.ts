@@ -14,6 +14,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
 import { PlatformModule } from './platform/platform.module';
 import { AuthModule } from './auth/auth.module';
+import { createValidationException } from './common/errors/api-error';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { AuthModule } from './auth/auth.module';
         whitelist: true,
         forbidNonWhitelisted: true,
         transform: true,
+        exceptionFactory: createValidationException,
       }),
     },
     {

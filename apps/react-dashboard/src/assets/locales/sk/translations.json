@@ -312,6 +312,14 @@
 		"sidebarOrderStatus": "Stav objednavky"
 	},
 	"errors": {
+		"http": {
+			"badRequest": "Poziadavka je neplatna",
+			"unauthorized": "Pre pokracovanie sa musite prihlasit",
+			"forbidden": "Nemate pristup k tomuto zdroju",
+			"notFound": "Pozadovany zdroj sa nenasiel",
+			"error": "Poziadavku sa nepodarilo dokoncit",
+			"internalServerError": "Doslo k neocekavanej chybe servera"
+		},
 		"validation": {
 			"required": "Toto pole je povinne",
 			"string": "Toto pole musi byt text",
@@ -320,6 +328,8 @@
 			"maxLength": "Musi mat najviac {{max}} znakov",
 			"url": "Zadajte platnu URL",
 			"phone": "Zadajte platne telefonne cislo",
+			"countryCode": "Zadajte platny kod krajiny",
+			"unique": "Tato hodnota musi byt jedinecna",
 			"quotePdfInvalid": "Povolene su len subory PDF",
 			"unknown": "{{message}}"
 		}
