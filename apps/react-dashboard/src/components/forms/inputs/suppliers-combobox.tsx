@@ -8,6 +8,7 @@ import {
 } from "@/components/forms/inputs/infinite-combobox";
 import { getSuppliers } from "@/features/suppliers/lib/supplier-api";
 import type { Supplier } from "@/features/suppliers/types";
+import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
 
 import type { JSX } from "react";
 
@@ -21,27 +22,38 @@ export type SuppliersComboboxProps<M extends boolean = false> = Omit<
 	"queryKey" | "fetchPage" | "getId" | "getLabel"
 >;
 
-export const SuppliersCombobox = <M extends boolean = false>(props: SuppliersComboboxProps<M>): JSX.Element => {
+export const SuppliersCombobox = <M extends boolean = false>(
+	props: SuppliersComboboxProps<M>
+): JSX.Element => {
 	const { t } = useTranslation();
+	const { activeMembership } = AdminRoute.useRouteContext();
+	const organizationId = activeMembership.organization.id;
 
 	return (
 		<InfiniteCombobox<Supplier, M>
-			getId={(s): string => s.documentId}
+			getId={(s): string => s.id}
 			getLabel={(s): string => s.name}
 			noResultsLabel={props.noResultsLabel ?? t("suppliers.noSuppliers")}
-			queryKey={["suppliers", "combobox"]}
+			queryKey={["suppliers", organizationId, "combobox"]}
 			selectAllLabel={props.selectAllLabel ?? t("suppliers.comboboxSelectAll")}
-			fetchPage={async ({ page, pageSize, search }): Promise<{
+			fetchPage={async ({
+				page,
+				pageSize,
+				search,
+			}): Promise<{
 				data: Array<Supplier>;
 				meta: { pagination: { page: number; pageCount: number } };
 			}> =>
-				getSuppliers({
-					page,
-					pageSize,
-					sortBy: "name",
-					sortOrder: "asc",
-					search,
-				})
+				getSuppliers(
+					{ organizationId },
+					{
+						page,
+						pageSize,
+						sortBy: "name",
+						sortOrder: "asc",
+						search,
+					}
+				)
 			}
 			searchPlaceholder={
 				props.searchPlaceholder ?? t("suppliers.searchPlaceholder")
@@ -53,4 +65,4 @@ export const SuppliersCombobox = <M extends boolean = false>(props: SuppliersCom
 			{...props}
 		/>
 	);
-}
+};

@@ -191,7 +191,7 @@ export const OrderSidebar = ({
 							<div>
 								<p className="text-xs text-muted-foreground">{t("orders.sidebarSupplierPhone")}</p>
 								<p className="font-medium">
-									{order.supplier.phone_number ?? t("orders.notApplicable")}
+									{order.supplier.phoneNumber ?? t("orders.notApplicable")}
 								</p>
 							</div>
 							<div>

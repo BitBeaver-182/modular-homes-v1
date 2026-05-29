@@ -36,32 +36,44 @@ export const useSuppliersTable = ({
 				accessorKey: "name",
 				meta: { flex: true },
 				header: ({ column }): JSX.Element => (
-					<DataGridColumnHeader column={column} title={t("suppliers.columnName")} />
+					<DataGridColumnHeader
+						column={column}
+						title={t("suppliers.columnName")}
+					/>
 				),
 			},
 			{
 				accessorKey: "email",
 				size: 300,
 				header: ({ column }): JSX.Element => (
-					<DataGridColumnHeader column={column} title={t("suppliers.columnEmail")} />
+					<DataGridColumnHeader
+						column={column}
+						title={t("suppliers.columnEmail")}
+					/>
 				),
 				cell: ({ row }): string => row.original.email ?? t("suppliers.dash"),
 			},
 			{
-				accessorKey: "phone_number",
+				accessorKey: "phoneNumber",
 				size: FIXED_SIZE,
 				header: ({ column }): JSX.Element => (
-					<DataGridColumnHeader column={column} title={t("suppliers.columnPhone")} />
+					<DataGridColumnHeader
+						column={column}
+						title={t("suppliers.columnPhone")}
+					/>
 				),
 				cell: ({ row }): string =>
-					row.original.phone_number ?? t("suppliers.dash"),
+					row.original.phoneNumber ?? t("suppliers.dash"),
 			},
 			{
 				accessorKey: "website",
 				enableSorting: false,
 				size: FIXED_SIZE,
 				header: ({ column }): JSX.Element => (
-					<DataGridColumnHeader column={column} title={t("suppliers.columnWebsite")} />
+					<DataGridColumnHeader
+						column={column}
+						title={t("suppliers.columnWebsite")}
+					/>
 				),
 				cell: ({ row }): JSX.Element | string =>
 					row.original.website ? (
@@ -82,7 +94,10 @@ export const useSuppliersTable = ({
 				enableSorting: false,
 				meta: { flex: true },
 				header: ({ column }): JSX.Element => (
-					<DataGridColumnHeader column={column} title={t("suppliers.columnAddress")} />
+					<DataGridColumnHeader
+						column={column}
+						title={t("suppliers.columnAddress")}
+					/>
 				),
 				cell: ({ row }): string => row.original.address ?? t("suppliers.dash"),
 			},
@@ -121,7 +136,7 @@ export const useSuppliersTable = ({
 				),
 			},
 		],
-		[onEdit, onDelete],
+		[onEdit, onDelete]
 	);
 
 	return useMemo(() => ({ columns }), [columns]);

@@ -1,5 +1,5 @@
 import { type JSX, useEffect } from "react";
-import { FormProvider, type FieldPath } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -14,48 +14,29 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { stripStrapiDataPrefix, useStrapiForm } from "@/lib/strapi";
 
 import type { Supplier, SupplierWriteInput } from "../types";
 
 type SupplierFormValues = SupplierWriteInput & { root?: string };
 
-const FIELD_NAMES = ["name", "phone_number", "email", "address", "website"] as const;
-type SupplierFieldName = (typeof FIELD_NAMES)[number];
-
 const EMPTY_VALUES: SupplierFormValues = {
 	name: "",
-	phone_number: "",
+	phoneNumber: "",
 	email: "",
 	address: "",
 	website: "",
 };
 
-/**
- * Strapi sometimes emits paths the form doesn't render (e.g. `slug`, which we
- * derive from `name`). Route unknown keys to the matching field instead of
- * dropping them silently.
- */
-const mapSupplierField = (
-	key: string,
-): FieldPath<SupplierFormValues> | undefined => {
-	if (key === "slug") {
-		return "name";
-	}
-
-	return (FIELD_NAMES as ReadonlyArray<string>).includes(key)
-		? (key as SupplierFieldName)
-		: undefined;
-};
-
-const toFormValues = (supplier: Supplier | null | undefined): SupplierFormValues => {
+const toFormValues = (
+	supplier: Supplier | null | undefined
+): SupplierFormValues => {
 	if (!supplier) {
 		return EMPTY_VALUES;
 	}
 
 	return {
 		name: supplier.name ?? "",
-		phone_number: supplier.phone_number ?? "",
+		phoneNumber: supplier.phoneNumber ?? "",
 		email: supplier.email ?? "",
 		address: supplier.address ?? "",
 		website: supplier.website ?? "",
@@ -80,16 +61,15 @@ export const SupplierFormDialog = ({
 	onSubmit,
 }: SupplierFormDialogProps): JSX.Element => {
 	const { t } = useTranslation();
-	const form = useStrapiForm<SupplierFormValues>({
+	const form = useForm<SupplierFormValues>({
 		defaultValues: EMPTY_VALUES,
 		mode: "onSubmit",
-		normalize: stripStrapiDataPrefix,
-		mapField: mapSupplierField,
 	});
 	const {
 		register,
 		reset,
-		submit,
+		handleSubmit,
+		setError,
 		formState: { errors },
 	} = form;
 
@@ -104,14 +84,23 @@ export const SupplierFormDialog = ({
 	const handleValid = async (values: SupplierFormValues): Promise<void> => {
 		const { root: _root, ...payload } = values;
 		void _root;
-		await onSubmit(payload);
-		onOpenChange(false);
+		try {
+			await onSubmit(payload);
+			onOpenChange(false);
+		} catch (error) {
+			setError("root", {
+				message:
+					error instanceof Error
+						? error.message
+						: t("suppliers.toastRequestFailed"),
+			});
+		}
 	};
 
 	const isCreate = mode === "create";
 	const rootError = errors.root?.message;
 	const nameError = errors.name?.message;
-	const phoneError = errors.phone_number?.message;
+	const phoneError = errors.phoneNumber?.message;
 	const emailError = errors.email?.message;
 	const addressError = errors.address?.message;
 	const websiteError = errors.website?.message;
@@ -120,7 +109,7 @@ export const SupplierFormDialog = ({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-md">
 				<FormProvider {...form}>
-					<form className="contents" onSubmit={submit(handleValid)}>
+					<form className="contents" onSubmit={handleSubmit(handleValid)}>
 						<DialogHeader>
 							<DialogTitle>
 								{isCreate
@@ -147,7 +136,11 @@ export const SupplierFormDialog = ({
 									aria-invalid={Boolean(nameError)}
 									id="supplier-name"
 									placeholder={t("suppliers.placeName")}
-									{...register("name")}
+									{...register("name", {
+										required: t("suppliers.fieldRequired"),
+										validate: (value) =>
+											value.trim().length > 0 || t("suppliers.fieldRequired"),
+									})}
 								/>
 								{nameError ? <FieldError>{nameError}</FieldError> : null}
 							</Field>
@@ -160,7 +153,7 @@ export const SupplierFormDialog = ({
 									aria-invalid={Boolean(phoneError)}
 									id="supplier-phone"
 									placeholder={t("suppliers.placePhone")}
-									{...register("phone_number")}
+									{...register("phoneNumber")}
 								/>
 								{phoneError ? <FieldError>{phoneError}</FieldError> : null}
 							</Field>

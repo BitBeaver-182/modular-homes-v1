@@ -82,6 +82,7 @@
 		"fieldEmail": "Correo",
 		"fieldAddress": "Direccion",
 		"fieldWebsite": "Sitio web",
+		"fieldRequired": "Este campo es obligatorio.",
 		"placeName": "ej. Acme Supplies",
 		"placePhone": "ej. +1 555 0100",
 		"placeEmail": "ej. contacto@proveedor.com",

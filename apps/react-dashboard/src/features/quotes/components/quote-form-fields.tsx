@@ -100,7 +100,7 @@ export const QuoteFormFields = ({
 							invalid={Boolean(supplierError)}
 							onChange={(next) => {
 								setSelectedSupplier(next ?? null);
-								field.onChange(next?.documentId ?? "");
+								field.onChange(next?.id ?? "");
 							}}
 							value={supplierValue}
 						/>

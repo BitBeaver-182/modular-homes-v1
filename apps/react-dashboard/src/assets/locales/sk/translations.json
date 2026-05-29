@@ -82,6 +82,7 @@
 		"fieldEmail": "Email",
 		"fieldAddress": "Adresa",
 		"fieldWebsite": "Web",
+		"fieldRequired": "Toto pole je povinne.",
 		"placeName": "napr. Acme Supplies",
 		"placePhone": "napr. +1 555 0100",
 		"placeEmail": "napr. kontakt@supplier.com",

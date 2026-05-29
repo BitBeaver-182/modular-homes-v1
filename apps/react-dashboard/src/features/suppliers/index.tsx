@@ -40,6 +40,8 @@ const SuppliersPage = (): JSX.Element => {
 	const { t } = useTranslation();
 	const searchParams = Route.useSearch();
 	const navigate = Route.useNavigate();
+	const { activeMembership } = Route.useRouteContext();
+	const organizationId = activeMembership.organization.id;
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 	const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(
@@ -60,13 +62,13 @@ const SuppliersPage = (): JSX.Element => {
 		data,
 		isLoading: isLoadingList,
 		isError: isErrorList,
-	} = useGetSuppliers(searchParams);
+	} = useGetSuppliers(organizationId, searchParams);
 	const { isPending: isCreating, mutateAsync: createSupplier } =
-		useCreateSupplier();
+		useCreateSupplier(organizationId);
 	const { isPending: isUpdating, mutateAsync: updateSupplier } =
-		useUpdateSupplier();
+		useUpdateSupplier(organizationId);
 	const { isPending: isDeleting, mutateAsync: deleteSupplier } =
-		useDeleteSupplier();
+		useDeleteSupplier(organizationId);
 	const suppliers = data?.data ?? [];
 	const pagination = data?.meta.pagination;
 	const recordCount = pagination?.total ?? 0;
@@ -110,13 +112,13 @@ const SuppliersPage = (): JSX.Element => {
 		}
 
 		await updateSupplier({
-			documentId: editingSupplier.documentId,
+			id: editingSupplier.id,
 			input: value,
 		});
 	};
 
 	const handleDelete = async (supplier: Supplier): Promise<void> => {
-		await deleteSupplier(supplier.documentId);
+		await deleteSupplier(supplier.id);
 	};
 
 	const table = useReactTable({
@@ -132,7 +134,7 @@ const SuppliersPage = (): JSX.Element => {
 		onPaginationChange,
 		onSortingChange,
 		pageCount,
-		getRowId: (row): string => row.documentId,
+		getRowId: (row): string => row.id,
 	});
 
 	return (

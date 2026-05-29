@@ -82,6 +82,7 @@
 		"fieldEmail": "Email",
 		"fieldAddress": "Cim",
 		"fieldWebsite": "Weboldal",
+		"fieldRequired": "Ez a mezo kotelezo.",
 		"placeName": "pl. Acme Supplies",
 		"placePhone": "pl. +1 555 0100",
 		"placeEmail": "pl. contact@supplier.com",
