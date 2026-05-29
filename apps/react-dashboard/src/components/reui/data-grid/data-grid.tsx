@@ -1,7 +1,9 @@
 "use client"
 
-import type { ReactNode} from "react";
 import { createContext, useContext, useMemo } from "react"
+
+import { cn } from "@/lib/utilities"
+
 import type {
   Column,
   ColumnFiltersState,
@@ -9,8 +11,7 @@ import type {
   SortingState,
   Table,
 } from "@tanstack/react-table"
-
-import { cn } from "@/lib/utilities"
+import type { ReactNode} from "react";
 
 declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -35,14 +36,14 @@ declare module "@tanstack/react-table" {
 export function getColumnHeaderLabel<TData, TValue>(
   column: Column<TData, TValue>
 ): string {
-  const meta = column.columnDef.meta as { headerTitle?: string } | undefined
-  if (typeof meta?.headerTitle === "string") return meta.headerTitle
+  const {meta} = column.columnDef
+  if (typeof meta?.headerTitle === "string") {return meta.headerTitle}
   const defHeader = column.columnDef.header
-  if (typeof defHeader === "string") return defHeader
+  if (typeof defHeader === "string") {return defHeader}
   return String(column.id)
 }
 
-export type DataGridApiFetchParameters = {
+export interface DataGridApiFetchParameters {
   pageIndex: number
   pageSize: number
   sorting?: SortingState
@@ -50,7 +51,7 @@ export type DataGridApiFetchParameters = {
   searchQuery?: string
 }
 
-export type DataGridApiResponse<T> = {
+export interface DataGridApiResponse<T> {
   data: Array<T>
   empty: boolean
   pagination: {
@@ -66,7 +67,7 @@ export interface DataGridContextProps<TData extends object> {
   isLoading: boolean
 }
 
-export type DataGridRequestParameters = {
+export interface DataGridRequestParameters {
   pageIndex: number
   pageSize: number
   sorting?: SortingState
@@ -117,7 +118,7 @@ export interface DataGridProps<TData extends object> {
 }
 
 const DataGridContext = createContext<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   DataGridContextProps<any> | undefined
 >(undefined)
 
@@ -129,11 +130,11 @@ function useDataGrid() {
   return context
 }
 
-function DataGridProvider<TData extends object>({
+const DataGridProvider = <TData extends object>({
   children,
   table,
   ...props
-}: DataGridProps<TData> & { table: Table<TData> }) {
+}: DataGridProps<TData> & { table: Table<TData> }) => {
   const tableState = table.getState()
   const resolvedColumnsResizeMode =
     props.tableLayout?.columnsResizeMode ?? "onEnd"
@@ -189,11 +190,11 @@ function DataGridProvider<TData extends object>({
   )
 }
 
-function DataGrid<TData extends object>({
+const DataGrid = <TData extends object>({
   children,
   table,
   ...props
-}: DataGridProps<TData>) {
+}: DataGridProps<TData>) => {
   const defaultProps: Partial<DataGridProps<TData>> = {
     loadingMode: "skeleton",
     tableLayout: {
@@ -252,7 +253,7 @@ function DataGrid<TData extends object>({
   )
 }
 
-function DataGridContainer({
+const DataGridContainer = ({
   children,
   className,
   border = true,
@@ -260,7 +261,7 @@ function DataGridContainer({
   children: ReactNode
   className?: string
   border?: boolean
-}) {
+}) => {
   return (
     <div
       data-slot="data-grid"

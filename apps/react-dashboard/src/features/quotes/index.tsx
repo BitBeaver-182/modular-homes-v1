@@ -1,6 +1,6 @@
+import { CalendarIcon, DollarSignIcon, ListChecks, Plus } from "lucide-react";
 import { type JSX, useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CalendarIcon, DollarSignIcon, ListChecks, Plus } from "lucide-react";
 
 import {
 	DateRangeFilter,
@@ -10,7 +10,15 @@ import {
 	NumberRangeFilter,
 	SearchFilter,
 } from "@/components/filters";
-import { SupplierFilter } from "@/features/suppliers/components/supplier-filter";
+import type { YmdPair } from "@/components/filters/date-range-filter";
+import type { NumberPair } from "@/components/filters/number-range-filter";
+import {
+	DataGrid,
+	DataGridContainer,
+} from "@/components/reui/data-grid/data-grid";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -19,13 +27,8 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import {
-	DataGrid,
-	DataGridContainer,
-} from "@/components/reui/data-grid/data-grid";
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
+import { useCreateSupplierOrderFromQuote } from "@/features/supplier-orders-detail/hooks/use-create-supplier-order-from-quote";
+import { SupplierFilter } from "@/features/suppliers/components/supplier-filter";
 import { getCoreRowModel, useReactTable } from "@/lib/tanstack-react-table";
 import {
 	Route,
@@ -40,20 +43,18 @@ import { QuotesEmptyState } from "./components/quotes-empty-state";
 import { useCreateQuote } from "./hooks/use-create-quote";
 import { useDeleteQuote } from "./hooks/use-delete-quote";
 import { useGetQuotes } from "./hooks/use-get-quotes";
-import { useUpdateQuote } from "./hooks/use-update-quote";
 import { useQuotesTable } from "./hooks/use-quotes-table";
+import { useUpdateQuote } from "./hooks/use-update-quote";
 import { quoteToWriteInput } from "./lib/quote-form";
-import { useCreateSupplierOrderFromQuote } from "@/features/supplier-orders-detail/hooks/use-create-supplier-order-from-quote";
-import type { Quote, QuoteStatus, QuoteWriteInput } from "./types";
-import type { YmdPair } from "@/components/filters/date-range-filter";
-import type { NumberPair } from "@/components/filters/number-range-filter";
-import { useSortingHandler } from "../../hooks/use-sorting-handler";
 import { usePaginationHandler } from "../../hooks/use-pagination-handler";
+import { useSortingHandler } from "../../hooks/use-sorting-handler";
 
-type StatusAction = {
+import type { Quote, QuoteStatus, QuoteWriteInput } from "./types";
+
+interface StatusAction {
 	quote: Quote;
 	status: Extract<QuoteStatus, "accepted" | "rejected">;
-};
+}
 
 const QuotesPage = (): JSX.Element => {
 	const { t } = useTranslation();

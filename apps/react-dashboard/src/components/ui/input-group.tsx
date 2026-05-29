@@ -1,12 +1,13 @@
-import type * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { cn } from "@/lib/utilities"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utilities"
 
-function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
+import type * as React from "react"
+
+const InputGroup = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
       data-slot="input-group"
@@ -41,11 +42,11 @@ const inputGroupAddonVariants = cva(
   }
 )
 
-function InputGroupAddon({
+const InputGroupAddon = ({
   className,
   align = "inline-start",
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
+}: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) => {
   return (
     <div
       className={cn(inputGroupAddonVariants({ align }), className)}
@@ -81,14 +82,14 @@ const inputGroupButtonVariants = cva(
   }
 )
 
-function InputGroupButton({
+const InputGroupButton = ({
   className,
   type = "button",
   variant = "ghost",
   size = "xs",
   ...props
 }: Omit<React.ComponentProps<typeof Button>, "size"> &
-  VariantProps<typeof inputGroupButtonVariants>) {
+  VariantProps<typeof inputGroupButtonVariants>) => {
   return (
     <Button
       className={cn(inputGroupButtonVariants({ size }), className)}
@@ -100,7 +101,7 @@ function InputGroupButton({
   )
 }
 
-function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
+const InputGroupText = ({ className, ...props }: React.ComponentProps<"span">) => {
   return (
     <span
       className={cn(
@@ -112,10 +113,10 @@ function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
   )
 }
 
-function InputGroupInput({
+const InputGroupInput = ({
   className,
   ...props
-}: React.ComponentProps<"input">) {
+}: React.ComponentProps<"input">) => {
   return (
     <Input
       data-slot="input-group-control"
@@ -128,10 +129,10 @@ function InputGroupInput({
   )
 }
 
-function InputGroupTextarea({
+const InputGroupTextarea = ({
   className,
   ...props
-}: React.ComponentProps<"textarea">) {
+}: React.ComponentProps<"textarea">) => {
   return (
     <Textarea
       data-slot="input-group-control"

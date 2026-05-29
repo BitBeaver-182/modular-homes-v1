@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
 import {
   addDays,
   format,
@@ -9,10 +8,10 @@ import {
   subMonths,
   subYears,
 } from "date-fns"
+import { CalendarIcon } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
-import { cn } from "@/lib/utilities"
-import { getDateFnsLocale } from "@/lib/i18n/date-fns-locale"
-import { formatYmdLocal, parseYmdLocal } from "@/lib/date-ymd"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent } from "@/components/ui/card"
@@ -21,10 +20,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { useTranslation } from "react-i18next"
-import type { Matcher } from "react-day-picker"
+import { formatYmdLocal, parseYmdLocal } from "@/lib/date-ymd"
+import { getDateFnsLocale } from "@/lib/i18n/date-fns-locale"
+import { cn } from "@/lib/utilities"
+
 import type { TFunction } from "i18next"
+import type { Matcher } from "react-day-picker"
 
 export type DatePresetKind =
   | "today"
@@ -66,7 +67,7 @@ type DateInputProps = {
 } & Partial<Pick<React.ComponentProps<typeof Calendar>, "defaultMonth" | "showWeekNumber">>
 
 function presetKey(preset: DatePreset, index: number): string {
-  if ("kind" in preset) return `${preset.kind}-${index}`
+  if ("kind" in preset) {return `${preset.kind}-${index}`}
   return `o${preset.offsetDays}-${index}`
 }
 
@@ -90,7 +91,7 @@ function resolveDateFromPreset(preset: DatePreset): Date {
 }
 
 function resolvePresetLabel(preset: DatePreset, t: TFunction): string {
-  if (preset.label) return preset.label
+  if (preset.label) {return preset.label}
   if ("kind" in preset) {
     switch (preset.kind) {
       case "today":
@@ -106,12 +107,12 @@ function resolvePresetLabel(preset: DatePreset, t: TFunction): string {
     }
   }
   const { offsetDays } = preset
-  if (offsetDays === 0) return t("dateInput.presetToday")
-  if (offsetDays > 0) return t("dateInput.presetInDays", { count: offsetDays })
+  if (offsetDays === 0) {return t("dateInput.presetToday")}
+  if (offsetDays > 0) {return t("dateInput.presetInDays", { count: offsetDays })}
   return t("dateInput.presetDaysAgo", { count: -offsetDays })
 }
 
-export function DateInput({
+export const DateInput = ({
   id,
   defaultValue,
   placeholder,
@@ -126,7 +127,7 @@ export function DateInput({
   valueYmd,
   onYmdChange,
   inline = false,
-}: DateInputProps) {
+}: DateInputProps) => {
   const { t, i18n } = useTranslation()
   const dfLocale = getDateFnsLocale(i18n.language?.split("-")[0] ?? "en")
 
@@ -136,8 +137,8 @@ export function DateInput({
 
   const [month, setMonth] = useState<Date>(() => {
     const parsed = parseYmdLocal(initialYmd.trim())
-    if (parsed) return parsed
-    if (defaultMonth) return defaultMonth
+    if (parsed) {return parsed}
+    if (defaultMonth) {return defaultMonth}
     return startOfDay(new Date())
   })
 
@@ -150,11 +151,11 @@ export function DateInput({
     const raw = isControlled ? String(valueYmd ?? "") : defaultValue
     const parsed = parseYmdLocal(raw.trim())
     setDate(parsed ?? undefined)
-    if (parsed) setMonth(parsed)
+    if (parsed) {setMonth(parsed)}
   }, [isControlled, valueYmd, defaultValue])
 
   const resolvedPresets = useMemo((): Array<DatePreset> => {
-    if (presets?.length) return presets
+    if (presets?.length) {return presets}
     return DEFAULT_PRESETS
   }, [presets])
 

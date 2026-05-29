@@ -3,8 +3,9 @@ import {
 	useQueryClient,
 	type UseMutationResult,
 } from "@tanstack/react-query";
-import { deleteQuote } from "../lib/quote-api";
+
 import { quoteKeys } from "./quote-keys";
+import { deleteQuote } from "../lib/quote-api";
 
 export const useDeleteQuote = (): UseMutationResult<void, Error, string> => {
 	const queryClient = useQueryClient();

@@ -1,264 +1,254 @@
-"use client"
+"use client";
 
-import type {
-  ReactNode} from "react";
+import { flexRender } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+
+import { useDataGrid } from "@/components/reui/data-grid/data-grid";
 import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react"
-import { useDataGrid } from "@/components/reui/data-grid/data-grid"
-import {
-  DataGridTableBase,
-  DataGridTableBody,
-  DataGridTableEmpty,
-  DataGridTableFoot,
-  DataGridTableHead,
-  DataGridTableHeadRow,
-  DataGridTableHeadRowCell,
-  DataGridTableHeadRowCellResize,
-  DataGridTableRenderedRow,
-  DataGridTableRowSpacer,
-  DataGridTableViewport,
-  getDataGridTableRowSections,
-} from "@/components/reui/data-grid/data-grid-table"
+	DataGridTableBase,
+	DataGridTableBody,
+	DataGridTableEmpty,
+	DataGridTableFoot,
+	DataGridTableHead,
+	DataGridTableHeadRow,
+	DataGridTableHeadRowCell,
+	DataGridTableHeadRowCellResize,
+	DataGridTableRenderedRow,
+	DataGridTableRowSpacer,
+	DataGridTableViewport,
+	getDataGridTableRowSections,
+} from "@/components/reui/data-grid/data-grid-table";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utilities";
+
 import type { HeaderGroup, Row, Table } from "@tanstack/react-table";
-import { flexRender } from "@tanstack/react-table"
-import type {
-  VirtualItem,
-  Virtualizer,
-  VirtualizerOptions} from "@tanstack/react-virtual";
-import {
-  useVirtualizer
-} from "@tanstack/react-virtual"
+import type { VirtualItem, VirtualizerOptions } from "@tanstack/react-virtual";
+import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utilities"
-import { Spinner } from "@/components/ui/spinner"
-
-type DataGridTableVirtualScrollElements = {
-  containerElement: HTMLDivElement | null
-  scrollElement: HTMLElement | null
+interface DataGridTableVirtualScrollElements {
+	containerElement: HTMLDivElement | null;
+	scrollElement: HTMLElement | null;
 }
-
-type DataGridTableVirtualizerInstance = Virtualizer<
-  HTMLElement,
-  HTMLTableRowElement
->
 
 type DataGridTableVirtualizerOptions<TData> = Omit<
-  VirtualizerOptions<HTMLElement, HTMLTableRowElement>,
-  "count" | "estimateSize" | "getItemKey" | "getScrollElement"
+	VirtualizerOptions<HTMLElement, HTMLTableRowElement>,
+	"count" | "estimateSize" | "getItemKey" | "getScrollElement"
 > & {
-  estimateSize?: (index: number, row: Row<TData>) => number
-  getItemKey?: (index: number, row: Row<TData>) => string | number
-  getScrollElement?: (
-    elements: DataGridTableVirtualScrollElements
-  ) => HTMLElement | null
-}
+	estimateSize?: (index: number, row: Row<TData>) => number;
+	getItemKey?: (index: number, row: Row<TData>) => string | number;
+	getScrollElement?: (
+		elements: DataGridTableVirtualScrollElements
+	) => HTMLElement | null;
+};
 
 interface DataGridTableVirtualProps<TData> {
-  height?: number | string
-  estimateSize?: number
-  overscan?: number
-  footerContent?: ReactNode
-  renderHeader?: boolean
-  onFetchMore?: () => void
-  isFetchingMore?: boolean
-  hasMore?: boolean
-  fetchMoreOffset?: number
-  virtualizerOptions?: DataGridTableVirtualizerOptions<TData>
+	height?: number | string;
+	estimateSize?: number;
+	overscan?: number;
+	footerContent?: ReactNode;
+	renderHeader?: boolean;
+	onFetchMore?: () => void;
+	isFetchingMore?: boolean;
+	hasMore?: boolean;
+	fetchMoreOffset?: number;
+	virtualizerOptions?: DataGridTableVirtualizerOptions<TData>;
 }
 
 interface VirtualBodyProps<TData> {
-  table: Table<TData>
-  columnCount: number
-  topRows: Array<Row<TData>>
-  centerRows: Array<Row<TData>>
-  bottomRows: Array<Row<TData>>
-  virtualItems: Array<VirtualItem>
-  totalSize: number
-  isVirtualizationEnabled: boolean
-  isInfiniteMode: boolean
-  isFetchingMore: boolean
-  hasMore?: boolean
-  loadingMoreMessage: ReactNode
-  allRowsLoadedMessage: ReactNode
-  measureRowRef?: (element: HTMLTableRowElement | null) => void
+	table: Table<TData>;
+	columnCount: number;
+	topRows: Array<Row<TData>>;
+	centerRows: Array<Row<TData>>;
+	bottomRows: Array<Row<TData>>;
+	virtualItems: Array<VirtualItem>;
+	totalSize: number;
+	isVirtualizationEnabled: boolean;
+	isInfiniteMode: boolean;
+	isFetchingMore: boolean;
+	hasMore?: boolean;
+	loadingMoreMessage: ReactNode;
+	allRowsLoadedMessage: ReactNode;
+	measureRowRef?: (element: HTMLTableRowElement | null) => void;
 }
 
-function DataGridTableVirtualSpacer({
-  columnCount,
-  height,
+const DataGridTableVirtualSpacer = ({
+	columnCount,
+	height,
 }: {
-  columnCount: number
-  height: number
-}) {
-  if (height <= 0) return null
+	columnCount: number;
+	height: number;
+}) => {
+	if (height <= 0) {
+		return null;
+	}
 
-  return (
-    <tr aria-hidden="true">
-      <td colSpan={columnCount} style={{ height, padding: 0 }} />
-    </tr>
-  )
-}
+	return (
+		<tr aria-hidden="true">
+			<td colSpan={columnCount} style={{ height, padding: 0 }} />
+		</tr>
+	);
+};
 
-function DataGridTableVirtualStatusRow({
-  children,
-  className,
-  columnCount,
+const DataGridTableVirtualStatusRow = ({
+	children,
+	className,
+	columnCount,
 }: {
-  children: ReactNode
-  className?: string
-  columnCount: number
-}) {
-  return (
-    <tr>
-      <td
-        colSpan={columnCount}
-        className={cn(
-          "text-muted-foreground py-4 text-center text-sm",
-          className
-        )}
-      >
-        {children}
-      </td>
-    </tr>
-  )
-}
+	children: ReactNode;
+	className?: string;
+	columnCount: number;
+}) => {
+	return (
+		<tr>
+			<td
+				colSpan={columnCount}
+				className={cn(
+					"text-muted-foreground py-4 text-center text-sm",
+					className
+				)}
+			>
+				{children}
+			</td>
+		</tr>
+	);
+};
 
 function DataGridTableVirtualBody<TData>({
-  table: _table,
-  columnCount,
-  topRows,
-  centerRows,
-  bottomRows,
-  virtualItems,
-  totalSize,
-  isVirtualizationEnabled,
-  isInfiniteMode,
-  isFetchingMore,
-  hasMore,
-  loadingMoreMessage,
-  allRowsLoadedMessage,
-  measureRowRef,
+	table: _table,
+	columnCount,
+	topRows,
+	centerRows,
+	bottomRows,
+	virtualItems,
+	totalSize,
+	isVirtualizationEnabled,
+	isInfiniteMode,
+	isFetchingMore,
+	hasMore,
+	loadingMoreMessage,
+	allRowsLoadedMessage,
+	measureRowRef,
 }: VirtualBodyProps<TData>) {
-  const totalRows = topRows.length + centerRows.length + bottomRows.length
+	const totalRows = topRows.length + centerRows.length + bottomRows.length;
 
-  if (!totalRows) return <DataGridTableEmpty />
+	if (!totalRows) {
+		return <DataGridTableEmpty />;
+	}
 
-  const hasCenterRows = centerRows.length > 0
-  const showFetchingRow = isInfiniteMode && isFetchingMore
-  const showCompleteRow = isInfiniteMode && hasMore === false && totalRows > 0
-  const hasMiddleSection = hasCenterRows || showFetchingRow || showCompleteRow
-  const leadingSpacerHeight =
-    isVirtualizationEnabled && hasCenterRows && virtualItems.length > 0
-      ? (virtualItems[0]?.start ?? 0)
-      : 0
-  const trailingSpacerHeight =
-    isVirtualizationEnabled && hasCenterRows && virtualItems.length > 0
-      ? Math.max(
-          0,
-          totalSize - (virtualItems[virtualItems.length - 1]?.end ?? 0)
-        )
-      : 0
+	const hasCenterRows = centerRows.length > 0;
+	const showFetchingRow = isInfiniteMode && isFetchingMore;
+	const showCompleteRow = isInfiniteMode && hasMore === false && totalRows > 0;
+	const hasMiddleSection = hasCenterRows || showFetchingRow || showCompleteRow;
+	const leadingSpacerHeight =
+		isVirtualizationEnabled && hasCenterRows && virtualItems.length > 0
+			? (virtualItems[0]?.start ?? 0)
+			: 0;
+	const trailingSpacerHeight =
+		isVirtualizationEnabled && hasCenterRows && virtualItems.length > 0
+			? Math.max(
+					0,
+					totalSize - (virtualItems[virtualItems.length - 1]?.end ?? 0)
+				)
+			: 0;
 
-  const renderedRows: Array<ReactNode> = []
+	const renderedRows: Array<ReactNode> = [];
 
-  topRows.forEach((row, index) => {
-    renderedRows.push(
-      <DataGridTableRenderedRow
-        key={row.id}
-        row={row}
-        pinnedBoundary={
-          index === topRows.length - 1 && hasMiddleSection ? "top" : undefined
-        }
-      />
-    )
-  })
+	topRows.forEach((row, index) => {
+		renderedRows.push(
+			<DataGridTableRenderedRow
+				key={row.id}
+				row={row}
+				pinnedBoundary={
+					index === topRows.length - 1 && hasMiddleSection ? "top" : undefined
+				}
+			/>
+		);
+	});
 
-  if (isVirtualizationEnabled) {
-    if (leadingSpacerHeight > 0) {
-      renderedRows.push(
-        <DataGridTableVirtualSpacer
-          key="virtual-spacer-start"
-          columnCount={columnCount}
-          height={leadingSpacerHeight}
-        />
-      )
-    }
+	if (isVirtualizationEnabled) {
+		if (leadingSpacerHeight > 0) {
+			renderedRows.push(
+				<DataGridTableVirtualSpacer
+					key="virtual-spacer-start"
+					columnCount={columnCount}
+					height={leadingSpacerHeight}
+				/>
+			);
+		}
 
-    virtualItems.forEach((virtualRow) => {
-      const row = centerRows[virtualRow.index]
+		virtualItems.forEach((virtualRow) => {
+			const row = centerRows[virtualRow.index];
 
-      if (!row) return
+			if (!row) {
+				return;
+			}
 
-      renderedRows.push(
-        <DataGridTableRenderedRow
-          key={row.id}
-          row={row}
-          rowRef={measureRowRef}
-        />
-      )
-    })
+			renderedRows.push(
+				<DataGridTableRenderedRow
+					key={row.id}
+					row={row}
+					rowRef={measureRowRef}
+				/>
+			);
+		});
 
-    if (trailingSpacerHeight > 0) {
-      renderedRows.push(
-        <DataGridTableVirtualSpacer
-          key="virtual-spacer-end"
-          columnCount={columnCount}
-          height={trailingSpacerHeight}
-        />
-      )
-    }
-  } else {
-    centerRows.forEach((row) => {
-      renderedRows.push(<DataGridTableRenderedRow key={row.id} row={row} />)
-    })
-  }
+		if (trailingSpacerHeight > 0) {
+			renderedRows.push(
+				<DataGridTableVirtualSpacer
+					key="virtual-spacer-end"
+					columnCount={columnCount}
+					height={trailingSpacerHeight}
+				/>
+			);
+		}
+	} else {
+		centerRows.forEach((row) => {
+			renderedRows.push(<DataGridTableRenderedRow key={row.id} row={row} />);
+		});
+	}
 
-  if (showFetchingRow) {
-    renderedRows.push(
-      <DataGridTableVirtualStatusRow
-        key="virtual-status-loading"
-        columnCount={columnCount}
-      >
-        <div className="flex items-center justify-center gap-2">
-          <Spinner className="size-4 opacity-60" />
-          {loadingMoreMessage}
-        </div>
-      </DataGridTableVirtualStatusRow>
-    )
-  }
+	if (showFetchingRow) {
+		renderedRows.push(
+			<DataGridTableVirtualStatusRow
+				key="virtual-status-loading"
+				columnCount={columnCount}
+			>
+				<div className="flex items-center justify-center gap-2">
+					<Spinner className="size-4 opacity-60" />
+					{loadingMoreMessage}
+				</div>
+			</DataGridTableVirtualStatusRow>
+		);
+	}
 
-  if (showCompleteRow) {
-    renderedRows.push(
-      <DataGridTableVirtualStatusRow
-        key="virtual-status-complete"
-        className="py-3 text-xs"
-        columnCount={columnCount}
-      >
-        {allRowsLoadedMessage}
-      </DataGridTableVirtualStatusRow>
-    )
-  }
+	if (showCompleteRow) {
+		renderedRows.push(
+			<DataGridTableVirtualStatusRow
+				key="virtual-status-complete"
+				className="py-3 text-xs"
+				columnCount={columnCount}
+			>
+				{allRowsLoadedMessage}
+			</DataGridTableVirtualStatusRow>
+		);
+	}
 
-  bottomRows.forEach((row, index) => {
-    renderedRows.push(
-      <DataGridTableRenderedRow
-        key={row.id}
-        row={row}
-        pinnedBoundary={
-          index === 0 && (topRows.length > 0 || hasMiddleSection)
-            ? "bottom"
-            : undefined
-        }
-      />
-    )
-  })
+	bottomRows.forEach((row, index) => {
+		renderedRows.push(
+			<DataGridTableRenderedRow
+				key={row.id}
+				row={row}
+				pinnedBoundary={
+					index === 0 && (topRows.length > 0 || hasMiddleSection)
+						? "bottom"
+						: undefined
+				}
+			/>
+		);
+	});
 
-  return <>{renderedRows}</>
+	return <>{renderedRows}</>;
 }
 
 /**
@@ -267,229 +257,234 @@ function DataGridTableVirtualBody<TData>({
  * so the browser handles width changes without React re-renders.
  */
 const MemoizedVirtualBody = memo(
-  DataGridTableVirtualBody,
-  (_previous, next) => !!next.table.getState().columnSizingInfo.isResizingColumn
-) as typeof DataGridTableVirtualBody
+	DataGridTableVirtualBody,
+	(_previous, next) => !!next.table.getState().columnSizingInfo.isResizingColumn
+) as typeof DataGridTableVirtualBody;
 
 function DataGridTableVirtual<TData>({
-  height,
-  estimateSize = 48,
-  overscan = 10,
-  footerContent,
-  renderHeader = true,
-  onFetchMore,
-  isFetchingMore = false,
-  hasMore,
-  fetchMoreOffset = 0,
-  virtualizerOptions,
+	height,
+	estimateSize = 48,
+	overscan = 10,
+	footerContent,
+	renderHeader = true,
+	onFetchMore,
+	isFetchingMore = false,
+	hasMore,
+	fetchMoreOffset = 0,
+	virtualizerOptions,
 }: DataGridTableVirtualProps<TData>) {
-  const { table, props } = useDataGrid()
-  const { topRows, centerRows, bottomRows } = getDataGridTableRowSections(
-    table,
-    props.tableLayout?.rowsPinnable
-  )
-  const columnCount =
-    table.getVisibleFlatColumns().length +
-    (props.tableLayout?.columnsResizable ? 1 : 0)
-  const isInfiniteMode = typeof onFetchMore === "function"
-  const [viewportElements, setViewportElements] =
-    useState<DataGridTableVirtualScrollElements>({
-      containerElement: null,
-      scrollElement: null,
-    })
+	const { table, props } = useDataGrid();
+	const { topRows, centerRows, bottomRows } = getDataGridTableRowSections(
+		table,
+		props.tableLayout?.rowsPinnable
+	);
+	const columnCount =
+		table.getVisibleFlatColumns().length +
+		(props.tableLayout?.columnsResizable ? 1 : 0);
+	const isInfiniteMode = typeof onFetchMore === "function";
+	const [viewportElements, setViewportElements] =
+		useState<DataGridTableVirtualScrollElements>({
+			containerElement: null,
+			scrollElement: null,
+		});
 
-  const {
-    estimateSize: customEstimateSize,
-    getItemKey: customGetItemKey,
-    getScrollElement: customGetScrollElement,
-    measureElement: customMeasureElement,
-    overscan: customOverscan,
-    ...virtualizerOptionsRest
-  } = virtualizerOptions ?? {}
+	const {
+		estimateSize: customEstimateSize,
+		getItemKey: customGetItemKey,
+		getScrollElement: customGetScrollElement,
+		measureElement: customMeasureElement,
+		overscan: customOverscan,
+		...virtualizerOptionsRest
+	} = virtualizerOptions ?? {};
 
-  const isVirtualizationEnabled = virtualizerOptions?.enabled !== false
-  const loadingMoreMessage =
-    props.fetchingMoreMessage || props.loadingMessage || "Loading..."
-  const allRowsLoadedMessage =
-    props.allRowsLoadedMessage || "All records loaded"
+	const isVirtualizationEnabled = virtualizerOptions?.enabled !== false;
+	const loadingMoreMessage =
+		props.fetchingMoreMessage || props.loadingMessage || "Loading...";
+	const allRowsLoadedMessage =
+		props.allRowsLoadedMessage || "All records loaded";
 
-  const handleViewportRef = useCallback((node: HTMLDivElement | null) => {
-    setViewportElements({
-      containerElement: node,
-      scrollElement:
-        (node?.closest(
-          '[data-slot="scroll-area-viewport"]'
-        ) as HTMLElement | null) ?? node,
-    })
-  }, [])
+	const handleViewportRef = useCallback((node: HTMLDivElement | null) => {
+		setViewportElements({
+			containerElement: node,
+			scrollElement:
+				(node?.closest(
+					'[data-slot="scroll-area-viewport"]'
+				) as HTMLElement | null) ?? node,
+		});
+	}, []);
 
-  const usesExternalScrollArea =
-    viewportElements.scrollElement !== null &&
-    viewportElements.scrollElement !== viewportElements.containerElement
+	const usesExternalScrollArea =
+		viewportElements.scrollElement !== null &&
+		viewportElements.scrollElement !== viewportElements.containerElement;
 
-  const resolveScrollElement = useCallback(() => {
-    if (customGetScrollElement) {
-      return customGetScrollElement(viewportElements)
-    }
+	const resolveScrollElement = useCallback(() => {
+		if (customGetScrollElement) {
+			return customGetScrollElement(viewportElements);
+		}
 
-    return viewportElements.scrollElement
-  }, [customGetScrollElement, viewportElements])
+		return viewportElements.scrollElement;
+	}, [customGetScrollElement, viewportElements]);
 
-  const resolveItemKey = useCallback(
-    (index: number) => {
-      const row = centerRows[index]
+	const resolveItemKey = useCallback(
+		(index: number) => {
+			const row = centerRows[index];
 
-      if (!row) return index
+			if (!row) {
+				return index;
+			}
 
-      return customGetItemKey?.(index, row) ?? row.id ?? index
-    },
-    [centerRows, customGetItemKey]
-  )
+			return customGetItemKey?.(index, row) ?? row.id ?? index;
+		},
+		[centerRows, customGetItemKey]
+	);
 
-  const resolveEstimateSize = useCallback(
-    (index: number) => {
-      const row = centerRows[index]
+	const resolveEstimateSize = useCallback(
+		(index: number) => {
+			const row = centerRows[index];
 
-      return row
-        ? (customEstimateSize?.(index, row) ?? estimateSize)
-        : estimateSize
-    },
-    [centerRows, customEstimateSize, estimateSize]
-  )
+			return row
+				? (customEstimateSize?.(index, row) ?? estimateSize)
+				: estimateSize;
+		},
+		[centerRows, customEstimateSize, estimateSize]
+	);
 
-  const virtualizer = useVirtualizer({
-    count: centerRows.length,
-    getScrollElement: resolveScrollElement,
-    getItemKey: resolveItemKey,
-    estimateSize: resolveEstimateSize,
-    overscan: customOverscan ?? overscan,
-    measureElement: customMeasureElement,
-    ...virtualizerOptionsRest,
-  }) as DataGridTableVirtualizerInstance
+	const virtualizer = useVirtualizer({
+		count: centerRows.length,
+		getScrollElement: resolveScrollElement,
+		getItemKey: resolveItemKey,
+		estimateSize: resolveEstimateSize,
+		overscan: customOverscan ?? overscan,
+		measureElement: customMeasureElement,
+		...virtualizerOptionsRest,
+	});
 
-  const virtualItems = isVirtualizationEnabled
-    ? virtualizer.getVirtualItems()
-    : []
-  const totalSize = isVirtualizationEnabled ? virtualizer.getTotalSize() : 0
-  const measureRowRef =
-    isVirtualizationEnabled && customMeasureElement
-      ? virtualizer.measureElement
-      : undefined
-  const resolvedFetchMoreOffset = useMemo(
-    () => Math.max(0, fetchMoreOffset),
-    [fetchMoreOffset]
-  )
+	const virtualItems = useMemo(
+		() => (isVirtualizationEnabled ? virtualizer.getVirtualItems() : []),
+		[isVirtualizationEnabled, virtualizer]
+	);
+	const totalSize = isVirtualizationEnabled ? virtualizer.getTotalSize() : 0;
+	const measureRowRef =
+		isVirtualizationEnabled && customMeasureElement
+			? virtualizer.measureElement
+			: undefined;
+	const resolvedFetchMoreOffset = useMemo(
+		() => Math.max(0, fetchMoreOffset),
+		[fetchMoreOffset]
+	);
 
-  useEffect(() => {
-    if (
-      !isVirtualizationEnabled ||
-      !isInfiniteMode ||
-      hasMore === false ||
-      isFetchingMore
-    ) {
-      return
-    }
+	useEffect(() => {
+		if (
+			!isVirtualizationEnabled ||
+			!isInfiniteMode ||
+			hasMore === false ||
+			isFetchingMore
+		) {
+			return;
+		}
 
-    const lastItem = virtualItems[virtualItems.length - 1]
-    if (!lastItem) return
+		const lastItem = virtualItems[virtualItems.length - 1];
+		if (!lastItem) {
+			return;
+		}
 
-    if (lastItem.index >= centerRows.length - 1 - resolvedFetchMoreOffset) {
-      onFetchMore?.()
-    }
-  }, [
-    centerRows.length,
-    hasMore,
-    isFetchingMore,
-    isInfiniteMode,
-    isVirtualizationEnabled,
-    onFetchMore,
-    resolvedFetchMoreOffset,
-    virtualItems,
-  ])
+		if (lastItem.index >= centerRows.length - 1 - resolvedFetchMoreOffset) {
+			onFetchMore?.();
+		}
+	}, [
+		centerRows.length,
+		hasMore,
+		isFetchingMore,
+		isInfiniteMode,
+		isVirtualizationEnabled,
+		onFetchMore,
+		resolvedFetchMoreOffset,
+		virtualItems,
+	]);
 
-  return (
-    <DataGridTableViewport
-      className={!usesExternalScrollArea ? "block" : undefined}
-      viewportRef={handleViewportRef}
-      style={
-        usesExternalScrollArea
-          ? undefined
-          : { height, overflow: "auto", position: "relative" }
-      }
-    >
-      <DataGridTableBase>
-        {renderHeader && (
-          <DataGridTableHead>
-            {table
-              .getHeaderGroups()
-              .map((headerGroup: HeaderGroup<TData>, index) => (
-                <DataGridTableHeadRow key={index} headerGroup={headerGroup}>
-                  {headerGroup.headers.map((header, hIndex) => {
-                    const { column } = header
+	return (
+		<DataGridTableViewport
+			className={!usesExternalScrollArea ? "block" : undefined}
+			viewportRef={handleViewportRef}
+			style={
+				usesExternalScrollArea
+					? undefined
+					: { height, overflow: "auto", position: "relative" }
+			}
+		>
+			<DataGridTableBase>
+				{renderHeader && (
+					<DataGridTableHead>
+						{table
+							.getHeaderGroups()
+							.map((headerGroup: HeaderGroup<TData>, index) => (
+								<DataGridTableHeadRow key={index} headerGroup={headerGroup}>
+									{headerGroup.headers.map((header, hIndex) => {
+										const { column } = header;
 
-                    return (
-                      <DataGridTableHeadRowCell key={hIndex} header={header}>
-                        {header.isPlaceholder ? null : props.tableLayout
-                            ?.columnsResizable && column.getCanResize() ? (
-                          <div className="truncate">
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                          </div>
-                        ) : (
-                          flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )
-                        )}
-                        {props.tableLayout?.columnsResizable &&
-                          column.getCanResize() && (
-                            <DataGridTableHeadRowCellResize header={header} />
-                          )}
-                      </DataGridTableHeadRowCell>
-                    )
-                  })}
-                </DataGridTableHeadRow>
-              ))}
-          </DataGridTableHead>
-        )}
+										return (
+											<DataGridTableHeadRowCell key={hIndex} header={header}>
+												{header.isPlaceholder ? null : props.tableLayout
+														?.columnsResizable && column.getCanResize() ? (
+													<div className="truncate">
+														{flexRender(
+															header.column.columnDef.header,
+															header.getContext()
+														)}
+													</div>
+												) : (
+													flexRender(
+														header.column.columnDef.header,
+														header.getContext()
+													)
+												)}
+												{props.tableLayout?.columnsResizable &&
+													column.getCanResize() && (
+														<DataGridTableHeadRowCellResize header={header} />
+													)}
+											</DataGridTableHeadRowCell>
+										);
+									})}
+								</DataGridTableHeadRow>
+							))}
+					</DataGridTableHead>
+				)}
 
-        {renderHeader &&
-          (props.tableLayout?.stripped || !props.tableLayout?.rowBorder) && (
-            <DataGridTableRowSpacer />
-          )}
+				{renderHeader &&
+					(props.tableLayout?.stripped || !props.tableLayout?.rowBorder) && (
+						<DataGridTableRowSpacer />
+					)}
 
-        <DataGridTableBody>
-          <MemoizedVirtualBody
-            allRowsLoadedMessage={allRowsLoadedMessage}
-            bottomRows={bottomRows}
-            centerRows={centerRows}
-            columnCount={columnCount}
-            hasMore={hasMore}
-            isFetchingMore={isFetchingMore}
-            isInfiniteMode={isInfiniteMode}
-            isVirtualizationEnabled={isVirtualizationEnabled}
-            loadingMoreMessage={loadingMoreMessage}
-            measureRowRef={measureRowRef}
-            table={table}
-            topRows={topRows}
-            totalSize={totalSize}
-            virtualItems={virtualItems}
-          />
-        </DataGridTableBody>
+				<DataGridTableBody>
+					<MemoizedVirtualBody
+						allRowsLoadedMessage={allRowsLoadedMessage}
+						bottomRows={bottomRows}
+						centerRows={centerRows}
+						columnCount={columnCount}
+						hasMore={hasMore}
+						isFetchingMore={isFetchingMore}
+						isInfiniteMode={isInfiniteMode}
+						isVirtualizationEnabled={isVirtualizationEnabled}
+						loadingMoreMessage={loadingMoreMessage}
+						measureRowRef={measureRowRef}
+						table={table}
+						topRows={topRows}
+						totalSize={totalSize}
+						virtualItems={virtualItems}
+					/>
+				</DataGridTableBody>
 
-        {footerContent && (
-          <DataGridTableFoot>{footerContent}</DataGridTableFoot>
-        )}
-      </DataGridTableBase>
-    </DataGridTableViewport>
-  )
+				{footerContent && (
+					<DataGridTableFoot>{footerContent}</DataGridTableFoot>
+				)}
+			</DataGridTableBase>
+		</DataGridTableViewport>
+	);
 }
 
-export { DataGridTableVirtual }
+export { DataGridTableVirtual };
 export type {
-  DataGridTableVirtualProps,
-  DataGridTableVirtualScrollElements,
-  DataGridTableVirtualizerOptions,
-}
+	DataGridTableVirtualProps,
+	DataGridTableVirtualScrollElements,
+	DataGridTableVirtualizerOptions,
+};

@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import SuppliersPage from "@/features/suppliers";
 import { z } from "zod";
+
 import {
 	createSortSchema,
 	createTableSchema,
 } from "@/common/validation-schema";
+import SuppliersPage from "@/features/suppliers";
 import { SUPPLIER_SORT_FIELDS } from "@/features/suppliers/types";
 
 const supplierSortSchema = createSortSchema(SUPPLIER_SORT_FIELDS);

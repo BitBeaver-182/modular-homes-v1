@@ -4,7 +4,7 @@
 
 export type UnwrapArray<T> = T extends Array<infer U> ? U : T;
 
-export type StrapiFilterOperator<T> = {
+export interface StrapiFilterOperator<T> {
   $eq?: T;
   $eqi?: T;
   $ne?: T;
@@ -27,7 +27,7 @@ export type StrapiFilterOperator<T> = {
   $endsWith?: string;
   $endsWithi?: string;
   $not?: StrapiFilterOperator<T>;
-};
+}
 
 // A loose, recursive filter type that handles deep/nested filtering on relations and components
 export type StrapiFilters<T = any> = {

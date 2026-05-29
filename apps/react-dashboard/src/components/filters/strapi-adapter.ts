@@ -15,9 +15,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isoToYmd = (iso: unknown): string | null => {
-	if (typeof iso !== "string") return null;
+	if (typeof iso !== "string") {return null;}
 	const parsed = new Date(iso);
-	if (Number.isNaN(parsed.getTime())) return null;
+	if (Number.isNaN(parsed.getTime())) {return null;}
 	return formatYmdLocal(parsed);
 };
 
@@ -45,11 +45,11 @@ export function filterValuesToSearchParams(
 			const range: { $gte?: string; $lte?: string } = {};
 			if (entry.from) {
 				const d = parseYmdLocal(entry.from);
-				if (d) range.$gte = startOfDayLocal(d).toISOString();
+				if (d) {range.$gte = startOfDayLocal(d).toISOString();}
 			}
 			if (entry.to) {
 				const d = parseYmdLocal(entry.to);
-				if (d) range.$lte = endOfDayLocal(d).toISOString();
+				if (d) {range.$lte = endOfDayLocal(d).toISOString();}
 			}
 			if (range.$gte !== undefined || range.$lte !== undefined) {
 				filters[entry.field] = range;
@@ -62,8 +62,8 @@ export function filterValuesToSearchParams(
 			(entry.min !== null || entry.max !== null)
 		) {
 			const range: { $gte?: number; $lte?: number } = {};
-			if (entry.min !== null) range.$gte = entry.min;
-			if (entry.max !== null) range.$lte = entry.max;
+			if (entry.min !== null) {range.$gte = entry.min;}
+			if (entry.max !== null) {range.$lte = entry.max;}
 			filters[entry.field] = range;
 		}
 	}
@@ -106,7 +106,7 @@ const pickMultiSelect = (
 	field: string,
 	value: unknown,
 ): FilterValue | null => {
-	if (!isRecord(value)) return null;
+	if (!isRecord(value)) {return null;}
 	const inList = value["$in"];
 	if (Array.isArray(inList) && inList.length > 0) {
 		const arr = inList
@@ -124,15 +124,15 @@ const pickMultiSelect = (
 };
 
 const pickDateRange = (field: string, value: unknown): FilterValue | null => {
-	if (!isRecord(value)) return null;
+	if (!isRecord(value)) {return null;}
 	const from = isoToYmd(value["$gte"]);
 	const to = isoToYmd(value["$lte"]);
-	if (!from && !to) return null;
+	if (!from && !to) {return null;}
 	return { kind: "date-range", field, from, to };
 };
 
 const pickNumberRange = (field: string, value: unknown): FilterValue | null => {
-	if (!isRecord(value)) return null;
+	if (!isRecord(value)) {return null;}
 	const gte = value["$gte"];
 	const lte = value["$lte"];
 	const min =
@@ -150,7 +150,7 @@ const pickNumberRange = (field: string, value: unknown): FilterValue | null => {
 
 	const finiteMin = min !== null && Number.isFinite(min) ? min : null;
 	const finiteMax = max !== null && Number.isFinite(max) ? max : null;
-	if (finiteMin === null && finiteMax === null) return null;
+	if (finiteMin === null && finiteMax === null) {return null;}
 	return { kind: "number-range", field, min: finiteMin, max: finiteMax };
 };
 
@@ -164,10 +164,10 @@ export function decodeStrapiFiltersFromRecord(
 ): Record<string, unknown> {
 	const query = new URLSearchParams();
 	for (const [key, value] of Object.entries(source)) {
-		if (!key.startsWith(FILTER_PREFIX)) continue;
-		if (value === undefined || value === null) continue;
+		if (!key.startsWith(FILTER_PREFIX)) {continue;}
+		if (value === undefined || value === null) {continue;}
 		if (Array.isArray(value)) {
-			for (const v of value) query.append(key, String(v));
+			for (const v of value) {query.append(key, String(v));}
 		} else {
 			query.append(key, String(value));
 		}
@@ -198,7 +198,7 @@ export function searchParamsToFilterValues(
 		}
 	} else {
 		for (const [key, value] of Object.entries(source)) {
-			if (value === undefined || value === null) continue;
+			if (value === undefined || value === null) {continue;}
 			if (Array.isArray(value)) {
 				searchRecord[key] = value.map(String);
 			} else {
@@ -209,9 +209,9 @@ export function searchParamsToFilterValues(
 
 	const queryString = new URLSearchParams();
 	for (const [key, value] of Object.entries(searchRecord)) {
-		if (!key.startsWith(FILTER_PREFIX)) continue;
+		if (!key.startsWith(FILTER_PREFIX)) {continue;}
 		if (Array.isArray(value)) {
-			for (const v of value) queryString.append(key, v);
+			for (const v of value) {queryString.append(key, v);}
 		} else {
 			queryString.append(key, value);
 		}
@@ -225,7 +225,7 @@ export function searchParamsToFilterValues(
 	const out: Array<FilterValue> = [];
 	for (const { field, kind } of fields) {
 		const raw = filters[field];
-		if (raw === undefined) continue;
+		if (raw === undefined) {continue;}
 		const picker =
 			kind === "multi-select"
 				? pickMultiSelect
@@ -233,7 +233,7 @@ export function searchParamsToFilterValues(
 					? pickDateRange
 					: pickNumberRange;
 		const decoded = picker(field, raw);
-		if (decoded) out.push(decoded);
+		if (decoded) {out.push(decoded);}
 	}
 	return out;
 }

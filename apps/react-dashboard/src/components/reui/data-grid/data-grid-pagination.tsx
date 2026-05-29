@@ -1,10 +1,8 @@
 "use client"
 
-import type { ReactNode } from "react";
-import type React from "react"
-import { useDataGrid } from "@/components/reui/data-grid/data-grid"
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
-import { cn } from "@/lib/utilities"
+import { useDataGrid } from "@/components/reui/data-grid/data-grid"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -14,7 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import { cn } from "@/lib/utilities"
+
+import type React from "react"
+import type { ReactNode } from "react";
+
 
 interface DataGridPaginationProps {
   sizes?: Array<number>
@@ -33,7 +35,7 @@ interface DataGridPaginationProps {
   ellipsisText?: string
 }
 
-function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
+const DataGridPagination = (props: DataGridPaginationProps): React.JSX.Element => {
   const { table, recordCount, isLoading } = useDataGrid()
 
   const defaultProps: Partial<DataGridPaginationProps> = {
@@ -54,9 +56,9 @@ function DataGridPagination(props: DataGridPaginationProps): React.JSX.Element {
   const mergedProps: DataGridPaginationProps = { ...defaultProps, ...props }
 
   const buttonBaseClasses = "size-7 p-0 text-sm"
-  const buttonArrowClasses = buttonBaseClasses + " rtl:transform rtl:rotate-180"
-  const pageIndex = table.getState().pagination.pageIndex
-  const pageSize = table.getState().pagination.pageSize
+  const buttonArrowClasses = `${buttonBaseClasses  } rtl:transform rtl:rotate-180`
+  const {pageIndex} = table.getState().pagination
+  const {pageSize} = table.getState().pagination
   const from = pageIndex * pageSize + 1
   const to = Math.min((pageIndex + 1) * pageSize, recordCount)
   const pageCount = table.getPageCount()

@@ -1,4 +1,4 @@
-export type Supplier = {
+export interface Supplier {
 	id: number;
 	documentId: string;
 	createdAt: string;
@@ -10,7 +10,7 @@ export type Supplier = {
 	email: string | null;
 	address: string | null;
 	website: string | null;
-};
+}
 
 export const SUPPLIER_SORT_FIELDS = [
 	"createdAt",
@@ -19,15 +19,15 @@ export const SUPPLIER_SORT_FIELDS = [
 	"phone_number",
 ] as const;
 
-export type SupplierWriteInput = {
+export interface SupplierWriteInput {
 	name: string;
 	phone_number: string;
 	email: string;
 	address: string;
 	website: string;
-};
+}
 
-export type PaginatedResult<T> = {
+export interface PaginatedResult<T> {
 	data: Array<T>;
 	meta: {
 		pagination: {
@@ -37,4 +37,4 @@ export type PaginatedResult<T> = {
 			total: number;
 		};
 	};
-};
+}

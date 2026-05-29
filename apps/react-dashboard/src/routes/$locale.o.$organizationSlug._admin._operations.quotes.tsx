@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import QuotesPage from "@/features/quotes";
-import { QUOTE_SORT_FIELDS, QUOTE_STATUSES } from "@/features/quotes/types";
+
 import {
 	createSortSchema,
 	dateRangeSchema,
 	numberRangeSchema,
 } from "@/common/validation-schema";
+import QuotesPage from "@/features/quotes";
+import { QUOTE_SORT_FIELDS, QUOTE_STATUSES } from "@/features/quotes/types";
 
 const quoteStatusSchema = z.enum(QUOTE_STATUSES);
 const quoteSortSchema = createSortSchema(QUOTE_SORT_FIELDS);

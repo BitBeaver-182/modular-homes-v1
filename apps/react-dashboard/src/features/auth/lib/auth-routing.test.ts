@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+
 import type { AuthSession } from "@/lib/moduflow/types";
+
 import { getFirstOrganizationPath, resolvePostAuthPath } from "./auth-routing";
 
 const session: AuthSession = {

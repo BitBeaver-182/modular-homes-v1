@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/only-throw-error */
+ 
 
 import { createFileRoute, redirect } from "@tanstack/react-router";
+
 import { isSupportedLocale } from "@/common/locales";
 import { authStorage } from "@/features/auth/lib/auth-storage";
 import { getSession } from "@/lib/moduflow/api";

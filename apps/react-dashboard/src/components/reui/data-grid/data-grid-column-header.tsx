@@ -1,14 +1,12 @@
 "use client"
 
-import type { HTMLAttributes, ReactNode} from "react";
+import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon, CheckIcon, ArrowLeftToLineIcon, ArrowRightToLineIcon, ArrowLeftIcon, ArrowRightIcon, Settings2Icon, PinOffIcon } from "lucide-react"
 import { memo, useMemo } from "react"
+
 import {
   getColumnHeaderLabel,
   useDataGrid,
 } from "@/components/reui/data-grid/data-grid"
-import type { Column } from "@tanstack/react-table"
-
-import { cn } from "@/lib/utilities"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -23,7 +21,11 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon, CheckIcon, ArrowLeftToLineIcon, ArrowRightToLineIcon, ArrowLeftIcon, ArrowRightIcon, Settings2Icon, PinOffIcon } from "lucide-react"
+import { cn } from "@/lib/utilities"
+
+import type { Column } from "@tanstack/react-table"
+import type { HTMLAttributes, ReactNode} from "react";
+
 
 interface DataGridColumnHeaderProps<
   TData,
@@ -38,18 +40,18 @@ interface DataGridColumnHeaderProps<
   visibility?: boolean
 }
 
-function DataGridColumnHeaderInner<TData, TValue>({
+const DataGridColumnHeaderInner = <TData, TValue>({
   column,
   title,
   icon,
   className,
   filter,
   visibility = false,
-}: DataGridColumnHeaderProps<TData, TValue>) {
+}: DataGridColumnHeaderProps<TData, TValue>) => {
   const { isLoading, table, props, recordCount } = useDataGrid()
   const resolvedTitle = title ?? getColumnHeaderLabel(column)
 
-  const columnOrder = table.getState().columnOrder
+  const {columnOrder} = table.getState()
   const columnVisibilityKey = JSON.stringify(table.getState().columnVisibility)
   const isSorted = column.getIsSorted()
   const isPinned = column.getIsPinned()

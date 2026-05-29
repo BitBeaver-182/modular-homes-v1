@@ -3,13 +3,14 @@ import {
 	useQueryClient,
 	type UseMutationResult,
 } from "@tanstack/react-query";
-import { deleteSupplierInvoicePayment } from "../lib/order-api";
-import { orderKeys } from "../../supplier-orders/hooks/order-keys";
 
-export type DeleteInvoicePaymentVariables = {
+import { orderKeys } from "../../supplier-orders/hooks/order-keys";
+import { deleteSupplierInvoicePayment } from "../lib/order-api";
+
+export interface DeleteInvoicePaymentVariables {
 	orderDocumentId: string;
 	paymentDocumentId: string;
-};
+}
 
 export const useDeleteInvoicePayment = (): UseMutationResult<
 	void,

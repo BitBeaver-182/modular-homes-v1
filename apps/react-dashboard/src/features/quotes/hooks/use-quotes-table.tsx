@@ -1,14 +1,15 @@
-import { useMemo, type JSX } from "react";
 import { t } from "i18next";
-import type { ColumnDef } from "@tanstack/react-table";
 import { Check, ExternalLink, Pencil, ShoppingCart, Trash2, X } from "lucide-react";
+import { useMemo, type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
+import { Button } from "@/components/ui/button";
+import { useCurrency } from "@/hooks/use-currency";
 
 import { QuoteStatusBadge } from "../components/quote-status-badge";
+
 import type { Quote, QuoteStatus } from "../types";
-import { useCurrency } from "@/hooks/use-currency";
+import type { ColumnDef } from "@tanstack/react-table";
 
 const DEFAULT_CURRENCY = "EUR";
 const FIXED_SIZE = 140;

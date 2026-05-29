@@ -1,14 +1,7 @@
 "use client";
 
-import {
-	Fragment,
-	useEffect,
-	useMemo,
-	useState,
-	type JSX,
-	type ReactNode,
-} from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState, type JSX, type ReactNode } from "react";
 import { useInView } from "react-intersection-observer";
 import { useDebounce } from "use-debounce";
 
@@ -28,18 +21,18 @@ import {
 } from "@/components/ui/combobox";
 import { Spinner } from "@/components/ui/spinner";
 
-export type InfiniteComboboxPage<T> = {
+export interface InfiniteComboboxPage<T> {
 	data: Array<T>;
 	meta: { pagination: { page: number; pageCount: number } };
-};
+}
 
-export type FetchPageArgs = {
+export interface FetchPageArgs {
 	page: number;
 	pageSize: number;
 	search: string;
-};
+}
 
-export type InfiniteComboboxProps<T, M extends boolean = false> = {
+export interface InfiniteComboboxProps<T, M extends boolean = false> {
 	multiple?: M;
 	clearable?: boolean;
 	disabled?: boolean;
@@ -63,7 +56,7 @@ export type InfiniteComboboxProps<T, M extends boolean = false> = {
 	selectedCountLabel?: (count: number) => string;
 	/** Max visible chips in the trigger before the overflow badge appears. */
 	maxVisibleChips?: number;
-};
+}
 
 /**
  * Generic infinite-scroll combobox: single or multiple selection, debounced
@@ -74,7 +67,7 @@ export type InfiniteComboboxProps<T, M extends boolean = false> = {
  * `getLabel` and any entity works. `SuppliersCombobox` and
  * `InfiniteComboboxFilter` both build on this.
  */
-export function InfiniteCombobox<T, M extends boolean = false>({
+export const InfiniteCombobox = <T, M extends boolean = false>({
 	multiple = false as M,
 	clearable = false,
 	disabled = false,
@@ -95,7 +88,7 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 	selectAllLabel,
 	selectedCountLabel,
 	maxVisibleChips = 1,
-}: InfiniteComboboxProps<T, M>): JSX.Element {
+}: InfiniteComboboxProps<T, M>): JSX.Element => {
 	const isControlled = value !== undefined;
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
@@ -105,17 +98,17 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 	const emptyValue = (multiple ? [] : null) as Selected;
 
 	const [internalValue, setInternalValue] = useState<Selected>(
-		(defaultValue ?? emptyValue) as Selected,
+		defaultValue ?? emptyValue
 	);
 
 	useEffect((): void => {
 		if (!isControlled) {
-			setInternalValue((defaultValue ?? emptyValue) as Selected);
+			setInternalValue(defaultValue ?? emptyValue);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [defaultValue, isControlled, multiple]);
 
-	const selectedValue = (isControlled ? value : internalValue) as Selected;
+	const selectedValue = isControlled ? value : internalValue;
 
 	const { ref: loaderRef, inView } = useInView({ threshold: 0.1 });
 
@@ -124,7 +117,7 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 			queryKey: [...queryKey, debouncedSearch] as ReadonlyArray<unknown>,
 			queryFn: async ({ pageParam }): Promise<InfiniteComboboxPage<T>> =>
 				fetchPage({
-					page: pageParam as number,
+					page: pageParam,
 					pageSize,
 					search: debouncedSearch,
 				}),
@@ -143,12 +136,14 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 
 	const allItems = useMemo(
 		(): Array<T> => data?.pages.flatMap((page): Array<T> => page.data) ?? [],
-		[data],
+		[data]
 	);
 
-	const selectedList: Array<T> = multiple
-		? ((selectedValue as Array<T> | undefined) ?? [])
-		: [];
+	const selectedList = useMemo(
+		(): Array<T> =>
+			multiple ? ((selectedValue as Array<T> | undefined) ?? []) : [],
+		[multiple, selectedValue]
+	);
 
 	const isItemSelected = (item: T): boolean => {
 		const id = getId(item);
@@ -160,9 +155,11 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 	};
 
 	const items = useMemo((): Array<T> => {
-		if (!multiple) return allItems;
+		if (!multiple) {
+			return allItems;
+		}
 		const selectedIds = new Set(
-			selectedList.map((item): string => getId(item)),
+			selectedList.map((item): string => getId(item))
 		);
 		return [
 			...allItems.filter((item): boolean => selectedIds.has(getId(item))),
@@ -177,7 +174,7 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 
 		if (multiple) {
 			(onChange as ((v: Array<T>) => void) | undefined)?.(
-				(next as Array<T>) ?? [],
+				(next as Array<T>) ?? []
 			);
 		} else {
 			(onChange as ((v: T | null) => void) | undefined)?.(next as T | null);
@@ -187,14 +184,17 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 	const handleSelectAll = (): void => {
 		const loadedIds = new Set(allItems.map((item): string => getId(item)));
 		const allLoaded =
-			allItems.length > 0 && allItems.every((item): boolean => isItemSelected(item));
+			allItems.length > 0 &&
+			allItems.every((item): boolean => isItemSelected(item));
 
 		if (allLoaded) {
 			const next = selectedList.filter(
-				(s): boolean => !loadedIds.has(getId(s)),
+				(s): boolean => !loadedIds.has(getId(s))
 			);
 			(onChange as ((v: Array<T>) => void) | undefined)?.(next);
-			if (!isControlled) setInternalValue(next as Selected);
+			if (!isControlled) {
+				setInternalValue(next as Selected);
+			}
 			return;
 		}
 
@@ -203,7 +203,9 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 			...allItems.filter((item): boolean => !isItemSelected(item)),
 		];
 		(onChange as ((v: Array<T>) => void) | undefined)?.(next);
-		if (!isControlled) setInternalValue(next as Selected);
+		if (!isControlled) {
+			setInternalValue(next as Selected);
+		}
 	};
 
 	const handleOpenChange = (next: boolean): void => {
@@ -214,13 +216,16 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 	};
 
 	const allLoaded =
-		allItems.length > 0 && allItems.every((item): boolean => isItemSelected(item));
+		allItems.length > 0 &&
+		allItems.every((item): boolean => isItemSelected(item));
 
 	const chipItems = selectedList.slice(0, maxVisibleChips);
 	const overflowCount = selectedList.length - maxVisibleChips;
 
 	const renderHiddenInputs = (): ReactNode => {
-		if (!name) return null;
+		if (!name) {
+			return null;
+		}
 
 		if (multiple) {
 			if (selectedList.length === 0) {
@@ -234,7 +239,7 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 						type="hidden"
 						value={getId(item)}
 					/>
-				),
+				)
 			);
 		}
 
@@ -260,7 +265,7 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 				value={selectedValue as never}
 				isItemEqualToValue={(a: T, b: T): boolean => getId(a) === getId(b)}
 				onOpenChange={handleOpenChange}
-				onValueChange={handleValueChange as never}
+				onValueChange={handleValueChange}
 				onInputValueChange={(nextValue): void => {
 					setSearch(nextValue);
 				}}
@@ -269,13 +274,13 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 					<ComboboxChips>
 						<ComboboxValue>
 							{(): JSX.Element => (
-								<Fragment>
+								<>
 									{chipItems.map(
 										(item): JSX.Element => (
 											<ComboboxChip key={getId(item)}>
 												{getLabel(item)}
 											</ComboboxChip>
-										),
+										)
 									)}
 									{overflowCount > 0 ? (
 										<Badge
@@ -285,7 +290,7 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 											+{overflowCount}
 										</Badge>
 									) : null}
-								</Fragment>
+								</>
 							)}
 						</ComboboxValue>
 						<ComboboxChipsInput
@@ -306,7 +311,7 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 						{isLoading ? (
 							<Spinner className="mx-auto" />
 						) : (
-							noResultsLabel ?? null
+							(noResultsLabel ?? null)
 						)}
 					</ComboboxEmpty>
 
@@ -346,7 +351,7 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 									) : null}
 									{getLabel(item)}
 								</ComboboxItem>
-							),
+							)
 						)}
 					</ComboboxList>
 
@@ -359,4 +364,4 @@ export function InfiniteCombobox<T, M extends boolean = false>({
 			</Combobox>
 		</>
 	);
-}
+};

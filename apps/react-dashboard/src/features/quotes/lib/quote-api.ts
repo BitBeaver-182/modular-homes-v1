@@ -5,6 +5,7 @@ import {
 	type StrapiQueryParams,
 } from "@/lib/strapi";
 import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._admin._operations.quotes";
+
 import type { PaginatedResult, Quote, QuoteWriteInput } from "../types";
 
 const POPULATE = {
@@ -14,7 +15,7 @@ const POPULATE = {
 	supplierOrders: true,
 } as const;
 
-type QuoteApiRecord = {
+interface QuoteApiRecord {
 	id: number;
 	documentId: string;
 	issueAt: string | null;
@@ -28,7 +29,7 @@ type QuoteApiRecord = {
 	total: Quote["total"] | null;
 	attachment?: AttachmentMedia | null;
 	supplierOrders?: Quote["supplierOrders"] | null;
-};
+}
 
 /**
  * Translates our standard route query params into Strapi's specific format.
@@ -213,7 +214,7 @@ export const getQuote = async (documentId: string): Promise<Quote> => {
 		`/quotes/${encodeURIComponent(documentId)}`,
 		{
 			method: "GET",
-			query: { populate: POPULATE } as StrapiQueryParams<QuoteApiRecord>,
+			query: { populate: POPULATE },
 		}
 	);
 
@@ -234,7 +235,7 @@ export const createQuote = async (input: QuoteWriteInput): Promise<Quote> => {
 
 	const response = await strapiClient
 		.from<QuoteApiRecord>("quotes")
-		.create(payload as Partial<QuoteApiRecord>);
+		.create(payload);
 
 	return getQuote(response.data.documentId);
 };
@@ -256,7 +257,7 @@ export const updateQuote = async (
 
 	await strapiClient
 		.from<QuoteApiRecord>("quotes")
-		.update(documentId, payload as Partial<QuoteApiRecord>);
+		.update(documentId, payload);
 
 	return getQuote(documentId);
 };

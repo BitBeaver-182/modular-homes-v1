@@ -1,6 +1,6 @@
+import { CalendarIcon, ListChecks } from "lucide-react";
 import { type JSX, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { CalendarIcon, ListChecks } from "lucide-react";
 
 import {
 	DateRangeFilter,
@@ -9,13 +9,7 @@ import {
 	MultiSelectFilter,
 	SearchFilter,
 } from "@/components/filters";
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+import type { YmdPair } from "@/components/filters/date-range-filter";
 import {
 	DataGrid,
 	DataGridContainer,
@@ -23,13 +17,20 @@ import {
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
-import { getCoreRowModel, useReactTable } from "@/lib/tanstack-react-table";
-import { SupplierFilter } from "@/features/suppliers/components/supplier-filter";
-import { Route } from "@/routes/$locale.o.$organizationSlug._admin._operations.supplier-orders";
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
+import { SupplierFilter } from "@/features/suppliers/components/supplier-filter";
 import { usePaginationHandler } from "@/hooks/use-pagination-handler";
 import { useSortingHandler } from "@/hooks/use-sorting-handler";
-import type { YmdPair } from "@/components/filters/date-range-filter";
+import { getCoreRowModel, useReactTable } from "@/lib/tanstack-react-table";
+import { Route } from "@/routes/$locale.o.$organizationSlug._admin._operations.supplier-orders";
+
 import { useGetOrders } from "./hooks/use-get-orders";
 import { useOrdersTable } from "./hooks/use-orders-table";
 import {
@@ -114,7 +115,7 @@ const OrdersPage = (): JSX.Element => {
 				search: (previous) => previous,
 			});
 		},
-		[navigate]
+		[locale, navigate, organizationSlug]
 	);
 
 	const { columns } = useOrdersTable({

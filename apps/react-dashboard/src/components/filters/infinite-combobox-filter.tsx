@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState, useEffect, type JSX, type ReactNode } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { CheckIcon } from "lucide-react";
+import { useMemo, useState, useEffect, type JSX, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { useInView } from "react-intersection-observer";
 import { useDebounce } from "use-debounce";
-import { useTranslation } from "react-i18next";
-import { CheckIcon } from "lucide-react";
 
+import type {
+	FetchPageArgs,
+	InfiniteComboboxPage,
+} from "@/components/forms/inputs/infinite-combobox";
 import { Badge } from "@/components/ui/badge";
 import {
 	Command,
@@ -16,15 +20,11 @@ import {
 	CommandList,
 } from "@/components/ui/command";
 import { Spinner } from "@/components/ui/spinner";
-import type {
-	FetchPageArgs,
-	InfiniteComboboxPage,
-} from "@/components/forms/inputs/infinite-combobox";
 
 import { FilterPopover } from "./filter-popover";
 import { FilterTrigger } from "./filter-trigger";
 
-export type InfiniteComboboxFilterProps<T> = {
+export interface InfiniteComboboxFilterProps<T> {
 	label: string;
 	icon?: ReactNode;
 	/** Selected entity ids. */
@@ -43,7 +43,7 @@ export type InfiniteComboboxFilterProps<T> = {
 	className?: string;
 	disabled?: boolean;
 	maxVisibleChips?: number;
-};
+}
 
 /**
  * Filter-bar equivalent of `InfiniteCombobox`: committing on Apply, persisting
@@ -79,7 +79,7 @@ export function InfiniteComboboxFilter<T>({
 	);
 
 	const triggerValue = useMemo((): ReactNode => {
-		if (value.length === 0) return null;
+		if (value.length === 0) {return null;}
 		if (value.length > maxVisibleChips) {
 			return (
 				<span className="truncate text-sm">
@@ -158,7 +158,7 @@ export function InfiniteComboboxFilter<T>({
 	);
 }
 
-type InfiniteComboboxFilterBodyProps<T> = {
+interface InfiniteComboboxFilterBodyProps<T> {
 	cachedSelected: Array<T>;
 	draft: Array<string>;
 	fetchPage: (args: FetchPageArgs) => Promise<InfiniteComboboxPage<T>>;
@@ -172,7 +172,7 @@ type InfiniteComboboxFilterBodyProps<T> = {
 	queryKey: ReadonlyArray<unknown>;
 	searchPlaceholder: string;
 	setDraft: React.Dispatch<React.SetStateAction<Array<string>>>;
-};
+}
 
 function mergeItemMap<T>(
 	pageItems: Array<T>,
@@ -232,7 +232,7 @@ function InfiniteComboboxFilterBody<T>({
 			queryKey: [...queryKey, debouncedSearch] as ReadonlyArray<unknown>,
 			queryFn: async ({ pageParam }): Promise<InfiniteComboboxPage<T>> =>
 				fetchPage({
-					page: pageParam as number,
+					page: pageParam,
 					pageSize,
 					search: debouncedSearch,
 				}),
@@ -292,7 +292,7 @@ function InfiniteComboboxFilterBody<T>({
 				}
 			}
 			for (const id of draft) {
-				if (seen.has(id)) continue;
+				if (seen.has(id)) {continue;}
 				const t = idToItem.get(id);
 				if (t) {
 					seen.add(id);

@@ -10,25 +10,25 @@
  * so each concrete filter component can own its own prop type and the bar is
  * pure composition.
  */
-export type MultiSelectFilterValue = {
+export interface MultiSelectFilterValue {
 	kind: "multi-select";
 	field: string;
 	values: Array<string>;
-};
+}
 
-export type DateRangeFilterValue = {
+export interface DateRangeFilterValue {
 	kind: "date-range";
 	field: string;
 	from: string | null;
 	to: string | null;
-};
+}
 
-export type NumberRangeFilterValue = {
+export interface NumberRangeFilterValue {
 	kind: "number-range";
 	field: string;
 	min: number | null;
 	max: number | null;
-};
+}
 
 export type FilterValue =
 	| MultiSelectFilterValue

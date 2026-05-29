@@ -73,14 +73,14 @@ interface BadgeProps
   asChild?: boolean
 }
 
-function Badge({
+const Badge = ({
   className,
   variant,
   size,
   radius,
   asChild = false,
   ...props
-}: BadgeProps) {
+}: BadgeProps) => {
   const Comp = asChild ? Slot.Root : "span"
 
   return (

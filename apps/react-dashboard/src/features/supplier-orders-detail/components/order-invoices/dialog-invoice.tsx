@@ -2,7 +2,8 @@ import { type JSX, useEffect } from "react";
 import { FormProvider, type FieldPath } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { DateInput } from "@/components/forms/inputs/date-input";
+import { FileUploadInput } from "@/components/forms/inputs/file-upload-input";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,13 +12,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { DateInput } from "@/components/forms/inputs/date-input";
-import { FileUploadInput } from "@/components/forms/inputs/file-upload-input";
-import {
-	QUOTE_MAX_ATTACHMENT_BYTES,
-	QUOTE_MAX_ATTACHMENT_FILES,
-} from "@/features/quotes/lib/quote-attachments";
 import {
 	Select,
 	SelectContent,
@@ -26,13 +22,17 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import {
+	QUOTE_MAX_ATTACHMENT_BYTES,
+	QUOTE_MAX_ATTACHMENT_FILES,
+} from "@/features/quotes/lib/quote-attachments";
+import {
 	SUPPLIER_INVOICE_STATUSES,
 	type SupplierInvoiceStatus,
 	type SupplierOrderInvoice,
 } from "@/features/supplier-orders/types";
 import { stripStrapiDataPrefix, useStrapiForm } from "@/lib/strapi";
 
-export type InvoiceFormValues = {
+export interface InvoiceFormValues {
 	vendorName: string;
 	totalAmount: string;
 	invoiceStatus: SupplierInvoiceStatus;
@@ -40,9 +40,9 @@ export type InvoiceFormValues = {
 	attachmentFile: File | null;
 	removeExistingAttachment: boolean;
 	root?: string;
-};
+}
 
-type InvoiceDialogProps = {
+interface InvoiceDialogProps {
 	open: boolean;
 	editingInvoice: SupplierOrderInvoice | null;
 	initialValues: InvoiceFormValues;
@@ -50,7 +50,7 @@ type InvoiceDialogProps = {
 	mutating: boolean;
 	onOpenChange: (open: boolean) => void;
 	onSubmit: (value: InvoiceFormValues) => Promise<void>;
-};
+}
 
 const mapInvoiceField = (
 	key: string,

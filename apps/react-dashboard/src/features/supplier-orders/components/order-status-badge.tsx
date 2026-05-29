@@ -1,13 +1,13 @@
-import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 
 import type { SupplierOrderStatus } from "../types";
+import type { JSX } from "react";
 
-type OrderStatusBadgeProps = {
+interface OrderStatusBadgeProps {
 	status: SupplierOrderStatus | null | undefined;
-};
+}
 
 const STATUS_VARIANT: Record<
 	SupplierOrderStatus,

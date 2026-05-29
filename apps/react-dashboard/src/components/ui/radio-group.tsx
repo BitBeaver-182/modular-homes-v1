@@ -1,12 +1,13 @@
-import type * as React from "react"
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utilities"
 
-function RadioGroup({
+import type * as React from "react"
+
+const RadioGroup = ({
   className,
   ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Root>) {
+}: React.ComponentProps<typeof RadioGroupPrimitive.Root>) => {
   return (
     <RadioGroupPrimitive.Root
       className={cn("grid w-full gap-2", className)}
@@ -16,10 +17,10 @@ function RadioGroup({
   )
 }
 
-function RadioGroupItem({
+const RadioGroupItem = ({
   className,
   ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Item>) {
+}: React.ComponentProps<typeof RadioGroupPrimitive.Item>) => {
   return (
     <RadioGroupPrimitive.Item
       data-slot="radio-group-item"

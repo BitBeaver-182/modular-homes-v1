@@ -1,8 +1,8 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/array-type, @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types, react-hooks/set-state-in-effect, react/jsx-sort-props, unicorn/prevent-abbreviations */
-import { useEffect, useRef, useState, type DragEvent } from "react";
+ 
 import { FileText, X } from "lucide-react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utilities";
@@ -49,7 +49,7 @@ function matchesAccept(file: File, accept: string | undefined): boolean {
 	});
 }
 
-type FileUploadInputProps = {
+interface FileUploadInputProps {
 	name?: string;
 	accept?: string;
 	maxFiles?: number;
@@ -69,9 +69,9 @@ type FileUploadInputProps = {
 	onFilesChange?: (files: File[]) => void;
 	/** Called when the user removes the existing server file from the UI. */
 	onExistingClear?: () => void;
-};
+}
 
-export function FileUploadInput({
+export const FileUploadInput = ({
 	name,
 	accept,
 	maxFiles = 1,
@@ -85,7 +85,7 @@ export function FileUploadInput({
 	existingFile = null,
 	onFilesChange,
 	onExistingClear,
-}: FileUploadInputProps) {
+}: FileUploadInputProps) => {
 	const [files, setFiles] = useState<File[]>([]);
 	const [clearedExistingFile, setClearedExistingFile] = useState(false);
 	const [isDragOver, setIsDragOver] = useState(false);

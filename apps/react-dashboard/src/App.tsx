@@ -1,16 +1,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider } from "@tanstack/react-router";
-import type { FunctionComponent } from "./common/types";
-import { TooltipProvider } from "./components/ui/tooltip";
-import { Toaster } from "./components/ui/sonner";
-import type { TanstackRouter } from "./main";
-import { TanStackRouterDevelopmentTools } from "./components/utils/development-tools/TanStackRouterDevelopmentTools";
+
 import { ThemeProvider } from "./components/theme-provider";
+import { Toaster } from "./components/ui/sonner";
+import { TooltipProvider } from "./components/ui/tooltip";
+import { TanStackRouterDevelopmentTools } from "./components/utils/development-tools/TanStackRouterDevelopmentTools";
+
+import type { FunctionComponent } from "./common/types";
+import type { TanstackRouter } from "./main";
+
 
 const queryClient = new QueryClient();
 
-type AppProps = { router: TanstackRouter };
+interface AppProps { router: TanstackRouter }
 
 const App = ({ router }: AppProps): FunctionComponent => {
 	return (

@@ -1,4 +1,3 @@
-import { strapiClient, strapiConfig, type AttachmentMedia, type StrapiMoney, type StrapiQueryParams } from "@/lib/strapi";
 import type {
 	SupplierInvoicePaymentMethod,
 	SupplierInvoiceStatus,
@@ -6,6 +5,7 @@ import type {
 	SupplierOrder,
 	SupplierOrderInvoice,
 } from "@/features/supplier-orders/types";
+import { strapiClient, strapiConfig, type AttachmentMedia, type StrapiMoney, type StrapiQueryParams } from "@/lib/strapi";
 
 const DETAIL_POPULATE = {
 	quote: {
@@ -30,46 +30,46 @@ const DETAIL_POPULATE = {
 	historyEntries: true,
 } as const;
 
-export type SupplierOrderWriteInput = {
+export interface SupplierOrderWriteInput {
 	orderStatus?: SupplierOrder["orderStatus"];
 	trackingUrl?: string | null;
 	orderLines?: Array<SupplierOrderLine>;
-};
+}
 
-export type SupplierInvoiceWriteInput = {
+export interface SupplierInvoiceWriteInput {
 	supplierOrderDocumentId: string;
 	vendorName: string;
 	total: StrapiMoney;
 	invoiceStatus: SupplierInvoiceStatus;
 	expirationDate: string;
 	attachmentFile?: File | null;
-};
+}
 
-export type SupplierInvoiceUpdateInput = {
+export interface SupplierInvoiceUpdateInput {
 	vendorName: string;
 	total: StrapiMoney;
 	invoiceStatus: SupplierInvoiceStatus;
 	expirationDate: string;
 	attachmentFile?: File | null;
 	removeExistingAttachment?: boolean;
-};
+}
 
-export type SupplierInvoicePaymentWriteInput = {
+export interface SupplierInvoicePaymentWriteInput {
 	invoiceDocumentId: string;
 	paymentAmount: StrapiMoney;
 	paymentDate: string;
 	method: SupplierInvoicePaymentMethod;
 	notes?: string;
-};
+}
 
-export type SupplierInvoicePaymentUpdateInput = {
+export interface SupplierInvoicePaymentUpdateInput {
 	paymentAmount: StrapiMoney;
 	paymentDate: string;
 	method: SupplierInvoicePaymentMethod;
 	notes?: string;
-};
+}
 
-type SupplierOrderQuoteApiRef = {
+interface SupplierOrderQuoteApiRef {
 	id: number;
 	documentId: string;
 	supplier: SupplierOrder["quote"] extends infer T
@@ -84,7 +84,7 @@ type SupplierOrderQuoteApiRef = {
 		: null;
 	expiresAt?: string | null;
 	attachment?: AttachmentMedia | null;
-};
+}
 
 type SupplierOrderApiRecord = Omit<SupplierOrder, "quote" | "orderLines"> & {
 	quote: SupplierOrderQuoteApiRef | null;
@@ -136,7 +136,7 @@ export const getSupplierOrder = async (documentId: string): Promise<SupplierOrde
 			`/supplier-orders/${encodeURIComponent(documentId)}`,
 			{
 				method: "GET",
-				query: { populate: DETAIL_POPULATE } as StrapiQueryParams<SupplierOrderApiRecord>,
+				query: { populate: DETAIL_POPULATE },
 			},
 		);
 
@@ -172,7 +172,7 @@ export const updateSupplierOrder = async (
 ): Promise<SupplierOrder> => {
 	const response = await strapiClient
 		.from<SupplierOrder>("supplier-orders")
-		.update(documentId, input as Partial<SupplierOrder>);
+		.update(documentId, input);
 
 	return getSupplierOrder(response.data.documentId);
 };
@@ -203,7 +203,7 @@ export const createSupplierInvoice = async (
 
 	await strapiClient
 		.from<SupplierOrderInvoice>("supplier-invoices")
-		.create(payload as unknown as Partial<SupplierOrderInvoice>);
+		.create(payload);
 };
 
 export const updateSupplierInvoice = async (
@@ -236,7 +236,7 @@ export const updateSupplierInvoice = async (
 
 	await strapiClient
 		.from<SupplierOrderInvoice>("supplier-invoices")
-		.update(documentId, payload as Partial<SupplierOrderInvoice>);
+		.update(documentId, payload);
 };
 
 export const deleteSupplierInvoice = async (documentId: string): Promise<void> => {

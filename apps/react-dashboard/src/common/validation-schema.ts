@@ -24,7 +24,7 @@ export const createRequiredSortSchema = <T extends readonly [string, ...string[]
 
 export type RequiredSortSchema = z.infer<ReturnType<typeof createRequiredSortSchema>>;
 
-export const createTableSchema = (pageSize: number = 15) => z.object({
+export const createTableSchema = (pageSize = 15) => z.object({
   page: z.coerce.number().min(1).catch(1),
   pageSize: z.coerce.number().min(1).catch(pageSize),
   search: z.coerce.string().optional(),

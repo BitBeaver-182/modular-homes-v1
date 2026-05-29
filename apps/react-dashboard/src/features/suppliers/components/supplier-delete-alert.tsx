@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,17 +11,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { JSX, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Supplier } from "../types";
 
-type SupplierDeleteAlertProps = {
+import type { Supplier } from "../types";
+import type { JSX} from "react";
+
+interface SupplierDeleteAlertProps {
   open: boolean;
   supplier: Supplier | null;
   loading: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (supplier: Supplier) => Promise<void>;
-};
+}
 
 export const SupplierDeleteAlert = ({
   open,

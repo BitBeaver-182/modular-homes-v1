@@ -1,6 +1,8 @@
 import qs from "qs";
+
 import { StrapiRequestError, isStrapiErrorResponse } from "./error";
-import { StrapiErrorResponse, StrapiQueryParams, StrapiResponse, UnwrapArray } from "./types";
+
+import type { StrapiErrorResponse, StrapiQueryParams, StrapiResponse, UnwrapArray } from "./types";
 
 type CollectionName =
   | "suppliers"
@@ -8,14 +10,14 @@ type CollectionName =
   | "supplier-orders"
   | "supplier-invoices"
 
-export type UploadedMedia = {
+export interface UploadedMedia {
   id: number;
   documentId?: string;
   name: string;
   mime: string;
   size: number;
   url: string;
-};
+}
 
 /**
  * Strapi upload plugin `ref` must be the **content-type UID** (`api::<singular>.<singular>`),
@@ -94,11 +96,11 @@ class StrapiClient {
       throw new StrapiRequestError(fallback.error);
     }
 
-    if (response.status === 204) return { data: {} as T };
+    if (response.status === 204) {return { data: {} as T };}
 
     const text = await response.text();
     try {
-      const parsed = JSON.parse(text) as unknown;
+      const parsed = JSON.parse(text);
       if (
         typeof parsed === "object" &&
         parsed !== null &&
@@ -180,11 +182,11 @@ class StrapiClient {
   }
 }
 
-export type StrapiConfig = {
+export interface StrapiConfig {
   baseUrl: string;
   apiToken?: string;
   timeoutMs: number;
-};
+}
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 
@@ -197,9 +199,9 @@ const sanitizeBaseUrl = (rawBaseUrl?: string): string => {
 };
 
 export const strapiConfig: StrapiConfig = {
-  baseUrl: sanitizeBaseUrl(import.meta.env["VITE_STRAPI_URL"]),
-  apiToken: import.meta.env["VITE_STRAPI_TOKEN"],
-  timeoutMs: Number(import.meta.env["VITE_STRAPI_TIMEOUT_MS"] || DEFAULT_TIMEOUT_MS),
+  baseUrl: sanitizeBaseUrl(import.meta.env.VITE_STRAPI_URL),
+  apiToken: import.meta.env.VITE_STRAPI_TOKEN,
+  timeoutMs: Number(import.meta.env.VITE_STRAPI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
 };
 
 

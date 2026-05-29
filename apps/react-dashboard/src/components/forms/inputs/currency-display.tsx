@@ -7,21 +7,21 @@ import { cn } from "@/lib/utilities";
 
 const CurrencyList = CurrencyListModule;
 
-type CurrencyDisplayProps = {
+interface CurrencyDisplayProps {
 	amount: number | null | undefined;
 	currencyCode?: string | null;
 	className?: string;
-};
+}
 
 /**
  * Renders a numeric amount with symbol and fraction digits from `currency-list`
  * for the given ISO currency code.
  */
-export function CurrencyDisplay({
+export const CurrencyDisplay = ({
 	amount,
 	currencyCode,
 	className,
-}: CurrencyDisplayProps) {
+}: CurrencyDisplayProps) => {
 	const { i18n } = useTranslation();
 	const locale = i18n.language?.split("-")[0] ?? "en";
 

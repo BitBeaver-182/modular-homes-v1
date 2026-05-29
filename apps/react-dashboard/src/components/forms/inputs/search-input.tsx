@@ -1,8 +1,8 @@
 "use client";
 
-import { useDebouncedCallback } from "use-debounce";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useDebouncedCallback } from "use-debounce";
 
 import {
 	InputGroup,
@@ -11,22 +11,22 @@ import {
 } from "@/components/ui/input-group";
 import { cn } from "@/lib/utilities";
 
-export type SearchInputProps = {
+export interface SearchInputProps {
 	value?: string;
 	placeholder: string;
 	/** Called after `debounceMs` when the user types (for URL / parent state). */
 	onDebouncedChange: (value: string) => void;
 	debounceMs?: number;
 	className?: string;
-};
+}
 
-export function SearchInput({
+export const SearchInput = ({
 	value,
 	placeholder,
 	onDebouncedChange,
 	debounceMs = 300,
 	className,
-}: SearchInputProps) {
+}: SearchInputProps) => {
 	const [internalValue, setInternalValue] = useState(value);
 	const debounced = useDebouncedCallback(onDebouncedChange, debounceMs);
 

@@ -1,17 +1,18 @@
 "use client"
 
-import type * as React from "react"
 import { Switch as SwitchPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utilities"
 
-function Switch({
+import type * as React from "react"
+
+const Switch = ({
   className,
   size = "default",
   ...props
 }: React.ComponentProps<typeof SwitchPrimitive.Root> & {
   size?: "sm" | "default"
-}) {
+}) => {
   return (
     <SwitchPrimitive.Root
       data-size={size}

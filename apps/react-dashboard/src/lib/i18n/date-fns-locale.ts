@@ -1,4 +1,5 @@
-import { enUS, es, hu, sk, type Locale } from "date-fns/locale";;
+import { enUS, es, hu, sk, type Locale } from "date-fns/locale";
+
 
 const dateFnsLocales: Record<string, Locale> = {
 	en: enUS,

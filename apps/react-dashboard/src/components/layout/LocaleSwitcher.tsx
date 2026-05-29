@@ -1,4 +1,6 @@
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+
 import {
 	SUPPORTED_LOCALES,
 	type SupportedLocale,
@@ -11,11 +13,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../ui/select";
-import { useTranslation } from "react-i18next";
 
-type LocaleSwitcherProps = {
+interface LocaleSwitcherProps {
 	currentLocale: SupportedLocale;
-};
+}
 
 export const LocaleSwitcher = ({ currentLocale }: LocaleSwitcherProps) => {
 	const location = useLocation();
@@ -34,7 +35,7 @@ export const LocaleSwitcher = ({ currentLocale }: LocaleSwitcherProps) => {
 		const hasLocaleParameter = isSupportedLocale(localeFromParameters ?? "");
 
 		if (hasLocaleParameter) {
-			navigate({
+			void navigate({
 				to: ".",
 				params: (previous) => ({ ...previous, locale: nextLocale }),
 				search: (previous) => previous,
@@ -43,7 +44,7 @@ export const LocaleSwitcher = ({ currentLocale }: LocaleSwitcherProps) => {
 			return;
 		}
 
-		navigate({
+		void navigate({
 			to: "/$locale",
 			params: { locale: nextLocale },
 			search: true,
@@ -53,7 +54,9 @@ export const LocaleSwitcher = ({ currentLocale }: LocaleSwitcherProps) => {
 
 	return (
 		<div className="flex items-center gap-2">
-			<span className="text-sm text-muted-foreground">{t("shell.language")}</span>
+			<span className="text-sm text-muted-foreground">
+				{t("shell.language")}
+			</span>
 			<Select
 				value={currentLocale}
 				onValueChange={(value) => {

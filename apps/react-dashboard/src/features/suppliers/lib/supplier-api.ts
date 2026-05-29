@@ -1,6 +1,7 @@
 import { strapiClient } from "@/lib/strapi";
 import type { StrapiQueryParams } from "@/lib/strapi";
 import type { SuppliersQueryParams } from "@/routes/$locale.o.$organizationSlug._admin._operations.suppliers";
+
 import type { PaginatedResult, Supplier, SupplierWriteInput } from "../types";
 
 /**

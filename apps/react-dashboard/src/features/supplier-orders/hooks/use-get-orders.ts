@@ -1,8 +1,11 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
-import { getSupplierOrders } from "../lib/order-api";
-import type { PaginatedResult, SupplierOrder } from "../types";
+
 import { orderKeys } from "./order-keys";
+import { getSupplierOrders } from "../lib/order-api";
+
+import type { PaginatedResult, SupplierOrder } from "../types";
 
 export const useGetOrders = (
 	parameters: SupplierOrdersSearchParameters,

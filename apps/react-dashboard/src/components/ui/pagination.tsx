@@ -1,10 +1,13 @@
-import type * as React from "react"
-
-import { cn } from "@/lib/utilities"
-import { Button } from "@/components/ui/button"
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
-function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utilities"
+
+import type * as React from "react"
+
+
+
+const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => {
   return (
     <nav
       aria-label="pagination"
@@ -16,10 +19,10 @@ function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   )
 }
 
-function PaginationContent({
+const PaginationContent = ({
   className,
   ...props
-}: React.ComponentProps<"ul">) {
+}: React.ComponentProps<"ul">) => {
   return (
     <ul
       className={cn("flex items-center gap-0.5", className)}
@@ -29,7 +32,7 @@ function PaginationContent({
   )
 }
 
-function PaginationItem({ ...props }: React.ComponentProps<"li">) {
+const PaginationItem = ({ ...props }: React.ComponentProps<"li">) => {
   return <li data-slot="pagination-item" {...props} />
 }
 
@@ -38,12 +41,12 @@ type PaginationLinkProps = {
 } & Pick<React.ComponentProps<typeof Button>, "size"> &
   React.ComponentProps<"a">
 
-function PaginationLink({
+const PaginationLink = ({
   className,
   isActive,
   size = "icon",
   ...props
-}: PaginationLinkProps) {
+}: PaginationLinkProps) => {
   return (
     <Button
       asChild
@@ -61,11 +64,11 @@ function PaginationLink({
   )
 }
 
-function PaginationPrevious({
+const PaginationPrevious = ({
   className,
   text = "Previous",
   ...props
-}: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+}: React.ComponentProps<typeof PaginationLink> & { text?: string }) => {
   return (
     <PaginationLink
       aria-label="Go to previous page"
@@ -79,11 +82,11 @@ function PaginationPrevious({
   )
 }
 
-function PaginationNext({
+const PaginationNext = ({
   className,
   text = "Next",
   ...props
-}: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+}: React.ComponentProps<typeof PaginationLink> & { text?: string }) => {
   return (
     <PaginationLink
       aria-label="Go to next page"
@@ -97,10 +100,10 @@ function PaginationNext({
   )
 }
 
-function PaginationEllipsis({
+const PaginationEllipsis = ({
   className,
   ...props
-}: React.ComponentProps<"span">) {
+}: React.ComponentProps<"span">) => {
   return (
     <span
       aria-hidden

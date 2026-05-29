@@ -39,16 +39,16 @@ export const SUPPLIER_INVOICE_PAYMENT_METHODS = [
 export type SupplierInvoicePaymentMethod =
 	(typeof SUPPLIER_INVOICE_PAYMENT_METHODS)[number];
 
-export type SupplierOrderQuoteRef = {
+export interface SupplierOrderQuoteRef {
 	id: number;
 	documentId: string;
 	supplier: Supplier | null;
 	total: StrapiMoney | null;
 	expiration_date?: string | null;
 	pdf?: AttachmentMedia | null;
-};
+}
 
-export type SupplierOrderInvoicePayment = {
+export interface SupplierOrderInvoicePayment {
 	id: number;
 	documentId: string;
 	createdAt: string;
@@ -58,9 +58,9 @@ export type SupplierOrderInvoicePayment = {
 	method: SupplierInvoicePaymentMethod;
 	notes: string | null;
 	invoice?: Pick<SupplierOrderInvoice, "documentId" | "invoiceNumber"> | null;
-};
+}
 
-export type SupplierOrderInvoice = {
+export interface SupplierOrderInvoice {
 	id: number;
 	documentId: string;
 	createdAt: string;
@@ -75,9 +75,9 @@ export type SupplierOrderInvoice = {
 	amountRemaining: StrapiMoney | null;
 	payments?: Array<SupplierOrderInvoicePayment> | null;
 	supplierOrder?: Pick<SupplierOrder, "documentId"> | null;
-};
+}
 
-export type SupplierOrderHistoryEntry = {
+export interface SupplierOrderHistoryEntry {
 	id: number;
 	documentId: string;
 	createdAt: string;
@@ -85,18 +85,18 @@ export type SupplierOrderHistoryEntry = {
 	message: string;
 	at: string;
 	meta?: Record<string, unknown> | null;
-};
+}
 
-export type SupplierOrderLine = {
+export interface SupplierOrderLine {
 	id?: number;
 	__tempId?: string;
 	description: string;
 	quantity: number | string;
 	unit_price: StrapiMoney;
 	line_total: StrapiMoney | null;
-};
+}
 
-export type SupplierOrder = {
+export interface SupplierOrder {
 	id: number;
 	documentId: string;
 	createdAt: string;
@@ -108,9 +108,9 @@ export type SupplierOrder = {
 	orderLines?: Array<SupplierOrderLine> | null;
 	invoices?: Array<SupplierOrderInvoice> | null;
 	historyEntries?: Array<SupplierOrderHistoryEntry> | null;
-};
+}
 
-export type PaginatedResult<T> = {
+export interface PaginatedResult<T> {
 	data: Array<T>;
 	meta: {
 		pagination: {
@@ -120,4 +120,4 @@ export type PaginatedResult<T> = {
 			total: number;
 		};
 	};
-};
+}

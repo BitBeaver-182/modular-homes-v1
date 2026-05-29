@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, type JSX, type ReactNode } from "react";
 import { format } from "date-fns";
+import { useMemo, type JSX, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -12,9 +12,9 @@ import {
 import { FilterPopover } from "./filter-popover";
 import { FilterTrigger } from "./filter-trigger";
 
-export type YmdPair = { from?: string; to?: string };
+export interface YmdPair { from?: string; to?: string }
 
-export type DateRangeFilterProps = {
+export interface DateRangeFilterProps {
 	label: string;
 	icon?: ReactNode;
 	value?: YmdPair;
@@ -23,10 +23,10 @@ export type DateRangeFilterProps = {
 	disableFuture?: boolean;
 	className?: string;
 	disabled?: boolean;
-};
+}
 
 const toDate = (ymd: string | null): Date | null => {
-	if (!ymd) return null;
+	if (!ymd) {return null;}
 	const parsed = new Date(ymd);
 	return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
@@ -35,7 +35,7 @@ const toDate = (ymd: string | null): Date | null => {
  * Date-range filter. Keeps YMD strings in the URL and converts them to the
  * `DateRangeInput` shape (Date objects) only while the popover is open.
  */
-export function DateRangeFilter({
+export const DateRangeFilter = ({
 	label,
 	icon,
 	value,
@@ -44,13 +44,13 @@ export function DateRangeFilter({
 	disableFuture,
 	className,
 	disabled,
-}: DateRangeFilterProps): JSX.Element {
+}: DateRangeFilterProps): JSX.Element => {
 	const { t } = useTranslation();
 
 	const triggerValue = useMemo((): ReactNode => {
 		const fromDate = value?.from ? toDate(value.from) : null;
 		const toEndDate = value?.to ? toDate(value.to) : null;
-		if (!fromDate && !toEndDate) return null;
+		if (!fromDate && !toEndDate) {return null;}
 		if (fromDate && toEndDate) {
 			return (
 				<span className="truncate text-sm">

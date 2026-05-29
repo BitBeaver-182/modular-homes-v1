@@ -3,13 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import { useSortingHandler } from "./use-sorting-handler";
 
+import type * as TanstackRouter from "@tanstack/react-router";
+
 const navigateMock = vi.fn();
 const getLastNavigateArg = (): any =>
 	navigateMock.mock.calls[navigateMock.mock.calls.length - 1]?.[0];
 
 vi.mock("@tanstack/react-router", async () => {
-	const actual = await vi.importActual<typeof import("@tanstack/react-router")>(
-		"@tanstack/react-router",
+	const actual = await vi.importActual<typeof TanstackRouter>(
+		"@tanstack/react-router"
 	);
 	return {
 		...actual,
@@ -22,7 +24,7 @@ describe("useSortingHandler", () => {
 		const { result } = renderHook(() =>
 			useSortingHandler({
 				currentParams: { sortBy: "name", sortOrder: "asc" },
-			}),
+			})
 		);
 
 		expect(result.current.sorting).toEqual([{ id: "name", desc: false }]);
@@ -35,7 +37,7 @@ describe("useSortingHandler", () => {
 			useSortingHandler({
 				currentParams: {},
 				defaultSorting: [{ id: "createdAt", desc: true }],
-			}),
+			})
 		);
 
 		expect(navigateMock).toHaveBeenCalledTimes(1);
@@ -58,7 +60,7 @@ describe("useSortingHandler", () => {
 					currentParams: { sortBy: props.sortBy } as any,
 					defaultSorting: [{ id: "createdAt", desc: true }],
 				}),
-			{ initialProps: { sortBy: undefined } },
+			{ initialProps: { sortBy: undefined } }
 		);
 
 		expect(navigateMock).toHaveBeenCalledTimes(1);
@@ -73,7 +75,7 @@ describe("useSortingHandler", () => {
 			useSortingHandler({
 				currentParams: { sortBy: "name", sortOrder: "desc" },
 				defaultSorting: [{ id: "createdAt", desc: true }],
-			}),
+			})
 		);
 
 		expect(navigateMock).not.toHaveBeenCalled();
@@ -81,7 +83,9 @@ describe("useSortingHandler", () => {
 
 	it("does not apply defaultSorting when it is empty or has no id", () => {
 		navigateMock.mockClear();
-		renderHook(() => useSortingHandler({ currentParams: {}, defaultSorting: [] }));
+		renderHook(() =>
+			useSortingHandler({ currentParams: {}, defaultSorting: [] })
+		);
 		expect(navigateMock).not.toHaveBeenCalled();
 
 		navigateMock.mockClear();
@@ -89,7 +93,7 @@ describe("useSortingHandler", () => {
 			useSortingHandler({
 				currentParams: {},
 				defaultSorting: [{ id: "" as any, desc: false }],
-			}),
+			})
 		);
 		expect(navigateMock).not.toHaveBeenCalled();
 	});
@@ -101,7 +105,7 @@ describe("useSortingHandler", () => {
 			useSortingHandler({
 				currentParams: {},
 				defaultSorting: [{ id: "name", desc: false }],
-			}),
+			})
 		);
 
 		const navArg = navigateMock.mock.calls[0]?.[0];
@@ -113,7 +117,7 @@ describe("useSortingHandler", () => {
 		const { result, unmount } = renderHook(() =>
 			useSortingHandler({
 				currentParams: { sortBy: "name", sortOrder: "desc" },
-			}),
+			})
 		);
 
 		// desc -> asc
@@ -126,7 +130,7 @@ describe("useSortingHandler", () => {
 		const nextRender = renderHook(() =>
 			useSortingHandler({
 				currentParams: { sortBy: "name", sortOrder: "asc" },
-			}),
+			})
 		);
 
 		// asc -> none
@@ -145,7 +149,7 @@ describe("useSortingHandler", () => {
 		const { result } = renderHook(() =>
 			useSortingHandler({
 				currentParams: { sortBy: "name" },
-			}),
+			})
 		);
 
 		result.current.onSortingChange([{ id: "name", desc: false }]);
@@ -159,12 +163,15 @@ describe("useSortingHandler", () => {
 		const { result } = renderHook(() =>
 			useSortingHandler({
 				currentParams: { sortBy: "name", sortOrder: "asc" },
-			}),
+			})
 		);
 
 		result.current.onSortingChange([{ id: "createdAt", desc: false }]);
 		const navArg = getLastNavigateArg();
-		expect(navArg.search({})).toEqual({ sortBy: "createdAt", sortOrder: "desc" });
+		expect(navArg.search({})).toEqual({
+			sortBy: "createdAt",
+			sortOrder: "desc",
+		});
 	});
 
 	it("handles TanStack proposing an id when there is no current sort", () => {
@@ -173,7 +180,7 @@ describe("useSortingHandler", () => {
 		const { result } = renderHook(() =>
 			useSortingHandler({
 				currentParams: {},
-			}),
+			})
 		);
 
 		result.current.onSortingChange([{ id: "name", desc: false }]);
@@ -187,7 +194,7 @@ describe("useSortingHandler", () => {
 		const { result } = renderHook(() =>
 			useSortingHandler({
 				currentParams: { sortBy: "name", sortOrder: "desc" },
-			}),
+			})
 		);
 
 		result.current.onSortingChange((prev) => prev);
@@ -200,7 +207,7 @@ describe("useSortingHandler", () => {
 		const { result } = renderHook(() =>
 			useSortingHandler({
 				currentParams: {},
-			}),
+			})
 		);
 
 		result.current.onSortingChange([]);
@@ -219,7 +226,7 @@ describe("useSortingHandler", () => {
 			useSortingHandler({
 				currentParams: {},
 				navigateOptions: { replace: true },
-			}),
+			})
 		);
 
 		result.current.onSortingChange([{ id: "name", desc: true }]);

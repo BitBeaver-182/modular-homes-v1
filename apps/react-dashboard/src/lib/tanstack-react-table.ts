@@ -4,7 +4,5 @@
  */
 import * as ReactTable from "@tanstack/react-table";
 
-export const getCoreRowModel: typeof ReactTable.getCoreRowModel =
-	ReactTable.getCoreRowModel;
-export const useReactTable: typeof ReactTable.useReactTable =
-	ReactTable.useReactTable;
+export const {getCoreRowModel} = ReactTable;
+export const {useReactTable} = ReactTable;

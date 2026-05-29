@@ -1,6 +1,6 @@
+import type { StrapiErrorDetail } from "./types";
 import type { TFunction } from "i18next";
 
-import type { StrapiErrorDetail } from "./types";
 
 const safeParameters = (
 	parameters: Record<string, unknown> | undefined,

@@ -1,5 +1,5 @@
 import type { Supplier } from "@/features/suppliers/types";
-import { AttachmentMedia } from "@/lib/strapi";
+import type { AttachmentMedia } from "@/lib/strapi";
 
 export const QUOTE_STATUSES = ["pending", "accepted", "rejected"] as const;
 export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
@@ -12,25 +12,25 @@ export const QUOTE_SORT_FIELDS = [
 ] as const;
 export type QuoteSortField = (typeof QUOTE_SORT_FIELDS)[number];
 
-export type QuotePdfMedia = {
+export interface QuotePdfMedia {
 	id: number;
 	url: string;
 	name: string;
 	size?: number;
 	mime?: string;
-};
+}
 
-export type QuoteTotal = {
+export interface QuoteTotal {
 	amount: number;
 	currency_code: string;
-};
+}
 
-export type QuoteSupplierOrderRef = {
+export interface QuoteSupplierOrderRef {
 	id: number;
 	documentId: string;
-};
+}
 
-export type Quote = {
+export interface Quote {
 	id: number;
 	documentId: string;
 	quotation_date: string | null;
@@ -46,9 +46,9 @@ export type Quote = {
 	/** Legacy `api::order.order` links; prefer {@link Quote.supplierOrders}. */
 	orders?: Array<QuoteSupplierOrderRef> | null;
 	supplierOrders?: Array<QuoteSupplierOrderRef> | null;
-};
+}
 
-export type QuoteWriteInput = {
+export interface QuoteWriteInput {
 	supplierId: string;
 	quotationDate: string;
 	expirationDate: string;
@@ -58,9 +58,9 @@ export type QuoteWriteInput = {
 	status: QuoteStatus;
 	pdfFile: File | null;
 	removeExistingPdf: boolean;
-};
+}
 
-export type PaginatedResult<T> = {
+export interface PaginatedResult<T> {
 	data: Array<T>;
 	meta: {
 		pagination: {
@@ -70,4 +70,4 @@ export type PaginatedResult<T> = {
 			total: number;
 		};
 	};
-};
+}

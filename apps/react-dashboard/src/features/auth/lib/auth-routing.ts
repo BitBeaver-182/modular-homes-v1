@@ -1,10 +1,12 @@
-/* eslint-disable @typescript-eslint/only-throw-error */
+ 
 
 import { redirect } from "@tanstack/react-router";
+
 import type { SupportedLocale } from "@/common/locales";
 import { getSession } from "@/lib/moduflow/api";
 import { ModuflowRequestError } from "@/lib/moduflow/client";
 import type { AuthSession, OrganizationMembership } from "@/lib/moduflow/types";
+
 import { authStorage } from "./auth-storage";
 
 export const getOrganizationDashboardPath = (

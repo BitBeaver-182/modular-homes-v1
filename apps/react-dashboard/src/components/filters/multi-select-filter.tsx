@@ -1,8 +1,8 @@
 "use client";
 
+import { CheckIcon } from "lucide-react";
 import { useMemo, type JSX, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,15 +17,15 @@ import {
 import { FilterPopover } from "./filter-popover";
 import { FilterTrigger } from "./filter-trigger";
 
-export type MultiSelectOption<T extends string = string> = {
+export interface MultiSelectOption<T extends string = string> {
 	value: T;
 	label: string;
 	/** Optional right-aligned count (e.g. server-returned totals per bucket). */
 	count?: number;
 	icon?: ReactNode;
-};
+}
 
-export type MultiSelectFilterProps<T extends string = string> = {
+export interface MultiSelectFilterProps<T extends string = string> {
 	label: string;
 	icon?: ReactNode;
 	value: Array<T>;
@@ -37,13 +37,13 @@ export type MultiSelectFilterProps<T extends string = string> = {
 	selectedLabel?: (count: number) => string;
 	className?: string;
 	disabled?: boolean;
-};
+}
 
 /**
  * Multi-select filter: trigger → popover with `Command` + checkbox items.
  * Value is an array of option `value`s; the parent is responsible for URL sync.
  */
-export function MultiSelectFilter<T extends string = string>({
+export const MultiSelectFilter = <T extends string = string>({
 	label,
 	icon,
 	value,
@@ -53,7 +53,7 @@ export function MultiSelectFilter<T extends string = string>({
 	selectedLabel,
 	className,
 	disabled,
-}: MultiSelectFilterProps<T>): JSX.Element {
+}: MultiSelectFilterProps<T>): JSX.Element => {
 	const { t } = useTranslation();
 	const optionByValue = useMemo(
 		(): Map<string, MultiSelectOption> =>
@@ -62,7 +62,7 @@ export function MultiSelectFilter<T extends string = string>({
 	);
 
 	const triggerValue = useMemo((): ReactNode => {
-		if (value.length === 0) return null;
+		if (value.length === 0) {return null;}
 		if (value.length > maxBadges) {
 			return (
 				<span className="truncate text-sm">

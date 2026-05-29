@@ -1,8 +1,8 @@
 import type { JSX, ReactNode } from "react";
 
-type AuthPageShellProps = {
+interface AuthPageShellProps {
 	children: ReactNode;
-};
+}
 
 export const AuthPageShell = ({
 	children,

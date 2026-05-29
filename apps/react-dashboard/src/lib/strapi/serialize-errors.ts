@@ -1,12 +1,12 @@
-import type { StrapiErrorDetail } from "./types";
 import type { StrapiRequestError } from "./error";
+import type { StrapiErrorDetail } from "./types";
 
-export type SerializeStrapiErrorsFormat = {
+export interface SerializeStrapiErrorsFormat {
 	/** Transform each field-level error into the message shown to users. */
 	detailMessage?: (item: StrapiErrorDetail) => string;
 	/** Transform the global error message (no field path). */
 	rootMessage?: (message: string) => string;
-};
+}
 
 /**
  * Flattens `StrapiRequestError.details.errors` into `{ "dotted.path": message }`.
@@ -16,7 +16,7 @@ export const serializeStrapiErrors = (
 	error: StrapiRequestError,
 	format?: SerializeStrapiErrorsFormat,
 ): Record<string, string> => {
-	const items = error.items;
+	const {items} = error;
 	if (items.length === 0) {
 		return {
 			root: format?.rootMessage?.(error.message) ?? error.message,
@@ -25,7 +25,7 @@ export const serializeStrapiErrors = (
 
 	const out: Record<string, string> = {};
 	for (const item of items) {
-		const path = item.path;
+		const {path} = item;
 		if (!path?.length) {
 			continue;
 		}

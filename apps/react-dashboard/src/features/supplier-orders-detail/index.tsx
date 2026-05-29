@@ -1,5 +1,5 @@
-import { useMemo, type JSX } from "react";
 import { Link } from "@tanstack/react-router";
+import { useMemo, type JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -12,12 +12,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import type {
-	SupplierInvoicePaymentUpdateInput,
-	SupplierInvoicePaymentWriteInput,
-	SupplierInvoiceUpdateInput,
-	SupplierInvoiceWriteInput,
-} from "@/features/supplier-orders-detail/lib/order-api";
 import { useCreateInvoicePayment } from "@/features/supplier-orders-detail/hooks/use-create-invoice-payment";
 import { useCreateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-create-order-invoice";
 import { useDeleteInvoicePayment } from "@/features/supplier-orders-detail/hooks/use-delete-invoice-payment";
@@ -26,9 +20,16 @@ import { useGetOrder } from "@/features/supplier-orders-detail/hooks/use-get-ord
 import { useUpdateInvoicePayment } from "@/features/supplier-orders-detail/hooks/use-update-invoice-payment";
 import { useUpdateOrder } from "@/features/supplier-orders-detail/hooks/use-update-order";
 import { useUpdateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-update-order-invoice";
+import type {
+	SupplierInvoicePaymentUpdateInput,
+	SupplierInvoicePaymentWriteInput,
+	SupplierInvoiceUpdateInput,
+	SupplierInvoiceWriteInput,
+} from "@/features/supplier-orders-detail/lib/order-api";
 import { Route } from "@/routes/$locale.o.$organizationSlug._admin._operations.supplier-orders_.$orderId";
-import { OrderProductsCard } from "./components/order-products/order-products-card";
+
 import { OrderInvoicesCard } from "./components/order-invoices";
+import { OrderProductsCard } from "./components/order-products/order-products-card";
 import { OrderSidebar } from "./components/order-sidebar";
 
 const getOrderNumber = (orderId: number): string =>

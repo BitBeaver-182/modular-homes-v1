@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/only-throw-error, no-use-before-define */
+import { createFileRoute, redirect } from "@tanstack/react-router";
+
+import { isSupportedLocale } from "@/common/locales";
+import { requireAuthenticatedSession } from "@/features/auth/lib/auth-routing";
+import { OnboardingPage } from "@/features/auth/onboarding-page";
 
 import type { JSX } from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { isSupportedLocale } from "@/common/locales";
-import { OnboardingPage } from "@/features/auth/onboarding-page";
-import { requireAuthenticatedSession } from "@/features/auth/lib/auth-routing";
 
 export const Route = createFileRoute("/$locale/onboarding")({
 	beforeLoad: async ({ location, params }) => {

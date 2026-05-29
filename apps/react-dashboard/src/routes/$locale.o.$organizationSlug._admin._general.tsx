@@ -1,7 +1,8 @@
-import type { JSX } from "react";
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-function GeneralGroupLayout(): JSX.Element {
+import type { JSX } from "react";
+
+const GeneralGroupLayout = (): JSX.Element => {
 	return <Outlet />;
 }
 

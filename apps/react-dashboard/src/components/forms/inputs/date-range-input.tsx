@@ -1,6 +1,5 @@
 "use client"
 
-import { useId, useState } from "react"
 import {
   endOfMonth,
   endOfYear,
@@ -11,9 +10,10 @@ import {
   subMonths,
   subYears,
 } from "date-fns"
-import type { DateRange } from "react-day-picker"
+import { CalendarIcon } from "lucide-react"
+import { useId, useState } from "react"
 
-import { cn } from "@/lib/utilities"
+
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,7 +22,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utilities"
+
+import type { DateRange } from "react-day-picker"
+
 
 // ─── Preset types ────────────────────────────────────────────────────────────
 
@@ -63,11 +66,11 @@ const DEFAULT_PRESET_LABELS: Record<DateRangePresetKind, string> = {
 }
 
 function resolvePresetLabel(preset: DateRangePreset): string {
-  if (preset.label) return preset.label
-  if ("kind" in preset) return DEFAULT_PRESET_LABELS[preset.kind]
+  if (preset.label) {return preset.label}
+  if ("kind" in preset) {return DEFAULT_PRESET_LABELS[preset.kind]}
   const { offsetDays } = preset
-  if (offsetDays === 0) return "Today"
-  if (offsetDays > 0) return `In ${offsetDays} days`
+  if (offsetDays === 0) {return "Today"}
+  if (offsetDays > 0) {return `In ${offsetDays} days`}
   return `${-offsetDays} days ago`
 }
 
@@ -108,7 +111,7 @@ function resolveRange(preset: DateRangePreset, today: Date): DateRange {
 
 export type DateRangeValue = DateRange | undefined
 
-export type DateRangeInputProps = {
+export interface DateRangeInputProps {
   /** Controlled value */
   value?: DateRangeValue
   /** Default value when uncontrolled */
@@ -130,7 +133,7 @@ export type DateRangeInputProps = {
   inline?: boolean
 }
 
-export function DateRangeInput({
+export const DateRangeInput = ({
   value,
   defaultValue,
   onChange,
@@ -142,7 +145,7 @@ export function DateRangeInput({
   trigger,
   align = "start",
   inline = false,
-}: DateRangeInputProps) {
+}: DateRangeInputProps) => {
   const id = useId()
   const today = new Date()
 
@@ -159,7 +162,7 @@ export function DateRangeInput({
   )
 
   const handleRangeChange = (newRange: DateRangeValue) => {
-    if (!isControlled) setInternalRange(newRange)
+    if (!isControlled) {setInternalRange(newRange)}
     onChange?.(newRange)
   }
 
@@ -226,7 +229,7 @@ export function DateRangeInput({
             selected={range}
             onMonthChange={setMonth}
             onSelect={(r) => {
-              if (r) handleRangeChange(r)
+              if (r) {handleRangeChange(r)}
             }}
             {...(disableFuture ? { disabled: [{ after: today }] } : {})}
           />

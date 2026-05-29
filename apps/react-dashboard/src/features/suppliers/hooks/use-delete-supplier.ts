@@ -3,8 +3,9 @@ import {
 	useQueryClient,
 	type UseMutationResult,
 } from "@tanstack/react-query";
-import { deleteSupplier } from "../lib/supplier-api";
+
 import { supplierKeys } from "./supplier-keys";
+import { deleteSupplier } from "../lib/supplier-api";
 
 export const useDeleteSupplier = (): UseMutationResult<void, Error, string> => {
 	const queryClient = useQueryClient();

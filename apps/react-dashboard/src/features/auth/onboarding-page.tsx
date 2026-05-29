@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent, type JSX } from "react";
 import { toast } from "sonner";
+
 import type { SupportedLocale } from "@/common/locales";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -40,6 +41,7 @@ import type {
 	OrganizationInvitation,
 	OrganizationSummary,
 } from "@/lib/moduflow/types";
+
 import { getErrorMessage } from "./lib/auth-form";
 import { getOrganizationDashboardPath } from "./lib/auth-routing";
 import {
@@ -47,16 +49,16 @@ import {
 	validateOrganizationSlug,
 } from "./lib/organization-slug";
 
-type OnboardingPageProps = {
+interface OnboardingPageProps {
 	locale: SupportedLocale;
 	session: AuthSession;
-};
+}
 
-type OrganizationFormErrors = {
+interface OrganizationFormErrors {
 	name?: string;
 	slug?: string;
 	root?: string;
-};
+}
 
 export const OnboardingPage = ({
 	locale,

@@ -1,7 +1,4 @@
-import type { ReactElement } from "react"
 import { getColumnHeaderLabel } from "@/components/reui/data-grid/data-grid"
-import type { Table } from "@tanstack/react-table"
-
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -10,6 +7,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+
+import type { Table } from "@tanstack/react-table"
+import type { ReactElement } from "react"
 
 function DataGridColumnVisibility<TData>({
   table,

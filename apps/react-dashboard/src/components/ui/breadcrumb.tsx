@@ -1,10 +1,13 @@
-import type * as React from "react"
+import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utilities"
-import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
-function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
+import type * as React from "react"
+
+
+
+const Breadcrumb = ({ className, ...props }: React.ComponentProps<"nav">) => {
   return (
     <nav
       aria-label="breadcrumb"
@@ -15,7 +18,7 @@ function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
   )
 }
 
-function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
+const BreadcrumbList = ({ className, ...props }: React.ComponentProps<"ol">) => {
   return (
     <ol
       data-slot="breadcrumb-list"
@@ -28,7 +31,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
   )
 }
 
-function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
+const BreadcrumbItem = ({ className, ...props }: React.ComponentProps<"li">) => {
   return (
     <li
       className={cn("inline-flex items-center gap-1", className)}
@@ -38,13 +41,13 @@ function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
   )
 }
 
-function BreadcrumbLink({
+const BreadcrumbLink = ({
   asChild,
   className,
   ...props
 }: React.ComponentProps<"a"> & {
   asChild?: boolean
-}) {
+}) => {
   const Comp = asChild ? Slot.Root : "a"
 
   return (
@@ -56,7 +59,7 @@ function BreadcrumbLink({
   )
 }
 
-function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
+const BreadcrumbPage = ({ className, ...props }: React.ComponentProps<"span">) => {
   return (
     <span
       aria-current="page"
@@ -69,11 +72,11 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
   )
 }
 
-function BreadcrumbSeparator({
+const BreadcrumbSeparator = ({
   children,
   className,
   ...props
-}: React.ComponentProps<"li">) {
+}: React.ComponentProps<"li">) => {
   return (
     <li
       aria-hidden="true"
@@ -89,10 +92,10 @@ function BreadcrumbSeparator({
   )
 }
 
-function BreadcrumbEllipsis({
+const BreadcrumbEllipsis = ({
   className,
   ...props
-}: React.ComponentProps<"span">) {
+}: React.ComponentProps<"span">) => {
   return (
     <span
       aria-hidden="true"

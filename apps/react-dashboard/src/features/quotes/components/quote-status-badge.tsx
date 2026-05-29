@@ -1,11 +1,13 @@
-import type React from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/reui/badge";
-import type { QuoteStatus } from "../types";
 
-type QuoteStatusBadgeProps = {
+import { Badge } from "@/components/reui/badge";
+
+import type { QuoteStatus } from "../types";
+import type React from "react";
+
+interface QuoteStatusBadgeProps {
 	status: QuoteStatus | null;
-};
+}
 
 export const QuoteStatusBadge = ({
 	status,

@@ -1,12 +1,12 @@
 "use client";
 
-import { forwardRef, type JSX, type ReactNode } from "react";
 import { PlusIcon } from "lucide-react";
+import { forwardRef, type JSX, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utilities";
 
-export type FilterTriggerProps = {
+export interface FilterTriggerProps {
 	/** Field label (e.g. "Status", "Amount"). */
 	label: string;
 	/** Optional left-side icon displayed before the label. Defaults to a `+`. */
@@ -20,7 +20,7 @@ export type FilterTriggerProps = {
 	/** Standard click forwarded to the underlying `<Button>`. The popover
 	 * wires this via `asChild` + Radix, so authors rarely set it directly. */
 	onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-};
+}
 
 /**
  * Shared trigger for every concrete filter component.

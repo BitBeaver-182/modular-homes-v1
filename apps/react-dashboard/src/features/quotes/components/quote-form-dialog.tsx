@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import { stripStrapiDataPrefix, useStrapiForm } from "@/lib/strapi";
 
-import { quoteToWriteInput } from "../lib/quote-form";
-import type { Quote, QuoteWriteInput } from "../types";
 import { QuoteFormFields, type QuoteFormValues } from "./quote-form-fields";
+import { quoteToWriteInput } from "../lib/quote-form";
+
+import type { Quote, QuoteWriteInput } from "../types";
 
 const EMPTY_VALUES: QuoteFormValues = {
 	supplierId: "",
@@ -38,7 +39,7 @@ const mapQuoteField = (
 	key: string,
 ): FieldPath<QuoteFormValues> | undefined => {
 	if (key === "root") {
-		return "root" as FieldPath<QuoteFormValues>;
+		return "root";
 	}
 
 	if (key === "total" || key.startsWith("total.amount") || key === "amount") {
@@ -76,14 +77,14 @@ const mapQuoteField = (
 	return undefined;
 };
 
-export type QuoteFormDialogProps = {
+export interface QuoteFormDialogProps {
 	mode: "create" | "edit";
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	loading: boolean;
 	initialQuote?: Quote | null;
 	onSubmit: (value: QuoteWriteInput) => Promise<void>;
-};
+}
 
 export const QuoteFormDialog = ({
 	mode,
@@ -118,7 +119,7 @@ export const QuoteFormDialog = ({
 	const handleValid = async (values: QuoteFormValues): Promise<void> => {
 		const { root: _root, ...payload } = values;
 		void _root;
-		await onSubmit(payload as QuoteWriteInput);
+		await onSubmit(payload);
 		onOpenChange(false);
 	};
 

@@ -1,9 +1,3 @@
-import type { TFunction } from "i18next";
-import type {
-	FieldPath,
-	FieldValues,
-	UseFormSetError,
-} from "react-hook-form";
 
 import { StrapiRequestError } from "./error";
 import {
@@ -11,7 +5,14 @@ import {
 	serializeStrapiErrors,
 } from "./serialize-errors";
 import { translateStrapiErrorDetailMessage } from "./translate-error";
+
 import type { StrapiErrorDetail } from "./types";
+import type { TFunction } from "i18next";
+import type {
+	FieldPath,
+	FieldValues,
+	UseFormSetError,
+} from "react-hook-form";
 
 export type StrapiFieldMap<TFieldValues extends FieldValues> = (
 	normalizedKey: string,
@@ -21,7 +22,7 @@ export type StrapiErrorNormalizer = (
 	raw: Record<string, string>,
 ) => Record<string, string>;
 
-export type ApplyStrapiErrorToFormOptions<TFieldValues extends FieldValues> = {
+export interface ApplyStrapiErrorToFormOptions<TFieldValues extends FieldValues> {
 	/**
 	 * Optional normalizer applied after serialization (e.g. to strip a `data.`
 	 * prefix or collapse backend-only paths like `slug` → `name`).
@@ -35,7 +36,7 @@ export type ApplyStrapiErrorToFormOptions<TFieldValues extends FieldValues> = {
 	mapField?: StrapiFieldMap<TFieldValues>;
 	/** Message for non-{@link StrapiRequestError} errors (network, timeouts, …). */
 	fallbackMessage: string;
-};
+}
 
 /**
  * Strips Strapi's `data.` prefix produced by validation of nested write payloads.
@@ -88,7 +89,7 @@ export const applyStrapiErrorToForm = <TFieldValues extends FieldValues>(
 		const flat = normalize ? normalize(raw) : raw;
 
 		if (Object.keys(flat).length === 0) {
-			setError("root" as FieldPath<TFieldValues>, {
+			setError("root", {
 				type: "server",
 				message: format.rootMessage?.(error.message) ?? error.message,
 			});
@@ -109,7 +110,7 @@ export const applyStrapiErrorToForm = <TFieldValues extends FieldValues>(
 		return;
 	}
 
-	setError("root" as FieldPath<TFieldValues>, {
+	setError("root", {
 		type: "server",
 		message: fallbackMessage,
 	});

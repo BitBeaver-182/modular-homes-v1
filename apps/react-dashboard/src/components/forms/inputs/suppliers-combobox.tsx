@@ -1,6 +1,5 @@
 "use client";
 
-import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -9,6 +8,8 @@ import {
 } from "@/components/forms/inputs/infinite-combobox";
 import { getSuppliers } from "@/features/suppliers/lib/supplier-api";
 import type { Supplier } from "@/features/suppliers/types";
+
+import type { JSX } from "react";
 
 /**
  * Domain wrapper around {@link InfiniteCombobox} for suppliers. The public
@@ -20,9 +21,7 @@ export type SuppliersComboboxProps<M extends boolean = false> = Omit<
 	"queryKey" | "fetchPage" | "getId" | "getLabel"
 >;
 
-export function SuppliersCombobox<M extends boolean = false>(
-	props: SuppliersComboboxProps<M>,
-): JSX.Element {
+export const SuppliersCombobox = <M extends boolean = false>(props: SuppliersComboboxProps<M>): JSX.Element => {
 	const { t } = useTranslation();
 
 	return (

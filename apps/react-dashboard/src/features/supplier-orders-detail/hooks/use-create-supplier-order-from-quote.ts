@@ -3,14 +3,17 @@ import {
 	useQueryClient,
 	type UseMutationResult,
 } from "@tanstack/react-query";
-import { quoteKeys } from "@/features/quotes/hooks/quote-keys";
-import type { SupplierOrder } from "../../supplier-orders/types";
-import { createSupplierOrderFromQuote } from "../../supplier-orders/lib/order-api";
-import { orderKeys } from "../../supplier-orders/hooks/order-keys";
 
-export type CreateSupplierOrderFromQuoteVariables = {
+import { quoteKeys } from "@/features/quotes/hooks/quote-keys";
+
+import { orderKeys } from "../../supplier-orders/hooks/order-keys";
+import { createSupplierOrderFromQuote } from "../../supplier-orders/lib/order-api";
+
+import type { SupplierOrder } from "../../supplier-orders/types";
+
+export interface CreateSupplierOrderFromQuoteVariables {
 	quoteDocumentId: string;
-};
+}
 
 export const useCreateSupplierOrderFromQuote = (): UseMutationResult<
 	SupplierOrder,

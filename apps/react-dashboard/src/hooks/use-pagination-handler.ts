@@ -1,25 +1,25 @@
-import { type PaginationState, type OnChangeFn } from "@tanstack/react-table";
 import { type NavigateOptions, useNavigate } from "@tanstack/react-router";
+import { type PaginationState, type OnChangeFn } from "@tanstack/react-table";
 import { useCallback, useMemo } from "react";
 
-type PaginationParams = {
+interface PaginationParams {
 	page: number;
 	pageSize: number;
-};
+}
 
-type UsePaginationHandlerOptions<TParams extends PaginationParams> = {
+interface UsePaginationHandlerOptions<TParams extends PaginationParams> {
 	/** Current validated params from TanStack Router */
 	currentParams: TParams;
 	/** Optional custom navigate options */
 	navigateOptions?: Omit<NavigateOptions, "search">;
-};
+}
 
-type UsePaginationHandlerReturn = {
+interface UsePaginationHandlerReturn {
 	/** Current pagination state for TanStack Table */
 	pagination: PaginationState;
 	/** Handler for TanStack Table's onPaginationChange */
 	onPaginationChange: OnChangeFn<PaginationState>;
-};
+}
 
 export function usePaginationHandler<TParams extends PaginationParams>({
 	currentParams,
@@ -49,7 +49,7 @@ export function usePaginationHandler<TParams extends PaginationParams>({
 						...prev,
 						page: hasPageSizeChanged ? 1 : next.pageIndex + 1,
 						pageSize: next.pageSize,
-					} as typeof prev;
+					};
 				},
 				...(navigateOptions ?? {}),
 			});

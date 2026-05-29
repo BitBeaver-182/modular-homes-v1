@@ -1,12 +1,12 @@
-import { useMemo, type JSX } from "react";
 import { t } from "i18next";
-import type { ColumnDef } from "@tanstack/react-table";
 import { Pencil, Trash2 } from "lucide-react";
+import { useMemo, type JSX } from "react";
 
-import { Button } from "@/components/ui/button";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
+import { Button } from "@/components/ui/button";
 
 import type { Supplier } from "../types";
+import type { ColumnDef } from "@tanstack/react-table";
 
 interface UseSuppliersTableProps {
 	onEdit?: (supplier: Supplier) => void;
@@ -54,7 +54,7 @@ export const useSuppliersTable = ({
 					<DataGridColumnHeader column={column} title={t("suppliers.columnPhone")} />
 				),
 				cell: ({ row }): string =>
-					row.original["phone_number"] ?? t("suppliers.dash"),
+					row.original.phone_number ?? t("suppliers.dash"),
 			},
 			{
 				accessorKey: "website",

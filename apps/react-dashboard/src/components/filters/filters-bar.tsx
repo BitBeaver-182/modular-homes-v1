@@ -1,23 +1,24 @@
 "use client";
 
-import type { JSX, ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import { FunnelXIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utilities";
 
-export type FiltersBarProps = {
+import type { JSX, ReactNode } from "react";
+
+export interface FiltersBarProps {
 	children: ReactNode;
 	className?: string;
-};
+}
 
 /**
  * Pure layout wrapper for the filter toolbar. Renders children on a single
  * wrapping row. No add-filter dropdown: every filter is a first-class child
  * whose trigger is always visible.
  */
-export function FiltersBar({ children, className }: FiltersBarProps): JSX.Element {
+export const FiltersBar = ({ children, className }: FiltersBarProps): JSX.Element => {
 	return (
 		<div
 			className={cn(
@@ -30,22 +31,22 @@ export function FiltersBar({ children, className }: FiltersBarProps): JSX.Elemen
 	);
 }
 
-export type FiltersResetButtonProps = {
+export interface FiltersResetButtonProps {
 	onClick: () => void;
 	label?: string;
 	className?: string;
-};
+}
 
 /**
  * Reset-all button intended as the last child of `FiltersBar`. Only render it
  * when at least one filter is active — this component stays dumb and does not
  * compute that itself.
  */
-export function FiltersResetButton({
+export const FiltersResetButton = ({
 	onClick,
 	label,
 	className,
-}: FiltersResetButtonProps): JSX.Element {
+}: FiltersResetButtonProps): JSX.Element => {
 	const { t } = useTranslation();
 	return (
 		<Button

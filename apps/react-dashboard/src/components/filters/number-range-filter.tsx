@@ -9,9 +9,9 @@ import { cn } from "@/lib/utilities";
 import { FilterPopover } from "./filter-popover";
 import { FilterTrigger } from "./filter-trigger";
 
-export type NumberPair = { min?: number; max?: number };
+export interface NumberPair { min?: number; max?: number }
 
-export type NumberRangeFilterProps = {
+export interface NumberRangeFilterProps {
 	label: string;
 	icon?: ReactNode;
 	value?: { min?: number; max?: number };
@@ -23,13 +23,13 @@ export type NumberRangeFilterProps = {
 	suffix?: string;
 	className?: string;
 	disabled?: boolean;
-};
+}
 
 const clamp = (value: number, lo: number, hi: number): number =>
 	Math.min(Math.max(value, lo), hi);
 
 const parseInput = (raw: string): number | null => {
-	if (raw === "") return null;
+	if (raw === "") {return null;}
 	const parsed = Number(raw);
 	return Number.isFinite(parsed) ? parsed : null;
 };
@@ -46,7 +46,7 @@ const thumbsFromDraft = (
 	return lo <= hi ? [lo, hi] : [hi, lo];
 };
 
-export function NumberRangeFilter({
+export const NumberRangeFilter = ({
 	label,
 	icon,
 	value,
@@ -58,9 +58,9 @@ export function NumberRangeFilter({
 	suffix,
 	className,
 	disabled,
-}: NumberRangeFilterProps): JSX.Element {
+}: NumberRangeFilterProps): JSX.Element => {
 	const triggerValue = useMemo((): ReactNode => {
-		if (value?.min === undefined && value?.max === undefined) return null;
+		if (value?.min === undefined && value?.max === undefined) {return null;}
 		const lo = value?.min !== undefined ? String(value.min) : String(min);
 		const hi = value?.max !== undefined ? String(value.max) : String(max);
 		return (

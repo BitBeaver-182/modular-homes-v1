@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import {
 	type DefaultValues,
 	type FieldValues,
@@ -8,6 +7,7 @@ import {
 	type UseFormReturn,
 	useForm,
 } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
 import {
 	applyStrapiErrorToForm,

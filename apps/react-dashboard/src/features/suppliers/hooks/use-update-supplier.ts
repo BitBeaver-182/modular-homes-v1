@@ -3,14 +3,16 @@ import {
 	useQueryClient,
 	type UseMutationResult,
 } from "@tanstack/react-query";
-import { updateSupplier } from "../lib/supplier-api";
-import type { Supplier, SupplierWriteInput } from "../types";
-import { supplierKeys } from "./supplier-keys";
 
-export type UpdateSupplierVariables = {
+import { supplierKeys } from "./supplier-keys";
+import { updateSupplier } from "../lib/supplier-api";
+
+import type { Supplier, SupplierWriteInput } from "../types";
+
+export interface UpdateSupplierVariables {
 	documentId: string;
 	input: SupplierWriteInput;
-};
+}
 
 export const useUpdateSupplier = (): UseMutationResult<
 	Supplier,

@@ -1,34 +1,35 @@
 "use client";
 
-import type { JSX } from "react";
-import { useTranslation } from "react-i18next";
 import { Building2Icon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { InfiniteComboboxFilter } from "@/components/filters/infinite-combobox-filter";
 
 import { getSuppliers } from "../lib/supplier-api";
-import type { Supplier } from "../types";
 
-export type SupplierFilterProps = {
+import type { Supplier } from "../types";
+import type { JSX } from "react";
+
+export interface SupplierFilterProps {
 	value: Array<string>;
 	onApply: (ids: Array<string>) => void;
 	label?: string;
 	className?: string;
 	disabled?: boolean;
-};
+}
 
 /**
  * Quotes and other features use this to filter by supplier. Thin wrapper over
  * {@link InfiniteComboboxFilter} that pre-wires the query key, fetcher, id,
  * and label for the `Supplier` entity.
  */
-export function SupplierFilter({
+export const SupplierFilter = ({
 	value,
 	onApply,
 	label,
 	className,
 	disabled,
-}: SupplierFilterProps): JSX.Element {
+}: SupplierFilterProps): JSX.Element => {
 	const { t } = useTranslation();
 
 	return (

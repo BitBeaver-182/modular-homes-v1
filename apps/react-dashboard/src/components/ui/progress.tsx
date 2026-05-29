@@ -1,15 +1,16 @@
 "use client"
 
-import type * as React from "react"
 import { Progress as ProgressPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utilities"
 
-function Progress({
+import type * as React from "react"
+
+const Progress = ({
   className,
   value,
   ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+}: React.ComponentProps<typeof ProgressPrimitive.Root>) => {
   return (
     <ProgressPrimitive.Root
       data-slot="progress"

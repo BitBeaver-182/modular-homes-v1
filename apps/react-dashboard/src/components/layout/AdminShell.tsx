@@ -1,5 +1,5 @@
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
 	Calendar,
 	FileText,
@@ -11,14 +11,15 @@ import {
 	Users,
 	Warehouse,
 } from "lucide-react";
-import type { ComponentType, JSX, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { SupportedLocale } from "../../common/locales";
+
 import { authStorage } from "@/features/auth/lib/auth-storage";
 import type { AuthUser, OrganizationMembership } from "@/lib/moduflow/types";
+
 import { NavUser } from "./NavUser";
 import { TeamSwitcher } from "./TeamSwitcher";
 import { ThemeToggle } from "../theme-toggle";
+import { LocaleSwitcher } from "./LocaleSwitcher";
 import {
 	Sidebar,
 	SidebarContent,
@@ -34,17 +35,19 @@ import {
 	SidebarProvider,
 	SidebarTrigger,
 } from "../ui/sidebar";
-import { LocaleSwitcher } from "./LocaleSwitcher";
 
-type AdminShellProps = {
+import type { SupportedLocale } from "../../common/locales";
+import type { ComponentType, JSX, ReactNode } from "react";
+
+interface AdminShellProps {
 	activeMembership: OrganizationMembership;
 	children: ReactNode;
 	locale: SupportedLocale;
 	memberships: Array<OrganizationMembership>;
 	user: AuthUser;
-};
+}
 
-type NavItem = {
+interface NavItem {
 	labelKey:
 		| "dashboard"
 		| "suppliers"
@@ -68,12 +71,12 @@ type NavItem = {
 		| "/$locale/o/$organizationSlug/marketing/calendar"
 		| "/$locale/o/$organizationSlug/account";
 	icon: ComponentType<{ className?: string }>;
-};
+}
 
-type NavGroup = {
+interface NavGroup {
 	groupKey: "general" | "operations" | "sales" | "marketing" | "settings";
 	items: Array<NavItem>;
-};
+}
 
 const NAV_GROUPS: Array<NavGroup> = [
 	{

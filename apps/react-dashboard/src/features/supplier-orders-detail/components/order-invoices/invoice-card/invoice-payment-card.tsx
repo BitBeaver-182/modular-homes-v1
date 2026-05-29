@@ -1,5 +1,5 @@
-import { useState, type JSX } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import { useState, type JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,13 @@ import type {
   SupplierOrderInvoicePayment,
 } from "@/features/supplier-orders/types";
 import { useCurrency } from "@/hooks/use-currency";
-import { AlertPaymentDelete } from "./alert-payment-delete";
-import { cn } from "@/lib/utilities";
 import type { StrapiMoney } from "@/lib/strapi";
+import { cn } from "@/lib/utilities";
 
-type InvoicePaymentCardProps = {
+import { AlertPaymentDelete } from "./alert-payment-delete";
+
+
+interface InvoicePaymentCardProps {
   className?: string;
   invoice: SupplierOrderInvoice;
   invoiceLineCurrency: string;
@@ -24,7 +26,7 @@ type InvoicePaymentCardProps = {
     payment: SupplierOrderInvoicePayment,
   ) => void;
   onConfirmDeletePayment: (payment: SupplierOrderInvoicePayment) => Promise<void>;
-};
+}
 
 const moneyAmount = (money: StrapiMoney | null | undefined): number => {
   const amount = money?.amount;

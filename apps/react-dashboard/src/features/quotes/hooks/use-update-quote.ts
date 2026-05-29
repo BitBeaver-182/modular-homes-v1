@@ -3,14 +3,16 @@ import {
 	useQueryClient,
 	type UseMutationResult,
 } from "@tanstack/react-query";
-import { updateQuote } from "../lib/quote-api";
-import type { Quote, QuoteWriteInput } from "../types";
-import { quoteKeys } from "./quote-keys";
 
-export type UpdateQuoteVariables = {
+import { quoteKeys } from "./quote-keys";
+import { updateQuote } from "../lib/quote-api";
+
+import type { Quote, QuoteWriteInput } from "../types";
+
+export interface UpdateQuoteVariables {
 	documentId: string;
 	input: QuoteWriteInput;
-};
+}
 
 export const useUpdateQuote = (): UseMutationResult<
 	Quote,

@@ -2,12 +2,13 @@ import i18n, { type InitOptions } from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import Backend, { type HttpBackendOptions } from "i18next-http-backend";
 import { initReactI18next } from "react-i18next";
+
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./locales";
+import { isProduction } from "./utilities";
 import translationEN from "../assets/locales/en/translations.json";
 import translationES from "../assets/locales/es/translations.json";
 import translationHU from "../assets/locales/hu/translations.json";
 import translationSK from "../assets/locales/sk/translations.json";
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./locales";
-import { isProduction } from "./utilities";
 
 export const defaultNS = "translations";
 export const resources = {

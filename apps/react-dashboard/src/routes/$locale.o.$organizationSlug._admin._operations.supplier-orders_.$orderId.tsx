@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import SupplierOrderDetailPage from "@/features/supplier-orders-detail";
 
 export const Route = createFileRoute(

@@ -1,10 +1,10 @@
-/* eslint-disable no-use-before-define */
-
-import type { JSX } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+
 import { isSupportedLocale } from "@/common/locales";
 import { LoginPage } from "@/features/auth/login-page";
+
+import type { JSX } from "react";
 
 const loginSearchSchema = z.object({
 	redirect: z.string().optional(),

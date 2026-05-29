@@ -1,8 +1,7 @@
+import { CirclePlusIcon, CheckIcon } from "lucide-react"
 import { useMemo, useState } from "react"
-import { Badge } from "@/components/reui/badge"
-import type { Column } from "@tanstack/react-table"
 
-import { cn } from "@/lib/utilities"
+import { Badge } from "@/components/reui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -11,7 +10,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
-import { CirclePlusIcon, CheckIcon } from "lucide-react"
+import { cn } from "@/lib/utilities"
+
+import type { Column } from "@tanstack/react-table"
 
 interface DataGridColumnFilterProps<TData, TValue> {
   column?: Column<TData, TValue>
@@ -23,17 +24,17 @@ interface DataGridColumnFilterProps<TData, TValue> {
   }>
 }
 
-function DataGridColumnFilter<TData, TValue>({
+const DataGridColumnFilter = <TData, TValue>({
   column,
   title,
   options,
-}: DataGridColumnFilterProps<TData, TValue>) {
+}: DataGridColumnFilterProps<TData, TValue>) => {
   const facets = column?.getFacetedUniqueValues()
   const selectedValues = new Set(column?.getFilterValue() as Array<string>)
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredOptions = useMemo(() => {
-    if (!searchQuery) return options
+    if (!searchQuery) {return options}
     return options.filter((option) =>
       option.label.toLowerCase().includes(searchQuery.toLowerCase())
     )

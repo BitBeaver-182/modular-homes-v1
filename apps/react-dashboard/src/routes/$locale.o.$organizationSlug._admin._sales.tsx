@@ -1,7 +1,8 @@
-import type { JSX } from "react";
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-function SalesGroupLayout(): JSX.Element {
+import type { JSX } from "react";
+
+const SalesGroupLayout = (): JSX.Element => {
 	return <Outlet />;
 }
 

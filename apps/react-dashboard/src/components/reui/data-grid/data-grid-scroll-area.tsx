@@ -1,17 +1,18 @@
-import type {
-  ComponentProps,
-  PointerEvent,
-  ReactNode} from "react";
+import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
 } from "react"
-import { useDataGrid } from "@/components/reui/data-grid/data-grid"
-import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
 
+import { useDataGrid } from "@/components/reui/data-grid/data-grid"
 import { cn } from "@/lib/utilities"
+
+import type {
+  ComponentProps,
+  PointerEvent,
+  ReactNode} from "react";
 
 const MIN_THUMB_SIZE = 24
 const FALLBACK_SCROLLBAR_SIZE = 12
@@ -27,7 +28,7 @@ const INITIAL_METRICS = {
 
 type DataGridScrollAreaOrientation = "horizontal" | "vertical" | "both"
 
-type ScrollbarMetrics = {
+interface ScrollbarMetrics {
   hasVerticalOverflow: boolean
   headerHeight: number
   horizontalScrollbarSize: number
@@ -36,7 +37,7 @@ type ScrollbarMetrics = {
   trackHeight: number
 }
 
-type ObservedElements = {
+interface ObservedElements {
   header: HTMLElement | null
   horizontalScrollbar: HTMLElement | null
   table: HTMLElement | null
@@ -85,12 +86,12 @@ function applyMetrics(element: HTMLElement, metrics: ScrollbarMetrics) {
   )
 }
 
-function DataGridScrollArea({
+const DataGridScrollArea = ({
   children,
   className,
   orientation = "both",
   ...props
-}: DataGridScrollAreaProps) {
+}: DataGridScrollAreaProps) => {
   const { props: dataGridProps } = useDataGrid()
   const containerRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -144,8 +145,8 @@ function DataGridScrollArea({
     const headerHeight = header?.getBoundingClientRect().height ?? 0
     const viewportHeight = viewport.clientHeight
     const viewportWidth = viewport.clientWidth
-    const scrollHeight = viewport.scrollHeight
-    const scrollWidth = viewport.scrollWidth
+    const {scrollHeight} = viewport
+    const {scrollWidth} = viewport
     const hasHorizontalOverflow =
       showHorizontal && scrollWidth > viewportWidth + 0.5
     const horizontalScrollbarSize = hasHorizontalOverflow
@@ -208,7 +209,7 @@ function DataGridScrollArea({
     const container = containerRef.current
     const viewport = viewportRef.current
 
-    if (!container || !viewport) return
+    if (!container || !viewport) {return}
 
     if (!usesCustomVerticalScrollbar) {
       resetMetrics()
@@ -270,7 +271,7 @@ function DataGridScrollArea({
     const viewport = viewportRef.current
     const { thumbHeight, trackHeight } = metricsRef.current
 
-    if (!viewport) return
+    if (!viewport) {return}
 
     const maxScroll = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
     const maxThumbTop = Math.max(0, trackHeight - thumbHeight)
@@ -287,7 +288,7 @@ function DataGridScrollArea({
   const handleThumbPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const viewport = viewportRef.current
 
-    if (!viewport) return
+    if (!viewport) {return}
 
     event.preventDefault()
     event.stopPropagation()
@@ -308,14 +309,14 @@ function DataGridScrollArea({
     const dragState = dragRef.current
     const { thumbHeight, trackHeight } = metricsRef.current
 
-    if (!viewport || !dragState || dragState.pointerId !== event.pointerId) {
+    if (!viewport || dragState?.pointerId !== event.pointerId) {
       return
     }
 
     const maxThumbTop = Math.max(0, trackHeight - thumbHeight)
     const maxScroll = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
 
-    if (maxThumbTop === 0 || maxScroll === 0) return
+    if (maxThumbTop === 0 || maxScroll === 0) {return}
 
     const deltaY = event.clientY - dragState.startY
     const nextScrollTop =
@@ -325,14 +326,14 @@ function DataGridScrollArea({
   }
 
   const handleThumbPointerUp = (event: PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.pointerId !== event.pointerId) return
+    if (dragRef.current?.pointerId !== event.pointerId) {return}
     clearDragState()
   }
 
   const handleTrackPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const { thumbHeight } = metricsRef.current
 
-    if (event.target !== event.currentTarget) return
+    if (event.target !== event.currentTarget) {return}
 
     event.preventDefault()
     event.stopPropagation()

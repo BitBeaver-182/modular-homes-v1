@@ -1,5 +1,6 @@
-import { strapiClient, type StrapiQueryParams } from "@/lib/strapi";
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
+import { strapiClient, type StrapiQueryParams } from "@/lib/strapi";
+
 import type {
 	PaginatedResult,
 	SupplierOrder,

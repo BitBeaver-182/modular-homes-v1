@@ -1,18 +1,19 @@
 "use client"
 
-import * as React from "react"
 import { OTPInput, OTPInputContext } from "input-otp"
+import { MinusIcon } from "lucide-react"
+import * as React from "react"
 
 import { cn } from "@/lib/utilities"
-import { MinusIcon } from "lucide-react"
 
-function InputOTP({
+
+const InputOTP = ({
   className,
   containerClassName,
   ...props
 }: React.ComponentProps<typeof OTPInput> & {
   containerClassName?: string
-}) {
+}) => {
   return (
     <OTPInput
       className={cn("disabled:cursor-not-allowed", className)}
@@ -27,7 +28,7 @@ function InputOTP({
   )
 }
 
-function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
+const InputOTPGroup = ({ className, ...props }: React.ComponentProps<"div">) => {
   return (
     <div
       data-slot="input-otp-group"
@@ -40,13 +41,13 @@ function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function InputOTPSlot({
+const InputOTPSlot = ({
   index,
   className,
   ...props
 }: React.ComponentProps<"div"> & {
   index: number
-}) {
+}) => {
   const inputOTPContext = React.useContext(OTPInputContext)
   const { char, hasFakeCaret, isActive } = inputOTPContext?.slots[index] ?? {}
 
@@ -70,7 +71,7 @@ function InputOTPSlot({
   )
 }
 
-function InputOTPSeparator({ ...props }: React.ComponentProps<"div">) {
+const InputOTPSeparator = ({ ...props }: React.ComponentProps<"div">) => {
   return (
     <div
       className="flex items-center [&_svg:not([class*='size-'])]:size-4"

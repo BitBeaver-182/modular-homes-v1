@@ -24,7 +24,7 @@ const sanitizeBaseUrl = (rawBaseUrl?: string): string => {
 };
 
 const moduflowApiBaseUrl = sanitizeBaseUrl(
-	import.meta.env["VITE_MODUFLOW_API_URL"]
+	import.meta.env.VITE_MODUFLOW_API_URL
 );
 
 const readErrorMessage = async (response: Response): Promise<string> => {

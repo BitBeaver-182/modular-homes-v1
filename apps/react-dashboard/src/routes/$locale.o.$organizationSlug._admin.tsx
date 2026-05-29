@@ -1,13 +1,14 @@
-/* eslint-disable @typescript-eslint/only-throw-error, no-use-before-define */
-
-import type { JSX } from "react";
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
-import { AdminShell } from "../components/layout/AdminShell";
-import { isSupportedLocale } from "../common/locales";
+
 import {
 	findMembershipBySlug,
 	requireAuthenticatedSession,
 } from "@/features/auth/lib/auth-routing";
+
+import { isSupportedLocale } from "../common/locales";
+import { AdminShell } from "../components/layout/AdminShell";
+
+import type { JSX } from "react";
 
 export const Route = createFileRoute("/$locale/o/$organizationSlug/_admin")({
 	beforeLoad: async ({ location, params }) => {

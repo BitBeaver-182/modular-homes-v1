@@ -1,13 +1,14 @@
-import type * as React from "react"
 import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utilities"
 
-function ScrollArea({
+import type * as React from "react"
+
+const ScrollArea = ({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) => {
   return (
     <ScrollAreaPrimitive.Root
       className={cn("relative", className)}
@@ -26,11 +27,11 @@ function ScrollArea({
   )
 }
 
-function ScrollBar({
+const ScrollBar = ({
   className,
   orientation = "vertical",
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
+}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) => {
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
       data-orientation={orientation}

@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types */
-import { useTranslation } from "react-i18next";
+ 
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,9 +11,9 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 
-export type QuotesEmptyStateProps = {
+export interface QuotesEmptyStateProps {
 	onAddQuote: () => void;
-};
+}
 
 export const QuotesEmptyState = ({ onAddQuote }: QuotesEmptyStateProps) => {
 	const { t } = useTranslation();

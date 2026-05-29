@@ -2,6 +2,7 @@ import { type JSX, useEffect } from "react";
 import { FormProvider, type FieldPath } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
+import { DateInput } from "@/components/forms/inputs/date-input";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,7 +12,6 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { DateInput } from "@/components/forms/inputs/date-input";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -28,15 +28,15 @@ import {
 } from "@/features/supplier-orders/types";
 import { stripStrapiDataPrefix, useStrapiForm } from "@/lib/strapi";
 
-export type PaymentFormValues = {
+export interface PaymentFormValues {
 	amount: string;
 	paymentDate: string;
 	method: SupplierInvoicePaymentMethod;
 	notes: string;
 	root?: string;
-};
+}
 
-type PaymentDialogProps = {
+interface PaymentDialogProps {
 	open: boolean;
 	editingPayment: SupplierOrderInvoicePayment | null;
 	initialValues: PaymentFormValues;
@@ -44,7 +44,7 @@ type PaymentDialogProps = {
 	mutating: boolean;
 	onOpenChange: (open: boolean) => void;
 	onSubmit: (value: PaymentFormValues) => Promise<void>;
-};
+}
 
 const mapPaymentField = (
 	key: string,

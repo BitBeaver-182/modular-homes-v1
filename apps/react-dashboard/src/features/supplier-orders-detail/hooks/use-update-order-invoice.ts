@@ -3,17 +3,18 @@ import {
 	useQueryClient,
 	type UseMutationResult,
 } from "@tanstack/react-query";
+
+import { orderKeys } from "../../supplier-orders/hooks/order-keys";
 import {
 	updateSupplierInvoice,
 	type SupplierInvoiceUpdateInput,
 } from "../lib/order-api";
-import { orderKeys } from "../../supplier-orders/hooks/order-keys";
 
-export type UpdateOrderInvoiceVariables = {
+export interface UpdateOrderInvoiceVariables {
 	orderDocumentId: string;
 	invoiceDocumentId: string;
 	input: SupplierInvoiceUpdateInput;
-};
+}
 
 export const useUpdateOrderInvoice = (): UseMutationResult<
 	void,

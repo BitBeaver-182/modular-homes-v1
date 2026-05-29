@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types */
+ 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -15,14 +15,14 @@ import {
 
 import type { Quote, QuoteStatus } from "../types";
 
-export type QuoteStatusAlertProps = {
+export interface QuoteStatusAlertProps {
 	open: boolean;
 	quote: Quote | null;
 	nextStatus: QuoteStatus | null;
 	loading: boolean;
 	onOpenChange: (open: boolean) => void;
 	onConfirm: (quote: Quote, status: QuoteStatus) => Promise<void>;
-};
+}
 
 export const QuoteStatusAlert = ({
 	open,

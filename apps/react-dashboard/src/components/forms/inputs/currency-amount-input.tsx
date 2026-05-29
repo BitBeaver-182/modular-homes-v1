@@ -1,8 +1,7 @@
 "use client";
 
-import { type JSX, useEffect, useState } from "react";
-import { useCurrency } from "@/hooks/use-currency";
 import { ChevronDownIcon } from "lucide-react";
+import { type JSX, useEffect, useState } from "react";
 
 import {
   DropdownMenu,
@@ -17,8 +16,9 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
+import { useCurrency } from "@/hooks/use-currency";
 
-type CurrencyAmountInputProps = {
+interface CurrencyAmountInputProps {
   id?: string;
   name: string;
   defaultValue?: string;
@@ -33,9 +33,9 @@ type CurrencyAmountInputProps = {
   /** Controlled ISO currency code. */
   currencyValue?: string;
   onCurrencyValueChange?: (value: string) => void;
-};
+}
 
-export function CurrencyAmountInput({
+export const CurrencyAmountInput = ({
   id,
   name,
   defaultValue = "",
@@ -48,7 +48,7 @@ export function CurrencyAmountInput({
   onAmountValueChange,
   currencyValue,
   onCurrencyValueChange,
-}: CurrencyAmountInputProps): JSX.Element {
+}: CurrencyAmountInputProps): JSX.Element => {
   const [currency, setCurrency] = useState(defaultCurrency);
   const [amountString, setAmountString] = useState(defaultValue);
   const { getDecimalDigits, parseAmountInput, formatAmountForCurrencyDigits, currencies } = useCurrency();

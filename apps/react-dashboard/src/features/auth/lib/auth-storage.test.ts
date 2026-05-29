@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+
 import { ACCESS_TOKEN_STORAGE_KEY, authStorage } from "./auth-storage";
 
 describe("authStorage", () => {

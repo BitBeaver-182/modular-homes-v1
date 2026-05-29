@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types, react/jsx-sort-props */
+import { startOfDay } from "date-fns";
 import { useMemo, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-import { startOfDay } from "date-fns";
 import { useTranslation } from "react-i18next";
 
 import { CurrencyAmountInput } from "@/components/forms/inputs/currency-amount-input";
@@ -22,23 +21,23 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { parseYmdLocal } from "@/lib/date-ymd";
-
 import type { Supplier } from "@/features/suppliers/types";
+import { parseYmdLocal } from "@/lib/date-ymd";
 
 import {
 	QUOTE_MAX_ATTACHMENT_BYTES,
 	QUOTE_MAX_ATTACHMENT_FILES,
 } from "../lib/quote-attachments";
-import type { Quote, QuoteStatus, QuoteWriteInput } from "../types";
+
+import type { Quote, QuoteWriteInput } from "../types";
 
 /** RHF values = write payload + optional `root` for server-only errors. */
 export type QuoteFormValues = QuoteWriteInput & { root?: string };
 
-export type QuoteFormFieldsProps = {
+export interface QuoteFormFieldsProps {
 	disabled?: boolean;
 	initialQuote?: Quote | null;
-};
+}
 
 export const QuoteFormFields = ({
 	disabled = false,
@@ -66,7 +65,7 @@ export const QuoteFormFields = ({
 	const pdfError = errors.pdfFile?.message;
 
 	const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
-		initialQuote?.supplier ?? null,
+		initialQuote?.supplier ?? null
 	);
 	const supplierValue = supplierId ? selectedSupplier : null;
 
@@ -85,7 +84,10 @@ export const QuoteFormFields = ({
 
 	return (
 		<FieldGroup className="grid gap-4 sm:grid-cols-2">
-			<Field className="sm:col-span-2" data-invalid={Boolean(supplierError) || undefined}>
+			<Field
+				className="sm:col-span-2"
+				data-invalid={Boolean(supplierError) || undefined}
+			>
 				<FieldLabel htmlFor="quote-supplier">{t("quotes.supplier")}</FieldLabel>
 				<Controller
 					control={control}
@@ -130,7 +132,9 @@ export const QuoteFormFields = ({
 										: currentExpiration;
 								field.onChange(ymd);
 								if (nextExpiration !== currentExpiration) {
-									setValue("expirationDate", nextExpiration, { shouldDirty: true });
+									setValue("expirationDate", nextExpiration, {
+										shouldDirty: true,
+									});
 								}
 							}}
 							placeholder={t("quotes.selectDate")}
@@ -139,7 +143,9 @@ export const QuoteFormFields = ({
 						/>
 					)}
 				/>
-				{quotationDateError ? <FieldError>{quotationDateError}</FieldError> : null}
+				{quotationDateError ? (
+					<FieldError>{quotationDateError}</FieldError>
+				) : null}
 			</Field>
 
 			<Field data-invalid={Boolean(expirationDateError) || undefined}>
@@ -166,7 +172,9 @@ export const QuoteFormFields = ({
 						/>
 					)}
 				/>
-				{expirationDateError ? <FieldError>{expirationDateError}</FieldError> : null}
+				{expirationDateError ? (
+					<FieldError>{expirationDateError}</FieldError>
+				) : null}
 			</Field>
 
 			<Field data-invalid={Boolean(amountError) || undefined}>
@@ -212,7 +220,7 @@ export const QuoteFormFields = ({
 						<Select
 							disabled={disabled}
 							onValueChange={(next) => {
-								field.onChange(next as QuoteStatus);
+								field.onChange(next);
 							}}
 							value={field.value}
 						>
@@ -224,9 +232,15 @@ export const QuoteFormFields = ({
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="pending">{t("quotes.statusPending")}</SelectItem>
-								<SelectItem value="accepted">{t("quotes.statusAccepted")}</SelectItem>
-								<SelectItem value="rejected">{t("quotes.statusRejected")}</SelectItem>
+								<SelectItem value="pending">
+									{t("quotes.statusPending")}
+								</SelectItem>
+								<SelectItem value="accepted">
+									{t("quotes.statusAccepted")}
+								</SelectItem>
+								<SelectItem value="rejected">
+									{t("quotes.statusRejected")}
+								</SelectItem>
 							</SelectContent>
 						</Select>
 					)}
@@ -234,7 +248,10 @@ export const QuoteFormFields = ({
 				{statusError ? <FieldError>{statusError}</FieldError> : null}
 			</Field>
 
-			<Field className="sm:col-span-2" data-invalid={Boolean(notesError) || undefined}>
+			<Field
+				className="sm:col-span-2"
+				data-invalid={Boolean(notesError) || undefined}
+			>
 				<FieldLabel htmlFor="quote-notes">{t("quotes.notes")}</FieldLabel>
 				<Textarea
 					aria-invalid={Boolean(notesError)}
@@ -248,7 +265,10 @@ export const QuoteFormFields = ({
 				{notesError ? <FieldError>{notesError}</FieldError> : null}
 			</Field>
 
-			<Field className="sm:col-span-2" data-invalid={Boolean(pdfError) || undefined}>
+			<Field
+				className="sm:col-span-2"
+				data-invalid={Boolean(pdfError) || undefined}
+			>
 				<FieldLabel>{t("quotes.supportingDoc")}</FieldLabel>
 				<Controller
 					control={control}

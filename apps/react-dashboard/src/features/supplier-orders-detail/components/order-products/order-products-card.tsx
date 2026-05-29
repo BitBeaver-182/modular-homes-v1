@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState, type JSX } from "react";
 import { type ColumnDef, flexRender } from "@tanstack/react-table";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useState, type JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -39,18 +39,18 @@ import type {
 import { useCurrency } from "@/hooks/use-currency";
 import { getCoreRowModel, useReactTable } from "@/lib/tanstack-react-table";
 
-type ProductFormState = {
+interface ProductFormState {
 	description: string;
 	unitPrice: string;
 	quantity: string;
-};
+}
 
-type OrderProductsCardProps = {
+interface OrderProductsCardProps {
 	currency: string;
 	mutating: boolean;
 	order: SupplierOrder;
 	onSaveOrderLines: (lines: Array<SupplierOrderLine>) => Promise<void>;
-};
+}
 
 const EMPTY_FORM: ProductFormState = {
 	description: "",

@@ -1,24 +1,26 @@
-import { useState, type JSX } from "react";
 import { FileText, FileTextIcon, MoreHorizontalIcon, Plus, Trash2, UserIcon } from "lucide-react";
+import { useState, type JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
 import type {
   SupplierInvoiceStatus,
   SupplierOrderInvoice,
   SupplierOrderInvoicePayment,
 } from "@/features/supplier-orders/types";
 import { useCurrency } from "@/hooks/use-currency";
-import { InvoicePaymentCard } from "./invoice-payment-card";
-import { AlertInvoiceDelete } from "./alert-invoice-delete";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utilities";
-import { Progress } from "@/components/ui/progress";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { StrapiMoney } from "@/lib/strapi";
+import { cn } from "@/lib/utilities";
 
-type InvoiceCardProps = {
+import { AlertInvoiceDelete } from "./alert-invoice-delete";
+import { InvoicePaymentCard } from "./invoice-payment-card";
+
+
+interface InvoiceCardProps {
   currency: string;
   mutating: boolean;
   className?: string;
@@ -32,7 +34,7 @@ type InvoiceCardProps = {
     payment: SupplierOrderInvoicePayment,
   ) => void;
   onConfirmDeletePayment: (payment: SupplierOrderInvoicePayment) => Promise<void>;
-};
+}
 
 const INVOICE_STATUS_VARIANT: Record<
   SupplierInvoiceStatus,

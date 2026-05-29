@@ -1,8 +1,11 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+
 import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._admin._operations.quotes";
-import { getQuotes } from "../lib/quote-api";
-import type { PaginatedResult, Quote } from "../types";
+
 import { quoteKeys } from "./quote-keys";
+import { getQuotes } from "../lib/quote-api";
+
+import type { PaginatedResult, Quote } from "../types";
 
 export const useGetQuotes = (
 	params: QuotesQueryParams

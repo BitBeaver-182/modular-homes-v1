@@ -1,6 +1,6 @@
+import { Building2, Clock, ClipboardList, Pencil } from "lucide-react";
 import { useEffect, useMemo, useState, type JSX } from "react";
 import { FormProvider, type FieldPath } from "react-hook-form";
-import { Building2, Clock, ClipboardList, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -26,20 +26,20 @@ import { OrderStatusBadge } from "@/features/supplier-orders/components/order-st
 import { SUPPLIER_ORDER_STATUSES, type SupplierOrder } from "@/features/supplier-orders/types";
 import { stripStrapiDataPrefix, useStrapiForm } from "@/lib/strapi";
 
-type OrderSidebarProps = {
+interface OrderSidebarProps {
 	order: SupplierOrder;
 	mutating: boolean;
 	onUpdateOrder: (input: {
 		orderStatus: SupplierOrder["orderStatus"];
 		trackingUrl: string | null;
 	}) => Promise<void>;
-};
+}
 
-type OrderSidebarFormValues = {
+interface OrderSidebarFormValues {
 	orderStatus: SupplierOrder["orderStatus"];
 	trackingUrl: string;
 	root?: string;
-};
+}
 
 const mapOrderSidebarField = (
 	key: string,

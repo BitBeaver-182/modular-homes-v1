@@ -1,27 +1,28 @@
-import { useMemo, useState, type JSX } from "react";
 import { Plus } from "lucide-react";
-import { toast } from "sonner";
+import { useMemo, useState, type JSX } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type {
+	SupplierOrder,
+	SupplierOrderInvoice,
+	SupplierOrderInvoicePayment,
+} from "@/features/supplier-orders/types";
 import type {
 	SupplierInvoicePaymentUpdateInput,
 	SupplierInvoicePaymentWriteInput,
 	SupplierInvoiceUpdateInput,
 	SupplierInvoiceWriteInput,
 } from "@/features/supplier-orders-detail/lib/order-api";
-import type {
-	SupplierOrder,
-	SupplierOrderInvoice,
-	SupplierOrderInvoicePayment,
-} from "@/features/supplier-orders/types";
 import type { StrapiMoney } from "@/lib/strapi";
+
 import { InvoiceDialog, type InvoiceFormValues } from "./dialog-invoice";
 import { PaymentDialog, type PaymentFormValues } from "./dialog-payment";
 import { InvoiceCard } from "./invoice-card";
 
-type OrderInvoicesCardProps = {
+interface OrderInvoicesCardProps {
 	orderDocumentId: string;
 	currency: string;
 	orderQuote: SupplierOrder["quote"];
@@ -40,7 +41,7 @@ type OrderInvoicesCardProps = {
 		input: SupplierInvoicePaymentUpdateInput,
 	) => Promise<void>;
 	onDeletePayment: (paymentDocumentId: string) => Promise<void>;
-};
+}
 
 const EMPTY_INVOICE_FORM: InvoiceFormValues = {
 	vendorName: "",

@@ -13,21 +13,21 @@ function stripHttpsPrefix(value: string): string {
   return value.replace(/^https?:\/\//i, "");
 }
 
-type UrlInputProps = {
+interface UrlInputProps {
   name: string;
   defaultValue?: string;
   disabled?: boolean;
   invalid?: boolean;
   placeholder?: string;
-};
+}
 
-export function UrlInput({
+export const UrlInput = ({
   name,
   defaultValue = "",
   disabled = false,
   invalid = false,
   placeholder,
-}: UrlInputProps) {
+}: UrlInputProps) => {
   const [value, setValue] = useState(stripHttpsPrefix(defaultValue));
 
   useEffect(() => {

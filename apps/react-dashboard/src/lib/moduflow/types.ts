@@ -1,52 +1,52 @@
 export type GovernanceRole = "owner" | "member";
 
-export type AuthUser = {
+export interface AuthUser {
 	id: string;
 	email: string;
 	name: string | null;
 	avatarUrl: string | null;
-};
+}
 
-export type OrganizationSummary = {
+export interface OrganizationSummary {
 	id: string;
 	name: string;
 	slug: string;
-};
+}
 
-export type OrganizationMembership = {
+export interface OrganizationMembership {
 	id: string;
 	governanceRole: GovernanceRole;
 	organization: OrganizationSummary;
-};
+}
 
-export type AuthSession = {
+export interface AuthSession {
 	user: AuthUser;
 	memberships: Array<OrganizationMembership>;
-};
+}
 
-export type AuthResponse = {
+export interface AuthResponse {
 	access_token: string;
 	user: AuthUser;
-};
+}
 
-export type OrganizationInvitation = {
+export interface OrganizationInvitation {
 	id: string;
 	email: string;
 	governanceRole: GovernanceRole;
 	status: "pending" | "accepted" | "expired" | "revoked" | "rejected";
 	organization?: OrganizationSummary;
-};
+}
 
-export type LoginInput = {
+export interface LoginInput {
 	email: string;
 	password: string;
-};
+}
 
 export type RegisterInput = LoginInput & {
 	name?: string;
 };
 
-export type CreateOrganizationInput = {
+export interface CreateOrganizationInput {
 	name: string;
 	slug: string;
-};
+}

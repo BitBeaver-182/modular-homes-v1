@@ -1,4 +1,3 @@
-import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -12,12 +11,14 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type AlertInvoiceDeleteProps = {
+import type { JSX } from "react";
+
+interface AlertInvoiceDeleteProps {
 	open: boolean;
 	mutating: boolean;
 	onOpenChange: (open: boolean) => void;
 	onConfirm: () => void;
-};
+}
 
 export const AlertInvoiceDelete = ({
 	open,

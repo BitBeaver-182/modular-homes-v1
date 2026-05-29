@@ -12,7 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utilities";
 
-export type FilterPopoverProps<T> = {
+export interface FilterPopoverProps<T> {
 	/** The committed value. Also used to reset `draft` when the popover opens. */
 	value: T;
 	/** Trigger button (usually a `<FilterTrigger />`). */
@@ -41,7 +41,7 @@ export type FilterPopoverProps<T> = {
 	canClear?: boolean;
 	/** Optional custom clear button label. Defaults to i18n `filters.clear`. */
 	clearLabel?: string;
-};
+}
 
 /**
  * Generic draft-and-apply shell shared by every concrete filter component.

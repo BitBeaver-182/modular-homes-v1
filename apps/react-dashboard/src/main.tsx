@@ -1,6 +1,7 @@
 import { createRouter } from "@tanstack/react-router";
 import React from "react";
 import ReactDOM from "react-dom/client";
+
 import App from "./App.tsx";
 import { routeTree } from "./routeTree.gen.ts";
 import "./styles/tailwind.css";
@@ -17,7 +18,7 @@ declare module "@tanstack/react-router" {
 	}
 }
 
-const rootElement = document.querySelector("#root") as Element;
+const rootElement = document.querySelector("#root")!;
 if (!rootElement.innerHTML) {
 	const root = ReactDOM.createRoot(rootElement);
 	root.render(

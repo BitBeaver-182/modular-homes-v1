@@ -1,3 +1,10 @@
+import {
+	BadgeCheckIcon,
+	BellIcon,
+	ChevronsUpDownIcon,
+	LogOutIcon,
+} from "lucide-react";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
@@ -14,15 +21,10 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import {
-	BadgeCheckIcon,
-	BellIcon,
-	ChevronsUpDownIcon,
-	LogOutIcon,
-} from "lucide-react";
+
 import type { JSX } from "react";
 
-export function NavUser({
+export const NavUser = ({
 	onLogout,
 	user,
 }: {
@@ -32,7 +34,7 @@ export function NavUser({
 		email: string;
 		avatarUrl: string | null;
 	};
-}): JSX.Element {
+}): JSX.Element => {
 	const { isMobile } = useSidebar();
 	const displayName = user.name ?? user.email;
 	const fallback = displayName.slice(0, 2).toUpperCase();

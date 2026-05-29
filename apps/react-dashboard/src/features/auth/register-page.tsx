@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent, type JSX } from "react";
+
 import type { SupportedLocale } from "@/common/locales";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,24 +14,25 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { getSession, registerUser, sessionQueryKey } from "@/lib/moduflow/api";
-import { authStorage } from "./lib/auth-storage";
+
+import { AuthPageShell } from "./components/auth-page-shell";
 import {
 	getErrorMessage,
 	validateEmail,
 	validatePassword,
 } from "./lib/auth-form";
 import { resolvePostAuthPath } from "./lib/auth-routing";
-import { AuthPageShell } from "./components/auth-page-shell";
+import { authStorage } from "./lib/auth-storage";
 
-type RegisterPageProps = {
+interface RegisterPageProps {
 	locale: SupportedLocale;
-};
+}
 
-type RegisterFormErrors = {
+interface RegisterFormErrors {
 	email?: string;
 	password?: string;
 	root?: string;
-};
+}
 
 export const RegisterPage = ({ locale }: RegisterPageProps): JSX.Element => {
 	const queryClient = useQueryClient();

@@ -3,12 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 
 import { usePaginationHandler } from "./use-pagination-handler";
 
+import type * as TanstackRouter from "@tanstack/react-router";
+
 const navigateMock = vi.fn();
 
 vi.mock("@tanstack/react-router", async () => {
 	// preserve types/other exports if present
-	const actual = await vi.importActual<typeof import("@tanstack/react-router")>(
-		"@tanstack/react-router",
+	const actual = await vi.importActual<typeof TanstackRouter>(
+		"@tanstack/react-router"
 	);
 	return {
 		...actual,
@@ -21,7 +23,7 @@ describe("usePaginationHandler", () => {
 		const { result } = renderHook(() =>
 			usePaginationHandler({
 				currentParams: { page: 3, pageSize: 25 },
-			}),
+			})
 		);
 
 		expect(result.current.pagination).toEqual({ pageIndex: 2, pageSize: 25 });
@@ -33,7 +35,7 @@ describe("usePaginationHandler", () => {
 		const { result } = renderHook(() =>
 			usePaginationHandler({
 				currentParams: { page: 5, pageSize: 10 },
-			}),
+			})
 		);
 
 		result.current.onPaginationChange({ pageIndex: 1, pageSize: 10 });
@@ -53,7 +55,7 @@ describe("usePaginationHandler", () => {
 		const { result } = renderHook(() =>
 			usePaginationHandler({
 				currentParams: { page: 2, pageSize: 10 },
-			}),
+			})
 		);
 
 		result.current.onPaginationChange((prev) => ({
@@ -66,7 +68,11 @@ describe("usePaginationHandler", () => {
 		const navArg = navigateMock.mock.calls[0]?.[0];
 
 		const prevSearch = { page: 2, pageSize: 10, foo: "bar" };
-		expect(navArg.search(prevSearch)).toEqual({ page: 1, pageSize: 50, foo: "bar" });
+		expect(navArg.search(prevSearch)).toEqual({
+			page: 1,
+			pageSize: 50,
+			foo: "bar",
+		});
 	});
 
 	it("passes through navigateOptions", () => {
@@ -76,7 +82,7 @@ describe("usePaginationHandler", () => {
 			usePaginationHandler({
 				currentParams: { page: 1, pageSize: 10 },
 				navigateOptions: { replace: true },
-			}),
+			})
 		);
 
 		result.current.onPaginationChange({ pageIndex: 0, pageSize: 10 });
@@ -84,4 +90,3 @@ describe("usePaginationHandler", () => {
 		expect(navArg.replace).toBe(true);
 	});
 });
-

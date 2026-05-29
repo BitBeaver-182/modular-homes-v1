@@ -1,4 +1,7 @@
 import { Link } from "@tanstack/react-router";
+import { Building2Icon, ChevronsUpDownIcon } from "lucide-react";
+
+import type { SupportedLocale } from "@/common/locales";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -12,22 +15,22 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import type { SupportedLocale } from "@/common/locales";
 import type { OrganizationMembership } from "@/lib/moduflow/types";
-import { Building2Icon, ChevronsUpDownIcon } from "lucide-react";
+
+
 import type { JSX } from "react";
 
-type TeamSwitcherProps = {
+interface TeamSwitcherProps {
 	activeMembership: OrganizationMembership;
 	locale: SupportedLocale;
 	memberships: Array<OrganizationMembership>;
-};
+}
 
-export function TeamSwitcher({
+export const TeamSwitcher = ({
 	activeMembership,
 	locale,
 	memberships,
-}: TeamSwitcherProps): JSX.Element {
+}: TeamSwitcherProps): JSX.Element => {
 	const { isMobile } = useSidebar();
 	const activeOrganization = activeMembership.organization;
 

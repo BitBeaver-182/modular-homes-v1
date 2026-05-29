@@ -62,14 +62,14 @@ const toFormValues = (supplier: Supplier | null | undefined): SupplierFormValues
 	};
 };
 
-export type SupplierFormDialogProps = {
+export interface SupplierFormDialogProps {
 	mode: "create" | "edit";
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	loading: boolean;
 	initialValue?: Supplier | null;
 	onSubmit: (value: SupplierWriteInput) => Promise<void>;
-};
+}
 
 export const SupplierFormDialog = ({
 	mode,

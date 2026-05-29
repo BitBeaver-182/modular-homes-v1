@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent, type JSX } from "react";
+
 import type { SupportedLocale } from "@/common/locales";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,8 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { getSession, loginUser, sessionQueryKey } from "@/lib/moduflow/api";
-import { authStorage } from "./lib/auth-storage";
+
+import { AuthPageShell } from "./components/auth-page-shell";
 import {
 	getErrorMessage,
 	isUnauthorizedError,
@@ -21,18 +23,18 @@ import {
 	validatePassword,
 } from "./lib/auth-form";
 import { resolvePostAuthPath } from "./lib/auth-routing";
-import { AuthPageShell } from "./components/auth-page-shell";
+import { authStorage } from "./lib/auth-storage";
 
-type LoginPageProps = {
+interface LoginPageProps {
 	locale: SupportedLocale;
 	redirectPath?: string;
-};
+}
 
-type LoginFormErrors = {
+interface LoginFormErrors {
 	email?: string;
 	password?: string;
 	root?: string;
-};
+}
 
 export const LoginPage = ({
 	locale,
