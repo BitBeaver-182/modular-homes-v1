@@ -1,13 +1,18 @@
 import { INestApplication, Logger } from '@nestjs/common';
 import { AppConfigurator } from './app-configurator';
 
+type CorsOptions = NonNullable<Parameters<INestApplication['enableCors']>[0]>;
+
 export abstract class BootstrapStrategy {
   abstract configure(app: INestApplication): Promise<void>;
   abstract start(app: INestApplication): Promise<void>;
 }
 
 abstract class BaseBootstrapStrategy extends BootstrapStrategy {
-  protected constructor(protected readonly port = 3000) {
+  protected constructor(
+    protected readonly port = 3000,
+    protected readonly corsOptions: CorsOptions = true,
+  ) {
     super();
   }
 
@@ -15,7 +20,7 @@ abstract class BaseBootstrapStrategy extends BootstrapStrategy {
     this.createConfigurator(app)
       .withApiPrefix()
       .withHelmet()
-      .withCors()
+      .withCors(this.corsOptions)
       .withShutdownHooks();
     return Promise.resolve();
   }
@@ -37,8 +42,8 @@ abstract class BaseBootstrapStrategy extends BootstrapStrategy {
 export class DevelopmentBootstrapStrategy extends BaseBootstrapStrategy {
   private readonly logger = new Logger(BootstrapStrategy.name);
 
-  constructor(port?: number) {
-    super(port);
+  constructor(port?: number, corsOptions?: CorsOptions) {
+    super(port, corsOptions);
   }
 
   override async start(app: INestApplication): Promise<void> {
@@ -51,15 +56,15 @@ export class DevelopmentBootstrapStrategy extends BaseBootstrapStrategy {
 export class LocalBootstrapStrategy extends BaseBootstrapStrategy {
   private readonly logger = new Logger(BootstrapStrategy.name);
 
-  constructor(port?: number) {
-    super(port);
+  constructor(port?: number, corsOptions?: CorsOptions) {
+    super(port, corsOptions);
   }
 
   override configure(app: INestApplication): Promise<void> {
     this.createConfigurator(app)
       .withApiPrefix()
       .withHelmet()
-      .withCors()
+      .withCors(this.corsOptions)
       .withShutdownHooks()
       .withSwagger();
     return Promise.resolve();
@@ -75,14 +80,14 @@ export class LocalBootstrapStrategy extends BaseBootstrapStrategy {
 }
 
 export class ProductionBootstrapStrategy extends BaseBootstrapStrategy {
-  constructor(port?: number) {
-    super(port);
+  constructor(port?: number, corsOptions?: CorsOptions) {
+    super(port, corsOptions);
   }
 }
 
 export class TestBootstrapStrategy extends BaseBootstrapStrategy {
-  constructor(port?: number) {
-    super(port);
+  constructor(port?: number, corsOptions?: CorsOptions) {
+    super(port, corsOptions);
   }
 
   override configure(app: INestApplication): Promise<void> {
@@ -90,7 +95,7 @@ export class TestBootstrapStrategy extends BaseBootstrapStrategy {
       .withQuietLogger()
       .withApiPrefix()
       .withHelmet()
-      .withCors()
+      .withCors(this.corsOptions)
       .withShutdownHooks();
     return Promise.resolve();
   }

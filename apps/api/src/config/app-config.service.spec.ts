@@ -44,6 +44,67 @@ describe('AppConfigService', () => {
     expect(configService.getOrThrow).toHaveBeenCalledWith('PORT');
   });
 
+  it('returns default cors origins when not configured', () => {
+    configService.get.mockReturnValue(undefined);
+
+    expect(service.corsOrigins).toEqual([
+      'http://localhost:5180',
+      'http://127.0.0.1:5180',
+      'http://localhost:4173',
+      'http://127.0.0.1:4173',
+    ]);
+  });
+
+  it('returns normalized configured cors origins', () => {
+    configService.get.mockReturnValue(
+      'https://dashboard.example.com/, https://admin.example.com',
+    );
+
+    expect(service.corsOrigins).toEqual([
+      'https://dashboard.example.com',
+      'https://admin.example.com',
+    ]);
+  });
+
+  it('returns the configured cors credentials flag', () => {
+    configService.get.mockReturnValue(false);
+
+    expect(service.corsAllowCredentials).toBe(false);
+  });
+
+  it('builds cors options that allow configured origins and no-origin requests', () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'CORS_ORIGINS') {
+        return 'https://dashboard.example.com';
+      }
+
+      if (key === 'CORS_ALLOW_CREDENTIALS') {
+        return true;
+      }
+
+      return undefined;
+    });
+
+    const corsOptions = service.corsOptions;
+    const successCallback = jest.fn();
+    corsOptions.origin('https://dashboard.example.com/', successCallback);
+    expect(successCallback).toHaveBeenCalledWith(null, true);
+
+    const noOriginCallback = jest.fn();
+    corsOptions.origin(undefined, noOriginCallback);
+    expect(noOriginCallback).toHaveBeenCalledWith(null, true);
+
+    const failureCallback = jest.fn();
+    corsOptions.origin('https://evil.example.com', failureCallback);
+    expect(failureCallback).toHaveBeenCalledWith(expect.any(Error), false);
+    expect(corsOptions.credentials).toBe(true);
+    expect(corsOptions.allowedHeaders).toEqual([
+      'Authorization',
+      'Content-Type',
+      'X-CSRF-Token',
+    ]);
+  });
+
   it('returns jwtSecret from config when present', () => {
     configService.get.mockReturnValue('jwt-secret');
 

@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule } from '../../config/app-config.module';
-import { AppConfigService } from '../../config/app-config.service';
+import {
+  AppConfigService,
+  type AppCorsOptions,
+} from '../../config/app-config.service';
 import {
   BootstrapStrategy,
   DevelopmentBootstrapStrategy,
@@ -17,17 +20,18 @@ import {
       inject: [AppConfigService],
       useFactory: (configService: AppConfigService): BootstrapStrategy => {
         const port = configService.port;
+        const corsOptions: AppCorsOptions = configService.corsOptions;
 
         switch (configService.nodeEnv) {
           case 'local':
-            return new LocalBootstrapStrategy(port);
+            return new LocalBootstrapStrategy(port, corsOptions);
           case 'development':
-            return new DevelopmentBootstrapStrategy(port);
+            return new DevelopmentBootstrapStrategy(port, corsOptions);
           case 'test':
-            return new TestBootstrapStrategy(port);
+            return new TestBootstrapStrategy(port, corsOptions);
           case 'production':
           default:
-            return new ProductionBootstrapStrategy(port);
+            return new ProductionBootstrapStrategy(port, corsOptions);
         }
       },
     },

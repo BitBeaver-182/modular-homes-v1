@@ -2,6 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppEnv } from './env.validation';
 
+type CorsOriginCallback = (error: Error | null, allow?: boolean) => void;
+
+export interface AppCorsOptions {
+  allowedHeaders: string[];
+  credentials: boolean;
+  methods: string[];
+  optionsSuccessStatus: number;
+  origin: (origin: string | undefined, callback: CorsOriginCallback) => void;
+}
+
+const DEFAULT_CORS_ORIGINS = [
+  'http://localhost:5180',
+  'http://127.0.0.1:5180',
+  'http://localhost:4173',
+  'http://127.0.0.1:4173',
+];
+
 @Injectable()
 export class AppConfigService {
   constructor(private readonly configService: ConfigService<AppEnv, true>) {}
@@ -22,6 +39,55 @@ export class AppConfigService {
 
   get port(): number {
     return this.configService.getOrThrow<AppEnv['PORT']>('PORT');
+  }
+
+  get corsOrigins(): string[] {
+    const configuredOrigins =
+      this.configService.get<AppEnv['CORS_ORIGINS']>('CORS_ORIGINS');
+
+    if (!configuredOrigins) {
+      return DEFAULT_CORS_ORIGINS;
+    }
+
+    return configuredOrigins
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0)
+      .map((origin) => origin.replace(/\/+$/, ''));
+  }
+
+  get corsAllowCredentials(): boolean {
+    return (
+      this.configService.get<AppEnv['CORS_ALLOW_CREDENTIALS']>(
+        'CORS_ALLOW_CREDENTIALS',
+      ) ?? true
+    );
+  }
+
+  get corsOptions(): AppCorsOptions {
+    const allowedOrigins = new Set(this.corsOrigins);
+
+    return {
+      allowedHeaders: ['Authorization', 'Content-Type', 'X-CSRF-Token'],
+      credentials: this.corsAllowCredentials,
+      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+      optionsSuccessStatus: 204,
+      origin: (origin: string | undefined, callback: CorsOriginCallback) => {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+
+        const normalizedOrigin = origin.replace(/\/+$/, '');
+
+        if (allowedOrigins.has(normalizedOrigin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error(`Origin ${origin} is not allowed by CORS`), false);
+      },
+    };
   }
 
   get jwtSecret(): string {
