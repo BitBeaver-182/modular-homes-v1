@@ -10,6 +10,7 @@ describe('StorageService', () => {
   const bucketApi = {
     createSignedUploadUrl: jest.fn(),
     createSignedUrl: jest.fn(),
+    exists: jest.fn(),
     getPublicUrl: jest.fn(),
     remove: jest.fn(),
   };
@@ -40,8 +41,22 @@ describe('StorageService', () => {
     bucketApi.getPublicUrl.mockReturnValue({
       data: { publicUrl: 'https://uploads.example.com/public' },
     });
+    bucketApi.exists.mockResolvedValue({ data: true, error: null });
     bucketApi.remove.mockResolvedValue({ error: null });
     service = new StorageService(config as never);
+  });
+
+  it('does not read Supabase credentials until storage is used', () => {
+    const lazyConfig = {
+      get supabaseUrl(): string {
+        throw new Error('SUPABASE_URL missing');
+      },
+      get supabaseServiceRoleKey(): string {
+        throw new Error('SUPABASE_SERVICE_ROLE_KEY missing');
+      },
+    };
+
+    expect(() => new StorageService(lazyConfig as never)).not.toThrow();
   });
 
   it('maps contexts to buckets in one place', () => {
@@ -75,6 +90,17 @@ describe('StorageService', () => {
     expect(bucketApi.createSignedUrl).toHaveBeenCalledWith(
       '4/SUPPLIER_DOCUMENT/file_123',
       3600,
+    );
+  });
+
+  it('checks object existence through the context bucket', async () => {
+    await expect(
+      service.exists('SUPPLIER_DOCUMENT', '4/SUPPLIER_DOCUMENT/file_123'),
+    ).resolves.toBe(true);
+
+    expect(supabase.storage.from).toHaveBeenCalledWith('private-documents');
+    expect(bucketApi.exists).toHaveBeenCalledWith(
+      '4/SUPPLIER_DOCUMENT/file_123',
     );
   });
 

@@ -12,5 +12,6 @@ export interface IStorageService {
     key: string,
     ttlSeconds: number,
   ): Promise<string>;
+  exists(context: FileContext, key: string): Promise<boolean>;
   delete(context: FileContext, key: string): Promise<void>;
 }

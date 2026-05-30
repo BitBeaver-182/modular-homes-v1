@@ -13,6 +13,7 @@ describe('UploadsService', () => {
     bucketForContext: jest.fn(),
     presignUpload: jest.fn(),
     readUrl: jest.fn(),
+    exists: jest.fn(),
     delete: jest.fn(),
   };
   const actor = {
@@ -34,6 +35,7 @@ describe('UploadsService', () => {
     storageService.readUrl.mockResolvedValue(
       'https://uploads.example.com/read',
     );
+    storageService.exists.mockResolvedValue(true);
     prisma.fileUpload.updateMany.mockResolvedValue({ count: 1 });
     service = new UploadsService(prisma as never, storageService as never);
   });
@@ -129,6 +131,31 @@ describe('UploadsService', () => {
       },
       data: { status: 'ORPHANED' },
     });
+  });
+
+  it('confirm throws NotFoundException when the storage object does not exist', async () => {
+    prisma.fileUpload.findFirst.mockResolvedValue({
+      id: 'file_123',
+      organizationId: 4n,
+      filename: 'floor-plan.pdf',
+      mimeType: 'application/pdf',
+      key: '4/SUPPLIER_DOCUMENT/file_123',
+      context: 'SUPPLIER_DOCUMENT',
+      status: 'PENDING',
+      expiresAt: new Date(1_800_001),
+      createdAt: new Date('2026-05-30T08:00:00.000Z'),
+    });
+    storageService.exists.mockResolvedValue(false);
+
+    await expect(service.confirm('file_123', actor)).rejects.toThrow(
+      NotFoundException,
+    );
+
+    expect(storageService.exists).toHaveBeenCalledWith(
+      'SUPPLIER_DOCUMENT',
+      '4/SUPPLIER_DOCUMENT/file_123',
+    );
+    expect(prisma.fileUpload.updateMany).not.toHaveBeenCalled();
   });
 
   it('getSignedUrl throws NotFoundException when fileId belongs to a different org', async () => {

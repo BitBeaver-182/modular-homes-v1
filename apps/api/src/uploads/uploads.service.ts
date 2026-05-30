@@ -87,6 +87,15 @@ export class UploadsService {
       throw new NotFoundException('File upload not found');
     }
 
+    const objectExists = await this.storageService.exists(
+      fileUpload.context,
+      fileUpload.key,
+    );
+
+    if (!objectExists) {
+      throw new NotFoundException('File upload not found');
+    }
+
     await this.prisma.fileUpload.updateMany({
       where: {
         id: fileId,

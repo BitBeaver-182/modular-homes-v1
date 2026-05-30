@@ -9,20 +9,9 @@ export const PRIVATE_DOCUMENTS_BUCKET = 'private-documents';
 
 @Injectable()
 export class StorageService implements IStorageService {
-  private readonly supabase: ReturnType<typeof createClient>;
+  private supabase?: ReturnType<typeof createClient>;
 
-  constructor(config: AppConfigService) {
-    this.supabase = createClient(
-      config.supabaseUrl,
-      config.supabaseServiceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      },
-    );
-  }
+  constructor(private readonly config: AppConfigService) {}
 
   bucketForContext(context: FileContext): string {
     return bucketFor(context);
@@ -35,8 +24,8 @@ export class StorageService implements IStorageService {
   ): Promise<{ uploadUrl: string }> {
     void mimeType;
     const bucket = this.bucketForContext(context);
-    const { data, error } = await this.supabase.storage
-      .from(bucket)
+    const { data, error } = await this.getSupabaseClient()
+      .storage.from(bucket)
       .createSignedUploadUrl(key);
 
     if (error) {
@@ -54,12 +43,12 @@ export class StorageService implements IStorageService {
     const bucket = this.bucketForContext(context);
 
     if (isPublicContext(context)) {
-      return this.supabase.storage.from(bucket).getPublicUrl(key).data
-        .publicUrl;
+      return this.getSupabaseClient().storage.from(bucket).getPublicUrl(key)
+        .data.publicUrl;
     }
 
-    const { data, error } = await this.supabase.storage
-      .from(bucket)
+    const { data, error } = await this.getSupabaseClient()
+      .storage.from(bucket)
       .createSignedUrl(key, ttlSeconds);
 
     if (error) {
@@ -69,13 +58,43 @@ export class StorageService implements IStorageService {
     return data.signedUrl;
   }
 
+  async exists(context: FileContext, key: string): Promise<boolean> {
+    const bucket = this.bucketForContext(context);
+    const { data, error } = await this.getSupabaseClient()
+      .storage.from(bucket)
+      .exists(key);
+
+    if (error && data) {
+      throw new InternalServerErrorException('Failed to verify stored file');
+    }
+
+    return data;
+  }
+
   async delete(context: FileContext, key: string): Promise<void> {
     const bucket = this.bucketForContext(context);
-    const { error } = await this.supabase.storage.from(bucket).remove([key]);
+    const { error } = await this.getSupabaseClient()
+      .storage.from(bucket)
+      .remove([key]);
 
     if (error) {
       throw new InternalServerErrorException('Failed to delete stored file');
     }
+  }
+
+  private getSupabaseClient(): ReturnType<typeof createClient> {
+    this.supabase ??= createClient(
+      this.config.supabaseUrl,
+      this.config.supabaseServiceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      },
+    );
+
+    return this.supabase;
   }
 }
 
