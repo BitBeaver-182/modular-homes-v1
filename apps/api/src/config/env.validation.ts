@@ -11,6 +11,8 @@ export interface AppEnv {
   THROTTLE_TTL_MS?: number;
   THROTTLE_LIMIT?: number;
   JWT_SECRET?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): AppEnv {
@@ -41,9 +43,21 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     typeof config.CORS_ORIGINS === 'string' && config.CORS_ORIGINS.length > 0
       ? config.CORS_ORIGINS
       : undefined;
+  const supabaseUrl = getOptionalString(config.SUPABASE_URL);
+  const supabaseServiceRoleKey = getOptionalString(
+    config.SUPABASE_SERVICE_ROLE_KEY,
+  );
 
   if (rawNodeEnv === 'production' && !jwtSecret) {
     throw new Error('JWT_SECRET is required in production');
+  }
+
+  if (rawNodeEnv === 'production' && !supabaseUrl) {
+    throw new Error('SUPABASE_URL is required in production');
+  }
+
+  if (rawNodeEnv === 'production' && !supabaseServiceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required in production');
   }
 
   return {
@@ -62,6 +76,8 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       'THROTTLE_LIMIT',
     ),
     JWT_SECRET: jwtSecret,
+    SUPABASE_URL: supabaseUrl,
+    SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey,
   };
 }
 
