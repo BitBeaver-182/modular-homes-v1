@@ -7,7 +7,7 @@
   "scripts": {
     "build": "pnpm build:types && pnpm build:api && pnpm build:dashboard",
     "build:api": "pnpm --filter api build",
-    "build:dashboard": "pnpm --filter react-dashboard build",
+    "build:dashboard": "pnpm build:types && pnpm --filter react-dashboard build",
     "build:types": "pnpm --filter @moduflow/types build",
     "dev": "pnpm --parallel --stream --filter api --filter react-dashboard dev",
     "dev:api": "pnpm --filter api dev",
