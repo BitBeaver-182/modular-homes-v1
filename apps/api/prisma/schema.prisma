@@ -43,6 +43,13 @@ enum FileContext {
   SUPPLIER_DOCUMENT
 }
 
+enum SupplierQuoteStatus {
+  received
+  accepted
+  rejected
+  expired
+}
+
 model User {
   id           BigInt  @id @default(autoincrement())
   email        String  @unique
@@ -56,6 +63,7 @@ model User {
 
   organizationUsers OrganizationUser[]
   fileUploads       FileUpload[]
+  acceptedSupplierQuotes SupplierQuote[] @relation("AcceptedSupplierQuotes")
 
   @@index([deletedAt])
 }
@@ -75,6 +83,7 @@ model Organization {
   suppliers         Supplier[]
   addresses         Address[]
   fileUploads       FileUpload[]
+  supplierQuotes    SupplierQuote[]
 
   @@index([deletedAt])
 }
@@ -96,6 +105,7 @@ model FileUpload {
 
   organization Organization @relation(fields: [organizationId], references: [id])
   uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+  supplierQuote SupplierQuote?
 
   @@index([organizationId])
   @@index([uploadedById])
@@ -141,6 +151,7 @@ model Supplier {
 
   organization Organization @relation(fields: [organizationId], references: [id])
   address      Address?     @relation(fields: [addressId, organizationId], references: [id, organizationId])
+  supplierQuotes SupplierQuote[]
 
   @@index([organizationId])
   @@index([addressId])
@@ -151,6 +162,75 @@ model Supplier {
   @@index([organizationId, phoneNumber])
   @@index([organizationId, createdAt])
   @@unique([addressId, organizationId])
+}
+
+model SupplierQuote {
+  id               BigInt              @id @default(autoincrement())
+  organizationId   BigInt
+  supplierId       BigInt
+  attachmentId     String?             @unique
+  quoteNumber      String?
+  status           SupplierQuoteStatus @default(received)
+  quoteDate        DateTime?
+  validUntil       DateTime?
+  currencyCode     String              @default("USD") @db.Char(3)
+  subtotalAmount   Decimal             @default(0) @db.Decimal(12, 2)
+  shippingAmount   Decimal             @default(0) @db.Decimal(12, 2)
+  taxAmount        Decimal             @default(0) @db.Decimal(12, 2)
+  totalAmount      Decimal             @default(0) @db.Decimal(12, 2)
+  incoterm         String?
+  paymentTerms     String?
+  loadingPort      String?
+  destinationPort  String?
+  notes            String?
+  acceptedAt       DateTime?
+  rejectedAt       DateTime?
+  acceptedByUserId BigInt?
+  deletedAt        DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  supplier       Supplier            @relation(fields: [supplierId], references: [id])
+  attachment     FileUpload?         @relation(fields: [attachmentId], references: [id])
+  acceptedByUser User?               @relation("AcceptedSupplierQuotes", fields: [acceptedByUserId], references: [id])
+  lines          SupplierQuoteLine[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, quoteNumber])
+  @@index([organizationId])
+  @@index([organizationId, deletedAt])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status, quoteDate])
+  @@index([organizationId, supplierId])
+  @@index([organizationId, totalAmount])
+  @@index([quoteDate])
+  @@index([validUntil])
+}
+
+model SupplierQuoteLine {
+  id                      BigInt  @id @default(autoincrement())
+  organizationId          BigInt
+  supplierQuoteId         BigInt
+  houseModelId            BigInt?
+  productConfigurationId  BigInt?
+  description             String?
+  quantity                Int     @default(1)
+  unitCost                Decimal @default(0) @db.Decimal(12, 2)
+  lineTotal               Decimal @default(0) @db.Decimal(12, 2)
+  estimatedProductionDays Int?
+  notes                   String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  supplierQuote SupplierQuote @relation(fields: [supplierQuoteId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, id])
+  @@index([organizationId])
+  @@index([organizationId, supplierQuoteId])
+  @@index([houseModelId])
+  @@index([productConfigurationId])
+  @@index([supplierQuoteId])
 }
 
 model OrganizationInvitation {
