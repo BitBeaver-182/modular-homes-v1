@@ -81,11 +81,28 @@
 		"fieldPhone": "Telefonszam",
 		"fieldEmail": "Email",
 		"fieldAddress": "Cim",
+		"fieldAddressFull": "Teljes cim",
+		"fieldAddressLine1": "Cim 1. sor",
+		"fieldAddressLine2": "Cim 2. sor",
+		"fieldCity": "Varos",
+		"fieldRegion": "Allam / regio",
+		"fieldPostalCode": "Iranyitoszam",
+		"fieldCountryCode": "Orszag",
 		"fieldWebsite": "Weboldal",
+		"fieldRequired": "Ez a mezo kotelezo.",
 		"placeName": "pl. Acme Supplies",
 		"placePhone": "pl. +1 555 0100",
 		"placeEmail": "pl. contact@supplier.com",
 		"placeAddress": "Utca, varos, iranyitoszam, orszag",
+		"placeAddressFull": "100 Main Street, Austin, TX 78701, US",
+		"placeAddressLine1": "100 Main Street",
+		"placeAddressLine2": "Suite 200",
+		"placeCity": "Austin",
+		"placeRegion": "TX",
+		"placePostalCode": "78701",
+		"placeCountryCode": "Orszag kivalasztasa",
+		"searchCountries": "Orszagok keresese...",
+		"noCountries": "Nincs talalat",
 		"placeWebsite": "https://example.com",
 		"createSupplier": "Beszallito letrehozasa",
 		"creatingSupplier": "Letrehozas…",
@@ -295,6 +312,14 @@
 		"sidebarOrderStatus": "Rendeles allapota"
 	},
 	"errors": {
+		"http": {
+			"badRequest": "A keres ervenytelen",
+			"unauthorized": "A folytatashoz jelentkezzen be",
+			"forbidden": "Nincs jogosultsaga ehhez az eroforrashoz",
+			"notFound": "A kert eroforras nem talalhato",
+			"error": "A keres nem teljesitheto",
+			"internalServerError": "Varatlan szerverhiba tortent"
+		},
 		"validation": {
 			"required": "Ez a mezo kotelezo",
 			"string": "A mezonek szovegnek kell lennie",
@@ -303,6 +328,8 @@
 			"maxLength": "Legfeljebb {{max}} karakter lehet",
 			"url": "Adjon meg ervenyes URL-t",
 			"phone": "Adjon meg ervenyes telefonszamot",
+			"countryCode": "Adjon meg ervenyes orszagkodot",
+			"unique": "Ennek az erteknek egyedinek kell lennie",
 			"quotePdfInvalid": "Csak PDF fajl engedelyezett",
 			"unknown": "{{message}}"
 		}

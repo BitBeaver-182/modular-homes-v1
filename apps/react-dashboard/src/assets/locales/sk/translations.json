@@ -81,11 +81,28 @@
 		"fieldPhone": "Telefon",
 		"fieldEmail": "Email",
 		"fieldAddress": "Adresa",
+		"fieldAddressFull": "Cela adresa",
+		"fieldAddressLine1": "Adresa riadok 1",
+		"fieldAddressLine2": "Adresa riadok 2",
+		"fieldCity": "Mesto",
+		"fieldRegion": "Stat / region",
+		"fieldPostalCode": "PSC",
+		"fieldCountryCode": "Krajina",
 		"fieldWebsite": "Web",
+		"fieldRequired": "Toto pole je povinne.",
 		"placeName": "napr. Acme Supplies",
 		"placePhone": "napr. +1 555 0100",
 		"placeEmail": "napr. kontakt@supplier.com",
 		"placeAddress": "Ulica, mesto, PSC, krajina",
+		"placeAddressFull": "100 Main Street, Austin, TX 78701, US",
+		"placeAddressLine1": "100 Main Street",
+		"placeAddressLine2": "Suite 200",
+		"placeCity": "Austin",
+		"placeRegion": "TX",
+		"placePostalCode": "78701",
+		"placeCountryCode": "Vybrat krajinu",
+		"searchCountries": "Hladat krajiny...",
+		"noCountries": "Nenasli sa ziadne krajiny",
 		"placeWebsite": "https://example.com",
 		"createSupplier": "Vytvorit dodavatela",
 		"creatingSupplier": "Vytvaram…",
@@ -295,6 +312,14 @@
 		"sidebarOrderStatus": "Stav objednavky"
 	},
 	"errors": {
+		"http": {
+			"badRequest": "Poziadavka je neplatna",
+			"unauthorized": "Pre pokracovanie sa musite prihlasit",
+			"forbidden": "Nemate pristup k tomuto zdroju",
+			"notFound": "Pozadovany zdroj sa nenasiel",
+			"error": "Poziadavku sa nepodarilo dokoncit",
+			"internalServerError": "Doslo k neocekavanej chybe servera"
+		},
 		"validation": {
 			"required": "Toto pole je povinne",
 			"string": "Toto pole musi byt text",
@@ -303,6 +328,8 @@
 			"maxLength": "Musi mat najviac {{max}} znakov",
 			"url": "Zadajte platnu URL",
 			"phone": "Zadajte platne telefonne cislo",
+			"countryCode": "Zadajte platny kod krajiny",
+			"unique": "Tato hodnota musi byt jedinecna",
 			"quotePdfInvalid": "Povolene su len subory PDF",
 			"unknown": "{{message}}"
 		}

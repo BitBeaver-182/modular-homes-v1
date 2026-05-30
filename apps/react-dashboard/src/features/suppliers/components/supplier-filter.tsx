@@ -4,6 +4,7 @@ import { Building2Icon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { InfiniteComboboxFilter } from "@/components/filters/infinite-combobox-filter";
+import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
 
 import { getSuppliers } from "../lib/supplier-api";
 
@@ -31,32 +32,43 @@ export const SupplierFilter = ({
 	disabled,
 }: SupplierFilterProps): JSX.Element => {
 	const { t } = useTranslation();
+	const { activeMembership } = AdminRoute.useRouteContext();
+	const organizationId = activeMembership.organization.id;
 
 	return (
 		<InfiniteComboboxFilter<Supplier>
 			className={className}
 			disabled={disabled}
-			getId={(s): string => s.documentId}
+			getId={(s): string => s.id}
 			getLabel={(s): string => s.name}
 			icon={<Building2Icon className="size-3.5" />}
 			label={label ?? t("suppliers.title")}
 			noResultsLabel={t("suppliers.noSuppliers")}
-			queryKey={["suppliers", "filter"]}
+			queryKey={["suppliers", organizationId, "filter"]}
 			searchPlaceholder={t("suppliers.searchPlaceholder")}
 			value={value}
-			fetchPage={async ({ page, pageSize, search }): Promise<{
+			fetchPage={async ({
+				page,
+				pageSize,
+				search,
+			}): Promise<{
 				data: Array<Supplier>;
 				meta: { pagination: { page: number; pageCount: number } };
 			}> =>
-				getSuppliers({
-					page,
-					pageSize,
-					sortBy: "name",
-					sortOrder: "asc",
-					search,
-				})
+				getSuppliers(
+					{
+						organizationId,
+					},
+					{
+						page,
+						pageSize,
+						sortBy: "name",
+						sortOrder: "asc",
+						search,
+					}
+				)
 			}
 			onApply={onApply}
 		/>
 	);
-}
+};

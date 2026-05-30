@@ -1590,6 +1590,218 @@
         ]
       }
     },
+    "/api/suppliers": {
+      "post": {
+        "description": "Create a supplier in the active organization.",
+        "operationId": "SuppliersController_create",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupplierDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create Supplier",
+        "tags": [
+          "Suppliers"
+        ]
+      },
+      "get": {
+        "description": "Return suppliers in the active organization.",
+        "operationId": "SuppliersController_findAll",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierListResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Suppliers",
+        "tags": [
+          "Suppliers"
+        ]
+      }
+    },
+    "/api/suppliers/{id}": {
+      "get": {
+        "description": "Return a single supplier by id in the active organization.",
+        "operationId": "SuppliersController_findOne",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the supplier.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Supplier",
+        "tags": [
+          "Suppliers"
+        ]
+      },
+      "patch": {
+        "description": "Update a supplier in the active organization.",
+        "operationId": "SuppliersController_update",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the supplier.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSupplierDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update Supplier",
+        "tags": [
+          "Suppliers"
+        ]
+      },
+      "delete": {
+        "description": "Soft-delete a supplier in the active organization.",
+        "operationId": "SuppliersController_remove",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the supplier.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Delete Supplier",
+        "tags": [
+          "Suppliers"
+        ]
+      }
+    },
     "/api/organizations": {
       "post": {
         "description": "Create a new organization for the authenticated user.",
@@ -2319,6 +2531,234 @@
           "key",
           "description"
         ]
+      },
+      "SupplierAddressDto": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string",
+            "example": "100 Main Street",
+            "maxLength": 200
+          },
+          "line2": {
+            "type": "string",
+            "example": "Suite 200",
+            "maxLength": 200
+          },
+          "city": {
+            "type": "string",
+            "example": "Austin",
+            "maxLength": 120
+          },
+          "region": {
+            "type": "string",
+            "example": "TX",
+            "maxLength": 120
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "78701",
+            "maxLength": 40
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code.",
+            "example": "US"
+          }
+        },
+        "required": [
+          "line1"
+        ]
+      },
+      "CreateSupplierDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Acme Supply"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "example": "+1 555 0100"
+          },
+          "email": {
+            "type": "string",
+            "example": "orders@example.com"
+          },
+          "address": {
+            "$ref": "#/components/schemas/SupplierAddressDto"
+          },
+          "website": {
+            "type": "string",
+            "example": "https://example.com"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "SupplierResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer",
+            "example": "1"
+          },
+          "name": {
+            "type": "string",
+            "example": "Acme Supply"
+          },
+          "phoneNumber": {
+            "type": "object",
+            "example": "+1 555 0100",
+            "nullable": true
+          },
+          "email": {
+            "type": "object",
+            "example": "orders@example.com",
+            "nullable": true
+          },
+          "address": {
+            "type": "object",
+            "example": "100 Main Street",
+            "nullable": true
+          },
+          "website": {
+            "type": "object",
+            "example": "https://example.com",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SupplierPaginationResponse": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 15
+          },
+          "pageCount": {
+            "type": "number",
+            "example": 3
+          },
+          "total": {
+            "type": "number",
+            "example": 42
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "pageCount",
+          "total"
+        ]
+      },
+      "SupplierListMetaResponse": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/SupplierPaginationResponse"
+          }
+        },
+        "required": [
+          "pagination"
+        ]
+      },
+      "SupplierListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierResponse"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SupplierListMetaResponse"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "UpdateSupplierAddressDto": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string",
+            "example": "100 Main Street",
+            "maxLength": 200
+          },
+          "line2": {
+            "type": "string",
+            "example": "Suite 200",
+            "maxLength": 200
+          },
+          "city": {
+            "type": "string",
+            "example": "Austin",
+            "maxLength": 120
+          },
+          "region": {
+            "type": "string",
+            "example": "TX",
+            "maxLength": 120
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "78701",
+            "maxLength": 40
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code.",
+            "example": "US"
+          }
+        }
+      },
+      "UpdateSupplierDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Acme Supply"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "example": "+1 555 0100"
+          },
+          "email": {
+            "type": "string",
+            "example": "orders@example.com"
+          },
+          "address": {
+            "$ref": "#/components/schemas/UpdateSupplierAddressDto"
+          },
+          "website": {
+            "type": "string",
+            "example": "https://example.com"
+          }
+        }
       },
       "CreateOrganizationDto": {
         "type": "object",

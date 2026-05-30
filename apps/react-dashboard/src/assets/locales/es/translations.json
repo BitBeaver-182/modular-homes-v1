@@ -81,11 +81,28 @@
 		"fieldPhone": "Telefono",
 		"fieldEmail": "Correo",
 		"fieldAddress": "Direccion",
+		"fieldAddressFull": "Direccion completa",
+		"fieldAddressLine1": "Direccion linea 1",
+		"fieldAddressLine2": "Direccion linea 2",
+		"fieldCity": "Ciudad",
+		"fieldRegion": "Estado / region",
+		"fieldPostalCode": "Codigo postal",
+		"fieldCountryCode": "Pais",
 		"fieldWebsite": "Sitio web",
+		"fieldRequired": "Este campo es obligatorio.",
 		"placeName": "ej. Acme Supplies",
 		"placePhone": "ej. +1 555 0100",
 		"placeEmail": "ej. contacto@proveedor.com",
 		"placeAddress": "Calle, ciudad, codigo postal, pais",
+		"placeAddressFull": "100 Main Street, Austin, TX 78701, US",
+		"placeAddressLine1": "100 Main Street",
+		"placeAddressLine2": "Suite 200",
+		"placeCity": "Austin",
+		"placeRegion": "TX",
+		"placePostalCode": "78701",
+		"placeCountryCode": "Seleccionar pais",
+		"searchCountries": "Buscar paises...",
+		"noCountries": "No se encontraron paises",
 		"placeWebsite": "https://example.com",
 		"createSupplier": "Crear proveedor",
 		"creatingSupplier": "Creando…",
@@ -295,6 +312,14 @@
 		"sidebarOrderStatus": "Estado del pedido"
 	},
 	"errors": {
+		"http": {
+			"badRequest": "La solicitud no es valida",
+			"unauthorized": "Necesita iniciar sesion para continuar",
+			"forbidden": "No tiene acceso a este recurso",
+			"notFound": "No se encontro el recurso solicitado",
+			"error": "No se pudo completar la solicitud",
+			"internalServerError": "Ocurrio un error inesperado del servidor"
+		},
 		"validation": {
 			"required": "Este campo es obligatorio",
 			"string": "Este campo debe ser una cadena",
@@ -303,6 +328,8 @@
 			"maxLength": "Debe tener como maximo {{max}} caracteres",
 			"url": "Introduzca una URL valida",
 			"phone": "Introduzca un numero de telefono valido",
+			"countryCode": "Introduzca un codigo de pais valido",
+			"unique": "Este valor debe ser unico",
 			"quotePdfInvalid": "Solo se permiten archivos PDF",
 			"unknown": "{{message}}"
 		}

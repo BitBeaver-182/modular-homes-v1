@@ -16,7 +16,7 @@ export const toDateInputValue = (value: string | null): string => {
 };
 
 export const quoteToWriteInput = (quote: Quote): QuoteWriteInput => ({
-	supplierId: quote.supplier?.documentId ?? "",
+	supplierId: quote.supplier?.id ?? "",
 	quotationDate: toDateInputValue(quote.quotation_date),
 	expirationDate: toDateInputValue(quote.expiration_date),
 	amount:

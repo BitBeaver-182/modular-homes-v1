@@ -102,6 +102,7 @@ describe('AppConfigService', () => {
       'Authorization',
       'Content-Type',
       'X-CSRF-Token',
+      'X-Organization-Id',
     ]);
   });
 

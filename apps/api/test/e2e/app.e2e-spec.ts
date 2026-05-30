@@ -922,6 +922,169 @@ describe('API (e2e)', () => {
       .expect(HttpStatus.CREATED);
   });
 
+  it('creates, lists, searches, updates, and soft-deletes org-scoped suppliers', async () => {
+    const organizationA = await createOrganization('supplier-a', 'Supplier A');
+    const organizationB = await createOrganization('supplier-b', 'Supplier B');
+
+    await request(httpServer)
+      .get('/api/suppliers')
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.UNAUTHORIZED);
+
+    const unrelatedUser = (
+      await request(httpServer)
+        .post('/api/auth/register')
+        .send({
+          email: 'supplier-unrelated@example.com',
+          password: testPassword,
+        })
+        .expect(HttpStatus.CREATED)
+    ).body as { access_token: string };
+
+    await request(httpServer)
+      .get('/api/suppliers')
+      .set('authorization', `Bearer ${unrelatedUser.access_token}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.FORBIDDEN);
+
+    const supplierA = (
+      await request(httpServer)
+        .post('/api/suppliers')
+        .set('authorization', `Bearer ${organizationA.ownerToken}`)
+        .set('x-organization-id', organizationA.id)
+        .send({
+          name: ' Acme Supply ',
+          phoneNumber: ' +1 415 555 2671 ',
+          email: ' orders@acme.example ',
+          address: {
+            line1: ' 100 Main Street ',
+            city: ' Austin ',
+            region: ' TX ',
+            postalCode: ' 78701 ',
+            countryCode: ' us ',
+          },
+          website: ' https://acme.example ',
+        })
+        .expect(HttpStatus.CREATED)
+    ).body as {
+      id: string;
+      name: string;
+      phoneNumber: string | null;
+      email: string | null;
+      address: { fullAddress: string; city: string | null } | null;
+      website: string | null;
+    };
+    expect(supplierA).toMatchObject({
+      name: 'Acme Supply',
+      phoneNumber: '+1 415 555 2671',
+      email: 'orders@acme.example',
+      address: {
+        fullAddress: '100 Main Street, Austin, TX 78701, US',
+        city: 'Austin',
+      },
+      website: 'https://acme.example',
+    });
+    expectHiddenFieldIsAbsent(supplierA, 'organizationId');
+    expectHiddenFieldIsAbsent(supplierA, 'deletedAt');
+
+    await request(httpServer)
+      .post('/api/suppliers')
+      .set('authorization', `Bearer ${organizationB.ownerToken}`)
+      .set('x-organization-id', organizationB.id)
+      .send({ name: 'Beta Supply', email: 'beta@example.com' })
+      .expect(HttpStatus.CREATED);
+
+    const listed = (
+      await request(httpServer)
+        .get(
+          '/api/suppliers?page=1&limit=10&search=555&sort[field]=name&sort[criteria]=asc',
+        )
+        .set('authorization', `Bearer ${organizationA.ownerToken}`)
+        .set('x-organization-id', organizationA.id)
+        .expect(HttpStatus.OK)
+    ).body as {
+      data: Array<{ id: string; name: string; phoneNumber: string | null }>;
+      meta: { pagination: { page: number; pageSize: number; total: number } };
+    };
+
+    expect(listed.data).toHaveLength(1);
+    expect(listed.data[0]?.id).toBe(supplierA.id);
+    expect(listed.meta.pagination).toMatchObject({
+      page: 1,
+      pageSize: 10,
+      total: 1,
+    });
+
+    await request(httpServer)
+      .get(`/api/suppliers/${supplierA.id}`)
+      .set('authorization', `Bearer ${organizationB.ownerToken}`)
+      .set('x-organization-id', organizationB.id)
+      .expect(HttpStatus.NOT_FOUND);
+
+    const updated = (
+      await request(httpServer)
+        .patch(`/api/suppliers/${supplierA.id}`)
+        .set('authorization', `Bearer ${organizationA.ownerToken}`)
+        .set('x-organization-id', organizationA.id)
+        .send({ name: 'Acme Supply Co', phoneNumber: '' })
+        .expect(HttpStatus.OK)
+    ).body as { id: string; name: string; phoneNumber: string | null };
+    expect(updated).toMatchObject({
+      id: supplierA.id,
+      name: 'Acme Supply Co',
+      phoneNumber: null,
+    });
+
+    const clearedAddress = (
+      await request(httpServer)
+        .patch(`/api/suppliers/${supplierA.id}`)
+        .set('authorization', `Bearer ${organizationA.ownerToken}`)
+        .set('x-organization-id', organizationA.id)
+        .send({
+          address: {
+            line1: '',
+            line2: '',
+            city: '',
+            region: '',
+            postalCode: '',
+            countryCode: '',
+          },
+        })
+        .expect(HttpStatus.OK)
+    ).body as {
+      id: string;
+      address: null;
+    };
+    expect(clearedAddress).toMatchObject({
+      id: supplierA.id,
+      address: null,
+    });
+
+    await request(httpServer)
+      .get('/api/suppliers?select=all')
+      .set('authorization', `Bearer ${organizationA.ownerToken}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer)
+      .get('/api/suppliers?sort[field]=organizationId&sort[criteria]=asc')
+      .set('authorization', `Bearer ${organizationA.ownerToken}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.BAD_REQUEST);
+
+    await request(httpServer)
+      .delete(`/api/suppliers/${supplierA.id}`)
+      .set('authorization', `Bearer ${organizationA.ownerToken}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.NO_CONTENT);
+
+    await request(httpServer)
+      .get(`/api/suppliers/${supplierA.id}`)
+      .set('authorization', `Bearer ${organizationA.ownerToken}`)
+      .set('x-organization-id', organizationA.id)
+      .expect(HttpStatus.NOT_FOUND);
+  });
+
   async function createOrganization(slug: string, name: string) {
     const registration = (
       await request(httpServer)

@@ -6,6 +6,7 @@ import { OrganizationInvitationsModule } from './organization-invitations/organi
 import { UserRolesModule } from './user-roles/user-roles.module';
 import { RolePermissionsModule } from './role-permissions/role-permissions.module';
 import { OrganizationUsersModule } from './organization-users/organization-users.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { OrganizationUsersModule } from './organization-users/organization-users
     UserRolesModule,
     RolePermissionsModule,
     OrganizationUsersModule,
+    SuppliersModule,
   ],
 })
 export class PlatformModule {}

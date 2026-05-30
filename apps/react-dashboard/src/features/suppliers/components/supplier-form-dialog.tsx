@@ -1,8 +1,19 @@
-import { type JSX, useEffect } from "react";
-import { FormProvider, type FieldPath } from "react-hook-form";
+import countries from "i18n-iso-countries";
+import enCountries from "i18n-iso-countries/langs/en.json";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { type JSX, useEffect, useMemo, useState } from "react";
+import { Controller, FormProvider, type FieldPath } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
 import {
 	Dialog,
 	DialogContent,
@@ -13,51 +24,86 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { stripStrapiDataPrefix, useStrapiForm } from "@/lib/strapi";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { useStrapiForm } from "@/lib/strapi";
+import { cn } from "@/lib/utilities";
 
 import type { Supplier, SupplierWriteInput } from "../types";
 
 type SupplierFormValues = SupplierWriteInput & { root?: string };
 
-const FIELD_NAMES = ["name", "phone_number", "email", "address", "website"] as const;
-type SupplierFieldName = (typeof FIELD_NAMES)[number];
+interface CountryOption {
+	code: string;
+	name: string;
+}
+
+countries.registerLocale(enCountries);
 
 const EMPTY_VALUES: SupplierFormValues = {
 	name: "",
-	phone_number: "",
+	phoneNumber: "",
 	email: "",
-	address: "",
+	address: {
+		line1: "",
+		line2: "",
+		city: "",
+		region: "",
+		postalCode: "",
+		countryCode: "",
+	},
 	website: "",
 };
 
-/**
- * Strapi sometimes emits paths the form doesn't render (e.g. `slug`, which we
- * derive from `name`). Route unknown keys to the matching field instead of
- * dropping them silently.
- */
-const mapSupplierField = (
-	key: string,
-): FieldPath<SupplierFormValues> | undefined => {
-	if (key === "slug") {
-		return "name";
-	}
-
-	return (FIELD_NAMES as ReadonlyArray<string>).includes(key)
-		? (key as SupplierFieldName)
-		: undefined;
+const FIELD_MAP: Record<string, FieldPath<SupplierFormValues>> = {
+	name: "name",
+	phoneNumber: "phoneNumber",
+	email: "email",
+	address: "address.line1",
+	line1: "address.line1",
+	"address.line1": "address.line1",
+	line2: "address.line2",
+	"address.line2": "address.line2",
+	city: "address.city",
+	"address.city": "address.city",
+	region: "address.region",
+	"address.region": "address.region",
+	postalCode: "address.postalCode",
+	"address.postalCode": "address.postalCode",
+	countryCode: "address.countryCode",
+	"address.countryCode": "address.countryCode",
+	website: "website",
+	root: "root",
 };
 
-const toFormValues = (supplier: Supplier | null | undefined): SupplierFormValues => {
+const countryOptions: Array<CountryOption> = Object.entries(
+	countries.getNames("en", { select: "official" })
+)
+	.map(([code, name]) => ({ code, name }))
+	.sort((a, b) => a.name.localeCompare(b.name));
+
+const toFormValues = (
+	supplier: Supplier | null | undefined
+): SupplierFormValues => {
 	if (!supplier) {
 		return EMPTY_VALUES;
 	}
 
 	return {
 		name: supplier.name ?? "",
-		phone_number: supplier.phone_number ?? "",
+		phoneNumber: supplier.phoneNumber ?? "",
 		email: supplier.email ?? "",
-		address: supplier.address ?? "",
+		address: {
+			line1: supplier.address?.line1 ?? "",
+			line2: supplier.address?.line2 ?? "",
+			city: supplier.address?.city ?? "",
+			region: supplier.address?.region ?? "",
+			postalCode: supplier.address?.postalCode ?? "",
+			countryCode: supplier.address?.countryCode ?? "",
+		},
 		website: supplier.website ?? "",
 	};
 };
@@ -82,11 +128,11 @@ export const SupplierFormDialog = ({
 	const { t } = useTranslation();
 	const form = useStrapiForm<SupplierFormValues>({
 		defaultValues: EMPTY_VALUES,
+		mapField: (key) => FIELD_MAP[key],
 		mode: "onSubmit",
-		normalize: stripStrapiDataPrefix,
-		mapField: mapSupplierField,
 	});
 	const {
+		control,
 		register,
 		reset,
 		submit,
@@ -111,14 +157,19 @@ export const SupplierFormDialog = ({
 	const isCreate = mode === "create";
 	const rootError = errors.root?.message;
 	const nameError = errors.name?.message;
-	const phoneError = errors.phone_number?.message;
+	const phoneError = errors.phoneNumber?.message;
 	const emailError = errors.email?.message;
-	const addressError = errors.address?.message;
+	const addressLine1Error = errors.address?.line1?.message;
+	const addressLine2Error = errors.address?.line2?.message;
+	const cityError = errors.address?.city?.message;
+	const regionError = errors.address?.region?.message;
+	const postalCodeError = errors.address?.postalCode?.message;
+	const countryCodeError = errors.address?.countryCode?.message;
 	const websiteError = errors.website?.message;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
+			<DialogContent className="sm:max-w-2xl">
 				<FormProvider {...form}>
 					<form className="contents" onSubmit={submit(handleValid)}>
 						<DialogHeader>
@@ -138,8 +189,11 @@ export const SupplierFormDialog = ({
 								{rootError}
 							</p>
 						) : null}
-						<div className="space-y-3">
-							<Field data-invalid={Boolean(nameError) || undefined}>
+						<div className="grid gap-3 sm:grid-cols-2">
+							<Field
+								className="sm:col-span-2"
+								data-invalid={Boolean(nameError) || undefined}
+							>
 								<FieldLabel htmlFor="supplier-name">
 									{t("suppliers.fieldName")}
 								</FieldLabel>
@@ -160,7 +214,7 @@ export const SupplierFormDialog = ({
 									aria-invalid={Boolean(phoneError)}
 									id="supplier-phone"
 									placeholder={t("suppliers.placePhone")}
-									{...register("phone_number")}
+									{...register("phoneNumber")}
 								/>
 								{phoneError ? <FieldError>{phoneError}</FieldError> : null}
 							</Field>
@@ -173,24 +227,103 @@ export const SupplierFormDialog = ({
 									aria-invalid={Boolean(emailError)}
 									id="supplier-email"
 									placeholder={t("suppliers.placeEmail")}
-									// type="email"
 									{...register("email")}
 								/>
 								{emailError ? <FieldError>{emailError}</FieldError> : null}
 							</Field>
 
-							<Field data-invalid={Boolean(addressError) || undefined}>
-								<FieldLabel htmlFor="supplier-address">
-									{t("suppliers.fieldAddress")}
+							<Field
+								className="sm:col-span-2"
+								data-invalid={Boolean(addressLine1Error) || undefined}
+							>
+								<FieldLabel htmlFor="supplier-address-line-1">
+									{t("suppliers.fieldAddressLine1")}
 								</FieldLabel>
-								<Textarea
-									aria-invalid={Boolean(addressError)}
-									className="min-h-20 resize-y"
-									id="supplier-address"
-									placeholder={t("suppliers.placeAddress")}
-									{...register("address")}
+								<Input
+									aria-invalid={Boolean(addressLine1Error)}
+									id="supplier-address-line-1"
+									placeholder={t("suppliers.placeAddressLine1")}
+									{...register("address.line1")}
 								/>
-								{addressError ? <FieldError>{addressError}</FieldError> : null}
+								{addressLine1Error ? (
+									<FieldError>{addressLine1Error}</FieldError>
+								) : null}
+							</Field>
+
+							<Field data-invalid={Boolean(addressLine2Error) || undefined}>
+								<FieldLabel htmlFor="supplier-address-line-2">
+									{t("suppliers.fieldAddressLine2")}
+								</FieldLabel>
+								<Input
+									aria-invalid={Boolean(addressLine2Error)}
+									id="supplier-address-line-2"
+									placeholder={t("suppliers.placeAddressLine2")}
+									{...register("address.line2")}
+								/>
+								{addressLine2Error ? (
+									<FieldError>{addressLine2Error}</FieldError>
+								) : null}
+							</Field>
+
+							<Field data-invalid={Boolean(cityError) || undefined}>
+								<FieldLabel htmlFor="supplier-city">
+									{t("suppliers.fieldCity")}
+								</FieldLabel>
+								<Input
+									aria-invalid={Boolean(cityError)}
+									id="supplier-city"
+									placeholder={t("suppliers.placeCity")}
+									{...register("address.city")}
+								/>
+								{cityError ? <FieldError>{cityError}</FieldError> : null}
+							</Field>
+
+							<Field data-invalid={Boolean(regionError) || undefined}>
+								<FieldLabel htmlFor="supplier-region">
+									{t("suppliers.fieldRegion")}
+								</FieldLabel>
+								<Input
+									aria-invalid={Boolean(regionError)}
+									id="supplier-region"
+									placeholder={t("suppliers.placeRegion")}
+									{...register("address.region")}
+								/>
+								{regionError ? <FieldError>{regionError}</FieldError> : null}
+							</Field>
+
+							<Field data-invalid={Boolean(postalCodeError) || undefined}>
+								<FieldLabel htmlFor="supplier-postal-code">
+									{t("suppliers.fieldPostalCode")}
+								</FieldLabel>
+								<Input
+									aria-invalid={Boolean(postalCodeError)}
+									id="supplier-postal-code"
+									placeholder={t("suppliers.placePostalCode")}
+									{...register("address.postalCode")}
+								/>
+								{postalCodeError ? (
+									<FieldError>{postalCodeError}</FieldError>
+								) : null}
+							</Field>
+
+							<Field data-invalid={Boolean(countryCodeError) || undefined}>
+								<FieldLabel htmlFor="supplier-country-code">
+									{t("suppliers.fieldCountryCode")}
+								</FieldLabel>
+								<Controller
+									control={control}
+									name="address.countryCode"
+									render={({ field }) => (
+										<CountryCombobox
+											id="supplier-country-code"
+											value={field.value}
+											onChange={field.onChange}
+										/>
+									)}
+								/>
+								{countryCodeError ? (
+									<FieldError>{countryCodeError}</FieldError>
+								) : null}
 							</Field>
 
 							<Field data-invalid={Boolean(websiteError) || undefined}>
@@ -223,3 +356,75 @@ export const SupplierFormDialog = ({
 		</Dialog>
 	);
 };
+
+interface CountryComboboxProps {
+	id: string;
+	value: string;
+	onChange: (value: string) => void;
+}
+
+function CountryCombobox({
+	id,
+	value,
+	onChange,
+}: CountryComboboxProps): JSX.Element {
+	const { t } = useTranslation();
+	const [open, setOpen] = useState(false);
+	const selectedCountry = useMemo(
+		() => countryOptions.find((country) => country.code === value),
+		[value],
+	);
+
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<Button
+					aria-expanded={open}
+					className="w-full justify-between"
+					id={id}
+					role="combobox"
+					type="button"
+					variant="outline"
+				>
+					<span className="truncate">
+						{selectedCountry
+							? `${selectedCountry.name} (${selectedCountry.code})`
+							: t("suppliers.placeCountryCode")}
+					</span>
+					<ChevronsUpDown className="size-4 opacity-50" />
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
+				<Command>
+					<CommandInput placeholder={t("suppliers.searchCountries")} />
+					<CommandList>
+						<CommandEmpty>{t("suppliers.noCountries")}</CommandEmpty>
+						<CommandGroup>
+							{countryOptions.map((country) => (
+								<CommandItem
+									key={country.code}
+									value={`${country.name} ${country.code}`}
+									onSelect={() => {
+										onChange(country.code);
+										setOpen(false);
+									}}
+								>
+									<Check
+										className={cn(
+											"size-4",
+											value === country.code ? "opacity-100" : "opacity-0",
+										)}
+									/>
+									<span>{country.name}</span>
+									<span className="ml-auto text-xs text-muted-foreground">
+										{country.code}
+									</span>
+								</CommandItem>
+							))}
+						</CommandGroup>
+					</CommandList>
+				</Command>
+			</PopoverContent>
+		</Popover>
+	);
+}
