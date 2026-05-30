@@ -1,14 +1,9 @@
+import type { PermissionResponse as PermissionContract } from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 
-export interface PermissionDto {
-  id: string;
-  key: string;
-  description: string | null;
-}
-
-export class PermissionResponse implements PermissionDto {
-  constructor(partial: Partial<PermissionDto>) {
+export class PermissionResponse implements PermissionContract {
+  constructor(partial: PermissionContract) {
     Object.assign(this, partial);
   }
 

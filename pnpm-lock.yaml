@@ -10,6 +10,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@moduflow/types':
+        specifier: workspace:*
+        version: link:../../libs/types
       '@nestjs/common':
         specifier: ^11.0.1
         version: 11.1.21(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -465,6 +468,12 @@ importers:
       vitest:
         specifier: 4.0.15
         version: 4.0.15(@types/node@24.12.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@1.8.0))(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.12.4)(typescript@5.9.3))(terser@5.47.1)
+
+  libs/types:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
 
 packages:
 

@@ -25,6 +25,7 @@ import {
 } from '../platform-swagger.decorator';
 import { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
 import { RolePermissionResponse } from './dto/role-permission.dto';
+import { toPermissionResponse } from '../permissions/mappers/permission.mapper';
 import { RolePermissionsService } from './role-permissions.service';
 
 @ApiTags('Roles/Permissions')
@@ -54,7 +55,7 @@ export class RolePermissionsController {
       parseBigIntId(roleId, 'roleId'),
       parseBigIntId(assignRolePermissionDto.permissionId, 'permissionId'),
     );
-    return plainToInstance(RolePermissionResponse, permission, {
+    return plainToInstance(RolePermissionResponse, toPermissionResponse(permission), {
       excludeExtraneousValues: true,
     });
   }
@@ -75,9 +76,13 @@ export class RolePermissionsController {
       organizationId,
       parseBigIntId(roleId, 'roleId'),
     );
-    return plainToInstance(RolePermissionResponse, permissions, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      RolePermissionResponse,
+      permissions.map((permission) => toPermissionResponse(permission)),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Delete(':permissionId')
@@ -98,7 +103,7 @@ export class RolePermissionsController {
       parseBigIntId(roleId, 'roleId'),
       parseBigIntId(permissionId, 'permissionId'),
     );
-    return plainToInstance(RolePermissionResponse, permission, {
+    return plainToInstance(RolePermissionResponse, toPermissionResponse(permission), {
       excludeExtraneousValues: true,
     });
   }

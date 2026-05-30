@@ -4,12 +4,17 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { AuthResponse, AuthTokenResponse, SessionResponse } from '@moduflow/types';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../database/prisma.service';
 import type { AccessTokenPayload, AuthUser } from './auth.types';
-import { RegisterUserDto } from './dto/register-user.dto';
 import { CreateTokenDto } from './dto/create-token.dto';
+import { RegisterUserDto } from './dto/register-user.dto';
+import {
+  toAuthResponse,
+  toSessionResponse,
+} from './mappers/auth.mapper';
 
 const PASSWORD_HASH_OPTIONS: argon2.Options & { raw?: false } = {
   type: argon2.argon2id,
@@ -23,16 +28,6 @@ type AuthenticatedUser = {
   email: string;
   name: string | null;
   avatarUrl: string | null;
-};
-
-type AuthResponse = {
-  access_token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    avatarUrl: string | null;
-  };
 };
 
 @Injectable()
@@ -117,14 +112,14 @@ export class AuthService {
 
   async issueTokenForCredentials(
     credentials: CreateTokenDto,
-  ): Promise<{ access_token: string }> {
+  ): Promise<AuthTokenResponse> {
     const authResponse = await this.login(credentials);
     return {
       access_token: authResponse.access_token,
     };
   }
 
-  async getSession(user: AuthUser) {
+  async getSession(user: AuthUser): Promise<SessionResponse> {
     const sessionUser = await this.prisma.user.findFirst({
       where: {
         id: user.userId,
@@ -162,25 +157,7 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    return {
-      user: {
-        id: sessionUser.id.toString(),
-        email: sessionUser.email,
-        name: sessionUser.name,
-        avatarUrl: sessionUser.avatarUrl,
-      },
-      memberships: sessionUser.organizationUsers
-        .filter((membership) => membership.organization.deletedAt == null)
-        .map((membership) => ({
-          id: membership.id.toString(),
-          governanceRole: membership.governanceRole,
-          organization: {
-            id: membership.organization.id.toString(),
-            name: membership.organization.name,
-            slug: membership.organization.slug,
-          },
-        })),
-    };
+    return toSessionResponse(sessionUser);
   }
 
   buildPayload(user: Pick<AuthUser, 'userId' | 'email'>): AccessTokenPayload {
@@ -191,20 +168,15 @@ export class AuthService {
   }
 
   private buildAuthResponse(user: AuthenticatedUser): AuthResponse {
-    return {
-      access_token: this.jwtService.sign(
+    return toAuthResponse(
+      user,
+      this.jwtService.sign(
         this.buildPayload({
           userId: user.id,
           email: user.email,
         }),
       ),
-      user: {
-        id: user.id.toString(),
-        email: user.email,
-        name: user.name,
-        avatarUrl: user.avatarUrl,
-      },
-    };
+    );
   }
 
   private assertValidPassword(password: unknown): asserts password is string {

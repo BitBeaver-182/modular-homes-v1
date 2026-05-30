@@ -14,6 +14,13 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { plainToInstance } from 'class-transformer';
+import {
+  AuthResponsePresenter,
+  AuthTokenPresenter,
+  CurrentActorPresenter,
+  SessionResponsePresenter,
+} from './dto/auth-response.dto';
 import { CurrentUser } from './decorator/current-user.decorator';
 import { Public } from './decorator/public.decorator';
 import { CreateTokenDto } from './dto/create-token.dto';
@@ -21,6 +28,7 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { JwtGuard } from './guard/jwt.guard';
 import { AuthService } from './auth.service';
 import type { AuthUser } from './auth.types';
+import { toCurrentActorResponse } from './mappers/auth.mapper';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -34,27 +42,13 @@ export class AuthController {
     description: 'Create a new global user account and issue a JWT.',
   })
   @ApiBody({ type: RegisterUserDto })
-  @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        access_token: {
-          type: 'string',
-        },
-        user: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            email: { type: 'string' },
-            name: { type: 'string', nullable: true },
-            avatarUrl: { type: 'string', nullable: true },
-          },
-        },
-      },
-    },
-  })
+  @ApiOkResponse({ type: AuthResponsePresenter })
   async register(@Body() registerUserDto: RegisterUserDto) {
-    return this.authService.registerUser(registerUserDto);
+    return plainToInstance(
+      AuthResponsePresenter,
+      await this.authService.registerUser(registerUserDto),
+      { excludeExtraneousValues: true },
+    );
   }
 
   @Public()
@@ -66,18 +60,13 @@ export class AuthController {
       'Issue a JWT for an existing active user with email and password credentials.',
   })
   @ApiBody({ type: CreateTokenDto })
-  @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        access_token: {
-          type: 'string',
-        },
-      },
-    },
-  })
+  @ApiOkResponse({ type: AuthTokenPresenter })
   async createToken(@Body() createTokenDto: CreateTokenDto) {
-    return this.authService.issueTokenForCredentials(createTokenDto);
+    return plainToInstance(
+      AuthTokenPresenter,
+      await this.authService.issueTokenForCredentials(createTokenDto),
+      { excludeExtraneousValues: true },
+    );
   }
 
   @Public()
@@ -88,27 +77,13 @@ export class AuthController {
     description: 'Authenticate with email and password and issue a JWT.',
   })
   @ApiBody({ type: CreateTokenDto })
-  @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        access_token: {
-          type: 'string',
-        },
-        user: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            email: { type: 'string' },
-            name: { type: 'string', nullable: true },
-            avatarUrl: { type: 'string', nullable: true },
-          },
-        },
-      },
-    },
-  })
+  @ApiOkResponse({ type: AuthResponsePresenter })
   async login(@Body() createTokenDto: CreateTokenDto) {
-    return this.authService.login(createTokenDto);
+    return plainToInstance(
+      AuthResponsePresenter,
+      await this.authService.login(createTokenDto),
+      { excludeExtraneousValues: true },
+    );
   }
 
   @UseGuards(JwtGuard)
@@ -118,11 +93,11 @@ export class AuthController {
     summary: 'Get current actor',
     description: 'Return the authenticated actor from the bearer token.',
   })
+  @ApiOkResponse({ type: CurrentActorPresenter })
   me(@CurrentUser() user: AuthUser) {
-    return {
-      userId: user.userId.toString(),
-      email: user.email,
-    };
+    return plainToInstance(CurrentActorPresenter, toCurrentActorResponse(user), {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(JwtGuard)
@@ -133,41 +108,12 @@ export class AuthController {
     description:
       'Return the authenticated user and active organization memberships.',
   })
-  @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        user: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            email: { type: 'string' },
-            name: { type: 'string', nullable: true },
-            avatarUrl: { type: 'string', nullable: true },
-          },
-        },
-        memberships: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              governanceRole: { type: 'string', enum: ['owner', 'member'] },
-              organization: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  name: { type: 'string' },
-                  slug: { type: 'string' },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  session(@CurrentUser() user: AuthUser) {
-    return this.authService.getSession(user);
+  @ApiOkResponse({ type: SessionResponsePresenter })
+  async session(@CurrentUser() user: AuthUser) {
+    return plainToInstance(
+      SessionResponsePresenter,
+      await this.authService.getSession(user),
+      { excludeExtraneousValues: true },
+    );
   }
 }

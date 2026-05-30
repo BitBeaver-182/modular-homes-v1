@@ -45,7 +45,7 @@ describe('RolePermissionsController', () => {
       2n,
     );
     expect(created.key).toBe('catalog.manage');
-    expect(list[0].id).toBe(2n);
+    expect(list[0].id).toBe('2');
     expect(removed.key).toBe('catalog.manage');
   });
 });

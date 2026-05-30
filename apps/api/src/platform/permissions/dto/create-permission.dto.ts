@@ -1,7 +1,8 @@
+import type { CreatePermissionRequest } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class CreatePermissionDto {
+export class CreatePermissionDto implements CreatePermissionRequest {
   @ApiProperty({
     description: 'Permission key.',
     example: 'users.manage',

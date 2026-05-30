@@ -1,10 +1,20 @@
+import type {
+  SupplierAddressResponse as SupplierAddressContract,
+  SupplierListMetaResponse as SupplierListMetaContract,
+  SupplierListResponse as SupplierListContract,
+  SupplierResponse as SupplierContract,
+} from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose, Transform, Type } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 
-export class SupplierResponse {
+export class SupplierResponse implements SupplierContract {
+  constructor(partial: SupplierContract) {
+    Object.assign(this, partial);
+  }
+
   @ApiProperty({ example: '1' })
   @Expose()
-  id!: bigint;
+  id!: string;
 
   @ApiProperty({ example: 'Acme Supply' })
   @Expose()
@@ -20,23 +30,6 @@ export class SupplierResponse {
 
   @ApiPropertyOptional({ example: '100 Main Street', nullable: true })
   @Expose()
-  @Transform(({ obj }: { obj: SupplierAddressSource }) => {
-    const address = obj.address;
-
-    if (!address || address.deletedAt) {
-      return null;
-    }
-
-    return {
-      fullAddress: formatFullAddress(address),
-      line1: address.line1 ?? null,
-      line2: address.line2 ?? null,
-      city: address.city ?? null,
-      region: address.region ?? null,
-      postalCode: address.postalCode ?? null,
-      countryCode: address.countryCode ?? null,
-    };
-  })
   @Type(() => SupplierAddressResponse)
   address!: SupplierAddressResponse | null;
 
@@ -46,46 +39,18 @@ export class SupplierResponse {
 
   @ApiProperty()
   @Expose()
-  createdAt!: Date;
+  createdAt!: string;
 
   @ApiProperty()
   @Expose()
-  updatedAt!: Date;
+  updatedAt!: string;
 }
 
-interface SupplierAddressSource {
-  address?: SupplierAddressRecord | null;
-}
+export class SupplierAddressResponse implements SupplierAddressContract {
+  constructor(partial: SupplierAddressContract) {
+    Object.assign(this, partial);
+  }
 
-interface SupplierAddressRecord {
-  line1?: string | null;
-  line2?: string | null;
-  city?: string | null;
-  region?: string | null;
-  postalCode?: string | null;
-  countryCode?: string | null;
-  deletedAt?: Date | null;
-}
-
-function formatFullAddress(address: SupplierAddressRecord): string {
-  const regionPostalCode = [address.region, address.postalCode]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(' ');
-
-  return [
-    address.line1,
-    address.line2,
-    address.city,
-    regionPostalCode,
-    address.countryCode,
-  ]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(', ');
-}
-
-export class SupplierAddressResponse {
   @ApiProperty({ example: '100 Main Street, Austin, TX 78701, US' })
   @Expose()
   fullAddress!: string;
@@ -116,28 +81,50 @@ export class SupplierAddressResponse {
 }
 
 export class SupplierPaginationResponse {
+  constructor(partial: SupplierListMetaContract['pagination']) {
+    Object.assign(this, partial);
+  }
+
   @ApiProperty({ example: 1 })
+  @Expose()
   page!: number;
 
   @ApiProperty({ example: 15 })
+  @Expose()
   pageSize!: number;
 
   @ApiProperty({ example: 3 })
+  @Expose()
   pageCount!: number;
 
   @ApiProperty({ example: 42 })
+  @Expose()
   total!: number;
 }
 
-export class SupplierListMetaResponse {
+export class SupplierListMetaResponse implements SupplierListMetaContract {
+  constructor(partial: SupplierListMetaContract) {
+    Object.assign(this, partial);
+  }
+
+  @Expose()
+  @Type(() => SupplierPaginationResponse)
   @ApiProperty({ type: SupplierPaginationResponse })
   pagination!: SupplierPaginationResponse;
 }
 
-export class SupplierListResponse {
+export class SupplierListResponse implements SupplierListContract {
+  constructor(partial: SupplierListContract) {
+    Object.assign(this, partial);
+  }
+
+  @Expose()
+  @Type(() => SupplierResponse)
   @ApiProperty({ type: SupplierResponse, isArray: true })
   data!: SupplierResponse[];
 
+  @Expose()
+  @Type(() => SupplierListMetaResponse)
   @ApiProperty({ type: SupplierListMetaResponse })
   meta!: SupplierListMetaResponse;
 }

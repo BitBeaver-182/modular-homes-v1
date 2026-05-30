@@ -31,7 +31,7 @@ describe('UserRolesController', () => {
     expect(userRolesService.findAll).toHaveBeenCalledWith(2n, 9n);
     expect(userRolesService.removeRole).toHaveBeenCalledWith(2n, 9n, 4n);
     expect(created.name).toBe('Admin');
-    expect(list[0].id).toBe(4n);
+    expect(list[0].id).toBe('4');
     expect(removed.name).toBe('Admin');
   });
 });

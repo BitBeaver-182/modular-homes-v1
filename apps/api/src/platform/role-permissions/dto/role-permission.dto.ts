@@ -1,7 +1,12 @@
+import type { RolePermissionResponse as RolePermissionContract } from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 
-export class RolePermissionResponse {
+export class RolePermissionResponse implements RolePermissionContract {
+  constructor(partial: RolePermissionContract) {
+    Object.assign(this, partial);
+  }
+
   @Expose()
   @ApiProperty({ example: '1' })
   id!: string;

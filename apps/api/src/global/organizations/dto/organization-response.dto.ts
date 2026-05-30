@@ -1,17 +1,9 @@
+import type { OrganizationResponse as OrganizationContract } from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose } from 'class-transformer';
+import { Expose } from 'class-transformer';
 
-export interface OrganizationDto {
-  id: string;
-  name: string;
-  slug: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-}
-
-export class OrganizationResponse implements OrganizationDto {
-  constructor(partial: Partial<OrganizationDto>) {
+export class OrganizationResponse implements OrganizationContract {
+  constructor(partial: OrganizationContract) {
     Object.assign(this, partial);
   }
 
@@ -26,13 +18,4 @@ export class OrganizationResponse implements OrganizationDto {
   @Expose()
   @ApiProperty({ example: 'northwind-homes' })
   slug!: string;
-
-  @Exclude()
-  createdAt!: string;
-
-  @Exclude()
-  updatedAt!: string;
-
-  @Exclude()
-  deletedAt!: string | null;
 }

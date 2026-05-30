@@ -1,3 +1,4 @@
+import type { CreateSupplierRequest } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
@@ -18,7 +19,7 @@ const emptyToUndefined = ({ value }: { value: unknown }): unknown =>
 const trimString = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
 
-export class CreateSupplierDto {
+export class CreateSupplierDto implements CreateSupplierRequest {
   @ApiProperty({ example: 'Acme Supply' })
   @Transform(trimString)
   @IsString()

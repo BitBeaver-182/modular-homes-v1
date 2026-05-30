@@ -34,6 +34,10 @@ import {
   SupplierResponse,
 } from './dto/supplier-response.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import {
+  toSupplierListResponse,
+  toSupplierResponse,
+} from './mappers/supplier.mapper';
 import { SuppliersService } from './suppliers.service';
 
 @ApiTags('Suppliers')
@@ -57,7 +61,9 @@ export class SuppliersController {
       organizationId,
       createSupplierDto,
     );
-    return toSupplierResponse(supplier);
+    return plainToInstance(SupplierResponse, toSupplierResponse(supplier), {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Get()
@@ -72,12 +78,13 @@ export class SuppliersController {
   ): Promise<SupplierListResponse> {
     const result = await this.suppliersService.findAll(organizationId, query);
 
-    return {
-      data: plainToInstance(SupplierResponse, result.data, {
+    return plainToInstance(
+      SupplierListResponse,
+      toSupplierListResponse(result.data, result.meta),
+      {
         excludeExtraneousValues: true,
-      }),
-      meta: result.meta,
-    };
+      },
+    );
   }
 
   @Get(':id')
@@ -95,7 +102,9 @@ export class SuppliersController {
       organizationId,
       parseBigIntId(id, 'supplierId'),
     );
-    return toSupplierResponse(supplier);
+    return plainToInstance(SupplierResponse, toSupplierResponse(supplier), {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Patch(':id')
@@ -115,7 +124,9 @@ export class SuppliersController {
       parseBigIntId(id, 'supplierId'),
       updateSupplierDto,
     );
-    return toSupplierResponse(supplier);
+    return plainToInstance(SupplierResponse, toSupplierResponse(supplier), {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Delete(':id')
@@ -135,10 +146,4 @@ export class SuppliersController {
       parseBigIntId(id, 'supplierId'),
     );
   }
-}
-
-function toSupplierResponse(supplier: object): SupplierResponse {
-  return plainToInstance(SupplierResponse, supplier, {
-    excludeExtraneousValues: true,
-  });
 }

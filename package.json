@@ -5,9 +5,10 @@
   "description": "Moduflow workspace",
   "packageManager": "pnpm@10.29.1",
   "scripts": {
-    "build": "pnpm build:api && pnpm build:dashboard",
+    "build": "pnpm build:types && pnpm build:api && pnpm build:dashboard",
     "build:api": "pnpm --filter api build",
     "build:dashboard": "pnpm --filter react-dashboard build",
+    "build:types": "pnpm --filter @moduflow/types build",
     "dev": "pnpm --parallel --stream --filter api --filter react-dashboard dev",
     "dev:api": "pnpm --filter api dev",
     "dev:dashboard": "pnpm --filter react-dashboard dev",
@@ -19,15 +20,16 @@
     "start:api": "pnpm --filter api start",
     "start:dashboard": "pnpm --filter react-dashboard start",
     "start:local": "pnpm dev:api",
-    "test": "pnpm --parallel --stream --filter api --filter react-dashboard test",
+    "test": "pnpm build:types && pnpm --parallel --stream --filter api --filter react-dashboard test",
     "test:api": "pnpm --filter api test",
     "test:api:e2e": "pnpm --filter api test:e2e",
     "test:dashboard": "pnpm --filter react-dashboard test:unit",
     "test:dashboard:e2e": "pnpm --filter react-dashboard test:e2e",
-    "test:e2e": "pnpm --parallel --stream --filter api --filter react-dashboard test:e2e",
-    "typecheck": "pnpm --parallel --stream --filter api --filter react-dashboard typecheck",
+    "test:e2e": "pnpm build:types && pnpm --parallel --stream --filter api --filter react-dashboard test:e2e",
+    "typecheck": "pnpm build:types && pnpm --parallel --stream --filter api --filter react-dashboard typecheck",
     "typecheck:api": "pnpm --filter api typecheck",
     "typecheck:dashboard": "pnpm --filter react-dashboard typecheck",
+    "typecheck:types": "pnpm --filter @moduflow/types typecheck",
     "typecheck:dashboard:e2e": "pnpm --filter react-dashboard exec tsc --project tsconfig.node.json --noEmit"
   }
 }

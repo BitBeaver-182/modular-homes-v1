@@ -28,6 +28,7 @@ import {
 } from '../platform-swagger.decorator';
 import { OrganizationMembershipResponse } from './dto/organization-membership-response.dto';
 import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
+import { toOrganizationMembershipResponse } from './mappers/organization-membership.mapper';
 import { OrganizationUsersService } from './organization-users.service';
 
 @ApiTags('Organization Memberships')
@@ -56,9 +57,13 @@ export class OrganizationUsersController {
         createUserDto,
       );
 
-    return plainToInstance(OrganizationMembershipResponse, membership, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      OrganizationMembershipResponse,
+      toOrganizationMembershipResponse(membership),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Post(':userId/activations')
@@ -77,9 +82,13 @@ export class OrganizationUsersController {
       parseBigIntId(userId, 'userId'),
     );
 
-    return plainToInstance(OrganizationMembershipResponse, membership, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      OrganizationMembershipResponse,
+      toOrganizationMembershipResponse(membership),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Post(':userId/owners')

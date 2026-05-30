@@ -1,7 +1,8 @@
+import type { CreateRoleRequest } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class CreateRoleDto {
+export class CreateRoleDto implements CreateRoleRequest {
   @ApiProperty({
     description: 'Role name.',
     example: 'Admin',

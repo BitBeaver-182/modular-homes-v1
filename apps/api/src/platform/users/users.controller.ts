@@ -29,62 +29,7 @@ import {
   ApiBigIntIdParam,
   ApiOrganizationHeader,
 } from '../platform-swagger.decorator';
-
-type UserWithOrganizationRoles = {
-  organizationUsers?: Array<{
-    organization?: {
-      id: bigint;
-      name: string;
-      slug: string;
-      deletedAt: Date | null;
-    } | null;
-    userRoles?: Array<{
-      role: {
-        id: bigint;
-        name: string;
-        description: string | null;
-      };
-    }>;
-  }>;
-} & Record<string, unknown>;
-
-function isActiveOrganization(
-  organization:
-    | {
-        id: bigint;
-        name: string;
-        slug: string;
-        deletedAt: Date | null;
-      }
-    | null
-    | undefined,
-): organization is {
-  id: bigint;
-  name: string;
-  slug: string;
-  deletedAt: Date | null;
-} {
-  return organization != null && organization.deletedAt == null;
-}
-
-function toUserResponse(user: UserWithOrganizationRoles): UserResponse {
-  const organizationUser = (user.organizationUsers ?? [])[0];
-  return plainToInstance(
-    UserResponse,
-    {
-      ...user,
-      organization: isActiveOrganization(organizationUser?.organization)
-        ? organizationUser.organization
-        : null,
-      roles: (organizationUser?.userRoles ?? []).map(
-        (userRole) => userRole.role,
-      ),
-    },
-    {
-      excludeExtraneousValues: true,
-    },
-  );
-}
+import { toUserResponse } from './mappers/user.mapper';
 
 @ApiTags('Users')
 @ApiOrganizationHeader()
@@ -104,7 +49,9 @@ export class UsersController {
     @Body() createUserDto: CreateUserDto,
   ) {
     const user = await this.usersService.create(organizationId, createUserDto);
-    return toUserResponse(user);
+    return plainToInstance(UserResponse, toUserResponse(user), {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Get()
@@ -115,7 +62,13 @@ export class UsersController {
   @ApiOkResponse({ type: UserResponse, isArray: true })
   async findAll(@OrganizationId() organizationId: bigint) {
     const users = await this.usersService.findAll(organizationId);
-    return users.map((user) => toUserResponse(user));
+    return plainToInstance(
+      UserResponse,
+      users.map((user) => toUserResponse(user)),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Get(':id')
@@ -133,7 +86,9 @@ export class UsersController {
       organizationId,
       parseBigIntId(id, 'userId'),
     );
-    return toUserResponse(user);
+    return plainToInstance(UserResponse, toUserResponse(user), {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Patch(':id')
@@ -153,7 +108,9 @@ export class UsersController {
       parseBigIntId(id, 'userId'),
       updateUserDto,
     );
-    return toUserResponse(user);
+    return plainToInstance(UserResponse, toUserResponse(user), {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Delete(':id')

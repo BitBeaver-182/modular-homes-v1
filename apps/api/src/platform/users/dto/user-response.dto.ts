@@ -1,25 +1,11 @@
+import type { UserResponse as UserContract } from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose, Type } from 'class-transformer';
-import {
-  OrganizationDto,
-  OrganizationResponse,
-} from '../../../global/organizations/dto/organization-response.dto';
-import { RoleDto, RoleResponse } from '../../roles/dto/role-response.dto';
+import { Expose, Type } from 'class-transformer';
+import { OrganizationResponse } from '../../../global/organizations/dto/organization-response.dto';
+import { RoleResponse } from '../../roles/dto/role-response.dto';
 
-export interface UserDto {
-  id: string;
-  email: string;
-  name: string | null;
-  avatarUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-  organization: Partial<OrganizationDto> | null;
-  roles: Partial<RoleDto>[];
-}
-
-export class UserResponse implements UserDto {
-  constructor(partial: Partial<UserDto>) {
+export class UserResponse implements UserContract {
+  constructor(partial: UserContract) {
     Object.assign(this, partial);
   }
 
@@ -45,19 +31,10 @@ export class UserResponse implements UserDto {
   @Expose()
   @Type(() => OrganizationResponse)
   @ApiProperty({ type: () => OrganizationResponse, nullable: true })
-  organization!: Partial<OrganizationDto> | null;
+  organization!: OrganizationResponse | null;
 
   @Expose()
   @Type(() => RoleResponse)
   @ApiProperty({ type: () => RoleResponse, isArray: true })
-  roles!: Partial<RoleDto>[];
-
-  @Exclude()
-  deletedAt!: string | null;
-
-  @Exclude()
-  createdAt!: string;
-
-  @Exclude()
-  updatedAt!: string;
+  roles!: RoleResponse[];
 }

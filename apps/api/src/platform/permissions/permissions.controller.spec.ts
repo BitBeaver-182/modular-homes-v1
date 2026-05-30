@@ -47,9 +47,9 @@ describe('PermissionsController', () => {
     });
     expect(permissionsService.remove).toHaveBeenCalledWith(1n);
     expect(created.key).toBe('catalog.manage');
-    expect(list[0].id).toBe(1n);
+    expect(list[0].id).toBe('1');
     expect(one.description).toBe('Manage catalog');
     expect(updated.key).toBe('catalog.manage');
-    expect(removed.id).toBe(1n);
+    expect(removed.id).toBe('1');
   });
 });

@@ -25,6 +25,7 @@ import {
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { PermissionResponse } from './dto/permission-response.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
+import { toPermissionResponse } from './mappers/permission.mapper';
 import { PermissionsService } from './permissions.service';
 
 @ApiTags('Permissions')
@@ -43,7 +44,7 @@ export class PermissionsController {
   async create(@Body() createPermissionDto: CreatePermissionDto) {
     const permission =
       await this.permissionsService.create(createPermissionDto);
-    return plainToInstance(PermissionResponse, permission, {
+    return plainToInstance(PermissionResponse, toPermissionResponse(permission), {
       excludeExtraneousValues: true,
     });
   }
@@ -56,9 +57,13 @@ export class PermissionsController {
   @ApiOkResponse({ type: PermissionResponse, isArray: true })
   async findAll() {
     const permissions = await this.permissionsService.findAll();
-    return plainToInstance(PermissionResponse, permissions, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      PermissionResponse,
+      permissions.map((permission) => toPermissionResponse(permission)),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Get(':id')
@@ -72,7 +77,7 @@ export class PermissionsController {
     const permission = await this.permissionsService.findOne(
       parseBigIntId(id, 'permissionId'),
     );
-    return plainToInstance(PermissionResponse, permission, {
+    return plainToInstance(PermissionResponse, toPermissionResponse(permission), {
       excludeExtraneousValues: true,
     });
   }
@@ -92,7 +97,7 @@ export class PermissionsController {
       parseBigIntId(id, 'permissionId'),
       updatePermissionDto,
     );
-    return plainToInstance(PermissionResponse, permission, {
+    return plainToInstance(PermissionResponse, toPermissionResponse(permission), {
       excludeExtraneousValues: true,
     });
   }
@@ -108,7 +113,7 @@ export class PermissionsController {
     const permission = await this.permissionsService.remove(
       parseBigIntId(id, 'permissionId'),
     );
-    return plainToInstance(PermissionResponse, permission, {
+    return plainToInstance(PermissionResponse, toPermissionResponse(permission), {
       excludeExtraneousValues: true,
     });
   }

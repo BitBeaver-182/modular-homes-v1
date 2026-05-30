@@ -39,9 +39,9 @@ describe('RolesController', () => {
     });
     expect(rolesService.remove).toHaveBeenCalledWith(2n, 1n);
     expect(created.name).toBe('Admin');
-    expect(list[0].id).toBe(1n);
+    expect(list[0].id).toBe('1');
     expect(one.description).toBe('Admin role');
     expect(updated.name).toBe('Admin');
-    expect(removed.id).toBe(1n);
+    expect(removed.id).toBe('1');
   });
 });

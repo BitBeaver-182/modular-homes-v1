@@ -31,6 +31,7 @@ import {
 } from '../platform-swagger.decorator';
 import { CreateOrganizationInvitationDto } from './dto/create-organization-invitation.dto';
 import { OrganizationInvitationResponse } from './dto/organization-invitation-response.dto';
+import { toOrganizationInvitationResponse } from './mappers/organization-invitation.mapper';
 import { OrganizationInvitationsService } from './organization-invitations.service';
 
 @ApiTags('Organization Invitations')
@@ -55,9 +56,13 @@ export class OrganizationInvitationsController {
         user.email,
       );
 
-    return plainToInstance(OrganizationInvitationResponse, invitations, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      OrganizationInvitationResponse,
+      invitations.map((invitation) => toOrganizationInvitationResponse(invitation)),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Post()
@@ -80,9 +85,13 @@ export class OrganizationInvitationsController {
         createInvitationDto,
       );
 
-    return plainToInstance(OrganizationInvitationResponse, invitation, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      OrganizationInvitationResponse,
+      toOrganizationInvitationResponse(invitation),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Post(':id/accept')
