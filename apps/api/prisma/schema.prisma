@@ -30,6 +30,19 @@ enum InvitationStatus {
   rejected
 }
 
+enum FileUploadStatus {
+  PENDING
+  CONFIRMED
+  ORPHANED
+  DELETED
+}
+
+enum FileContext {
+  AVATAR
+  ORGANIZATION_LOGO
+  SUPPLIER_DOCUMENT
+}
+
 model User {
   id           BigInt  @id @default(autoincrement())
   email        String  @unique
@@ -42,6 +55,7 @@ model User {
   deletedAt DateTime?
 
   organizationUsers OrganizationUser[]
+  fileUploads       FileUpload[]
 
   @@index([deletedAt])
 }
@@ -60,8 +74,31 @@ model Organization {
   roles             Role[]
   suppliers         Supplier[]
   addresses         Address[]
+  fileUploads       FileUpload[]
 
   @@index([deletedAt])
+}
+
+model FileUpload {
+  id             String           @id
+  organizationId BigInt
+  uploadedById   BigInt
+  bucket         String
+  key            String
+  filename       String
+  mimeType       String
+  sizeBytes      Int?
+  status         FileUploadStatus @default(PENDING)
+  context        FileContext
+  expiresAt      DateTime?
+  createdAt      DateTime         @default(now())
+  confirmedAt    DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+
+  @@index([organizationId])
+  @@index([uploadedById])
 }
 
 model Address {
