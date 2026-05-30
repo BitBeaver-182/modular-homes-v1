@@ -67,6 +67,10 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 | 2026-05-30 | System           | Making the same mistake twice         | Check this table before every single output. | v1.0 (Initial) |
 | 2026-05-30 | Git Workflow     | Submitting giant single-commit PRs    | Micro-commit often throughout development.   | v1.0 (Initial) |
 | 2026-05-30 | Logic            | Assuming user intent on vague prompts | Halt and ask for explicit clarification.     | v1.0 (Initial) |
+| 2026-05-30 | Upload Storage   | Letting callers branch on public/private buckets or hardcoding bucket names outside storage service | Callers pass file context; `StorageService` owns bucket resolution and public/private URL behavior. | v1.0 |
+| 2026-05-30 | Upload Expiry    | Treating Supabase signed upload URL lifetime as the product contract | Use an app-level 300 second upload window stored in `expiresAt`; cleanup expired pending uploads by `expiresAt`. | v1.0 |
+| 2026-05-30 | Upload Cleanup   | Marking expired uploads `ORPHANED` without deleting the storage object or making it sweepable | Delete the storage object immediately when confirm expires a pending upload, or explicitly keep cleanup responsible for that status. | v1.0 |
+| 2026-05-30 | Filename Validation | Guessing vague filename sanitization rules or letting filenames affect storage paths | Require filenames to match `/^[\w\-. ]+$/`, max 255 chars; use `{organizationId}/{context}/{fileId}` as the bucket key and store filename only as metadata. | v1.0 |
 
 ---
 
@@ -74,3 +78,4 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 
 - **Log Entry #1 (System Genesis):** Established `AGENTS.md` with basic self-correcting memory loop.
 - **Log Entry #2 (Multi-Agent PR Workflow):** Implemented the "Stateless Blind Reviewer" protocol and the "No Assumptions" gate to ensure code quality and communication clarity.
+- **Log Entry #3 (Upload Storage Rules):** Added upload-specific storage ownership, expiry, cleanup, and filename validation rules.
