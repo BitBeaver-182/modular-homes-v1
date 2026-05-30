@@ -24,13 +24,17 @@ export class StorageService implements IStorageService {
     );
   }
 
+  bucketForContext(context: FileContext): string {
+    return bucketFor(context);
+  }
+
   async presignUpload(
     context: FileContext,
     key: string,
     mimeType: string,
   ): Promise<{ uploadUrl: string }> {
     void mimeType;
-    const bucket = bucketFor(context);
+    const bucket = this.bucketForContext(context);
     const { data, error } = await this.supabase.storage
       .from(bucket)
       .createSignedUploadUrl(key);
@@ -47,7 +51,7 @@ export class StorageService implements IStorageService {
     key: string,
     ttlSeconds: number,
   ): Promise<string> {
-    const bucket = bucketFor(context);
+    const bucket = this.bucketForContext(context);
 
     if (isPublicContext(context)) {
       return this.supabase.storage.from(bucket).getPublicUrl(key).data
@@ -66,7 +70,7 @@ export class StorageService implements IStorageService {
   }
 
   async delete(context: FileContext, key: string): Promise<void> {
-    const bucket = bucketFor(context);
+    const bucket = this.bucketForContext(context);
     const { error } = await this.supabase.storage.from(bucket).remove([key]);
 
     if (error) {

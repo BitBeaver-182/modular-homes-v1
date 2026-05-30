@@ -1,6 +1,7 @@
 import type { FileContext } from '@moduflow/types';
 
 export interface IStorageService {
+  bucketForContext(context: FileContext): string;
   presignUpload(
     context: FileContext,
     key: string,
