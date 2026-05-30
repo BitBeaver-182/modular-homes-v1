@@ -7,19 +7,19 @@ import {
 import { supplierKeys } from "./supplier-keys";
 import { createSupplier } from "../lib/supplier-api";
 
-import type { Supplier, SupplierWriteInput } from "../types";
+import type { SupplierResponse, CreateSupplierRequest } from "@moduflow/types";
 
 export const useCreateSupplier = (
 	organizationId: string
 ): UseMutationResult<
-	Supplier,
+	SupplierResponse,
 	Error,
-	SupplierWriteInput
+	CreateSupplierRequest
 > => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (input: SupplierWriteInput) =>
+		mutationFn: (input: CreateSupplierRequest) =>
 			createSupplier({ organizationId }, input),
 		onSuccess: async (): Promise<void> => {
 			await queryClient.invalidateQueries({

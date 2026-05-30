@@ -1,5 +1,8 @@
-import type { Supplier } from "@/features/suppliers/types";
+
 import type { AttachmentMedia } from "@/lib/strapi";
+
+import type { SupplierResponse } from "@moduflow/types";
+
 
 export const QUOTE_STATUSES = ["pending", "accepted", "rejected"] as const;
 export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
@@ -40,7 +43,7 @@ export interface Quote {
 	publishedAt: string;
 	notes: string;
 	quote_status: QuoteStatus | null;
-	supplier: Supplier | null;
+	supplier: SupplierResponse | null;
 	total: QuoteTotal | null;
 	pdf?: AttachmentMedia;
 	/** Legacy `api::order.order` links; prefer {@link Quote.supplierOrders}. */

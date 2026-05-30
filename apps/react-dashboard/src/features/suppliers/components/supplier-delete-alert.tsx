@@ -12,15 +12,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import type { Supplier } from "../types";
-import type { JSX} from "react";
+import type { SupplierResponse } from "@moduflow/types";
+import type { JSX } from "react";
 
 interface SupplierDeleteAlertProps {
   open: boolean;
-  supplier: Supplier | null;
+  supplier: SupplierResponse | null;
   loading: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (supplier: Supplier) => Promise<void>;
+  onConfirm: (supplier: SupplierResponse) => Promise<void>;
 }
 
 export const SupplierDeleteAlert = ({

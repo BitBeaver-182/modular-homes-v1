@@ -7,17 +7,18 @@ import {
 import { supplierKeys } from "./supplier-keys";
 import { updateSupplier } from "../lib/supplier-api";
 
-import type { Supplier, SupplierWriteInput } from "../types";
+import type { CreateSupplierRequest, SupplierResponse } from "@moduflow/types";
+
 
 export interface UpdateSupplierVariables {
 	id: string;
-	input: SupplierWriteInput;
+	input: CreateSupplierRequest;
 }
 
 export const useUpdateSupplier = (
 	organizationId: string
 ): UseMutationResult<
-	Supplier,
+	SupplierResponse,
 	Error,
 	UpdateSupplierVariables
 > => {

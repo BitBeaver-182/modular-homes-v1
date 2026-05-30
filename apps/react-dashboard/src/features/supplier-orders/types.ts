@@ -1,5 +1,6 @@
-import type { Supplier } from "@/features/suppliers/types";
 import type { AttachmentMedia, StrapiMoney } from "@/lib/strapi";
+
+import type { SupplierResponse } from "@moduflow/types";
 
 /** Strapi `supplier-order.orderStatus` enum. */
 export const SUPPLIER_ORDER_STATUSES = [
@@ -42,7 +43,7 @@ export type SupplierInvoicePaymentMethod =
 export interface SupplierOrderQuoteRef {
 	id: number;
 	documentId: string;
-	supplier: Supplier | null;
+	supplier: SupplierResponse | null;
 	total: StrapiMoney | null;
 	expiration_date?: string | null;
 	pdf?: AttachmentMedia | null;
@@ -104,7 +105,7 @@ export interface SupplierOrder {
 	orderStatus: SupplierOrderStatus;
 	trackingUrl: string | null;
 	quote: SupplierOrderQuoteRef | null;
-	supplier: Supplier | null;
+	supplier: SupplierResponse | null;
 	orderLines?: Array<SupplierOrderLine> | null;
 	invoices?: Array<SupplierOrderInvoice> | null;
 	historyEntries?: Array<SupplierOrderHistoryEntry> | null;
