@@ -75,10 +75,7 @@ export class UploadsService {
     }
 
     if (isExpired(fileUpload.expiresAt)) {
-      await this.storageService.delete(
-        fileUpload.context as FileContext,
-        fileUpload.key,
-      );
+      await this.storageService.delete(fileUpload.context, fileUpload.key);
       await this.prisma.fileUpload.updateMany({
         where: {
           id: fileId,
@@ -134,7 +131,7 @@ export class UploadsService {
     }
 
     return this.storageService.readUrl(
-      fileUpload.context as FileContext,
+      fileUpload.context,
       fileUpload.key,
       READ_URL_TTL_SECONDS,
     );

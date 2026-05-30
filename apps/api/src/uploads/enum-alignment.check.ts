@@ -14,6 +14,7 @@ type FileUploadStatusMatchesPrisma = Assert<
   PrismaFileUploadStatus extends FileUploadStatus ? true : false
 >;
 
-export type UploadEnumAlignment =
-  | FileContextMatchesPrisma
-  | FileUploadStatusMatchesPrisma;
+export type UploadEnumAlignment = [
+  FileContextMatchesPrisma,
+  FileUploadStatusMatchesPrisma,
+];

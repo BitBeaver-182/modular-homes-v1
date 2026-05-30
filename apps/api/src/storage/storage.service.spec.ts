@@ -53,9 +53,9 @@ describe('StorageService', () => {
   });
 
   it('returns public URLs for public contexts', async () => {
-    await expect(service.readUrl('AVATAR', '4/AVATAR/file_123', 3600)).resolves.toBe(
-      'https://uploads.example.com/public',
-    );
+    await expect(
+      service.readUrl('AVATAR', '4/AVATAR/file_123', 3600),
+    ).resolves.toBe('https://uploads.example.com/public');
 
     expect(supabase.storage.from).toHaveBeenCalledWith('public-assets');
     expect(bucketApi.getPublicUrl).toHaveBeenCalledWith('4/AVATAR/file_123');
@@ -64,7 +64,11 @@ describe('StorageService', () => {
 
   it('returns signed URLs for private contexts', async () => {
     await expect(
-      service.readUrl('SUPPLIER_DOCUMENT', '4/SUPPLIER_DOCUMENT/file_123', 3600),
+      service.readUrl(
+        'SUPPLIER_DOCUMENT',
+        '4/SUPPLIER_DOCUMENT/file_123',
+        3600,
+      ),
     ).resolves.toBe('https://uploads.example.com/read-signed');
 
     expect(supabase.storage.from).toHaveBeenCalledWith('private-documents');

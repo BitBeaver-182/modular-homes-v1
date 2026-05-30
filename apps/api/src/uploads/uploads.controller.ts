@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -35,7 +44,8 @@ export class UploadsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Create signed upload URL',
-    description: 'Create upload metadata and return a signed Supabase upload URL.',
+    description:
+      'Create upload metadata and return a signed Supabase upload URL.',
   })
   @ApiBody({ type: PresignUploadBodyDto })
   @ApiOkResponse({ type: PresignUploadPresenter })
@@ -54,7 +64,8 @@ export class UploadsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Confirm upload',
-    description: 'Mark a pending upload as confirmed in the active organization.',
+    description:
+      'Mark a pending upload as confirmed in the active organization.',
   })
   @ApiOkResponse({ type: FileUploadPresenter })
   async confirm(

@@ -31,7 +31,9 @@ describe('UploadsService', () => {
     storageService.presignUpload.mockResolvedValue({
       uploadUrl: 'https://uploads.example.com/signed',
     });
-    storageService.readUrl.mockResolvedValue('https://uploads.example.com/read');
+    storageService.readUrl.mockResolvedValue(
+      'https://uploads.example.com/read',
+    );
     prisma.fileUpload.updateMany.mockResolvedValue({ count: 1 });
     service = new UploadsService(prisma as never, storageService as never);
   });
@@ -56,6 +58,8 @@ describe('UploadsService', () => {
     });
     expect(result.fileId).toEqual(expect.any(String));
     expect(prisma.fileUpload.create).toHaveBeenCalledWith({
+      // Jest asymmetric matchers are typed as any.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       data: expect.objectContaining({
         id: result.fileId,
         organizationId: 4n,
@@ -69,9 +73,12 @@ describe('UploadsService', () => {
         expiresAt: new Date(2_100_000),
       }),
     });
-    expect(prisma.fileUpload.create.mock.calls[0][0].data.key).not.toContain(
-      'floor-plan.pdf',
-    );
+    // Jest mock call arguments are typed as any.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const createCall = prisma.fileUpload.create.mock.calls[0]?.[0] as
+      | { data: { key: string } }
+      | undefined;
+    expect(createCall?.data.key).not.toContain('floor-plan.pdf');
   });
 
   it('builds storage keys from organization, context, and file id only', () => {

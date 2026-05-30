@@ -1,5 +1,5 @@
-import type { FileContext, FileUploadResponse } from '@moduflow/types';
-import type { FileUpload, FileUploadStatus } from '@prisma/client';
+import type { FileUploadResponse } from '@moduflow/types';
+import type { FileUpload } from '@prisma/client';
 import { toIsoDateString } from '../../common/mappers/transport';
 import type { IStorageService } from '../../storage/storage.service.interface';
 
@@ -18,12 +18,12 @@ export class FileUploadMapper {
       filename: fileUpload.filename,
       mimeType: fileUpload.mimeType,
       url: await storageService.readUrl(
-        fileUpload.context as FileContext,
+        fileUpload.context,
         fileUpload.key,
         3600,
       ),
-      context: fileUpload.context as FileContext,
-      status: fileUpload.status as FileUploadStatus,
+      context: fileUpload.context,
+      status: fileUpload.status,
       uploadedAt: toIsoDateString(fileUpload.createdAt),
     };
   }

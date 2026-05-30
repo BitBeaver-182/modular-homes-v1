@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import type { FileContext } from '@moduflow/types';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { AppConfigService } from '../config/app-config.service';
 import type { IStorageService } from './storage.service.interface';
 
@@ -9,7 +9,7 @@ export const PRIVATE_DOCUMENTS_BUCKET = 'private-documents';
 
 @Injectable()
 export class StorageService implements IStorageService {
-  private readonly supabase: SupabaseClient;
+  private readonly supabase: ReturnType<typeof createClient>;
 
   constructor(config: AppConfigService) {
     this.supabase = createClient(

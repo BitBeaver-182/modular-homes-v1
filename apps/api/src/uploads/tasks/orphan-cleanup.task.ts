@@ -1,4 +1,3 @@
-import type { FileContext } from '@moduflow/types';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../database/prisma.service';
@@ -25,7 +24,7 @@ export class OrphanCleanupTask {
     let cleanedCount = 0;
 
     for (const upload of expiredUploads) {
-      await this.storageService.delete(upload.context as FileContext, upload.key);
+      await this.storageService.delete(upload.context, upload.key);
       await this.prisma.fileUpload.updateMany({
         where: {
           id: upload.id,
