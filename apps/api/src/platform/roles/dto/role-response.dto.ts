@@ -17,6 +17,7 @@ export class RoleResponse implements RoleContract {
 
   @Expose()
   @ApiProperty({
+    type: String,
     example: 'Can manage users and permissions.',
     nullable: true,
   })

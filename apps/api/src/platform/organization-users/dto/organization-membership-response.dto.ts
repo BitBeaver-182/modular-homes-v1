@@ -19,11 +19,11 @@ class MembershipUserSummary implements OrganizationMembershipUserContract {
   email!: string;
 
   @Expose()
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   name!: string | null;
 
   @Expose()
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   avatarUrl!: string | null;
 }
 

@@ -16,6 +16,10 @@ export class PermissionResponse implements PermissionContract {
   key!: string;
 
   @Expose()
-  @ApiProperty({ example: 'Allows managing users.', nullable: true })
+  @ApiProperty({
+    type: String,
+    example: 'Allows managing users.',
+    nullable: true,
+  })
   description!: string | null;
 }

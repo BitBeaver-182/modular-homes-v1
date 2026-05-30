@@ -27,6 +27,7 @@ export class RegisterUserDto implements RegisterUserRequest {
   password!: string;
 
   @ApiProperty({
+    type: String,
     required: false,
     nullable: true,
     example: 'Owner User',
@@ -36,6 +37,7 @@ export class RegisterUserDto implements RegisterUserRequest {
   name?: string;
 
   @ApiProperty({
+    type: String,
     required: false,
     nullable: true,
     example: 'https://example.com/avatar.png',

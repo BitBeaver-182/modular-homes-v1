@@ -2087,12 +2087,12 @@
             "example": "owner@example.com"
           },
           "name": {
-            "type": "object",
+            "type": "string",
             "example": "Owner User",
             "nullable": true
           },
           "avatarUrl": {
-            "type": "object",
+            "type": "string",
             "example": "https://example.com/avatar.png",
             "nullable": true
           }
@@ -2312,7 +2312,7 @@
             "example": "Admin"
           },
           "description": {
-            "type": "object",
+            "type": "string",
             "example": "Can manage users and permissions.",
             "nullable": true
           }
@@ -2335,12 +2335,12 @@
             "example": "alex@example.com"
           },
           "name": {
-            "type": "object",
+            "type": "string",
             "example": "Alex Johnson",
             "nullable": true
           },
           "avatarUrl": {
-            "type": "object",
+            "type": "string",
             "example": "https://example.com/avatar.png",
             "nullable": true
           },
@@ -2401,11 +2401,11 @@
             "type": "string"
           },
           "name": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "avatarUrl": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           }
         },
@@ -2531,7 +2531,7 @@
             "example": "users.manage"
           },
           "description": {
-            "type": "object",
+            "type": "string",
             "example": "Allows managing users.",
             "nullable": true
           }
@@ -2664,7 +2664,7 @@
             "example": "Admin"
           },
           "description": {
-            "type": "object",
+            "type": "string",
             "example": "Can manage users and permissions.",
             "nullable": true
           }
@@ -2700,7 +2700,7 @@
             "example": "users.manage"
           },
           "description": {
-            "type": "object",
+            "type": "string",
             "example": "Allows managing users.",
             "nullable": true
           }
@@ -2776,6 +2776,48 @@
           "name"
         ]
       },
+      "SupplierAddressResponse": {
+        "type": "object",
+        "properties": {
+          "fullAddress": {
+            "type": "string",
+            "example": "100 Main Street, Austin, TX 78701, US"
+          },
+          "line1": {
+            "type": "string",
+            "example": "100 Main Street",
+            "nullable": true
+          },
+          "line2": {
+            "type": "string",
+            "example": "Suite 200",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "example": "Austin",
+            "nullable": true
+          },
+          "region": {
+            "type": "string",
+            "example": "TX",
+            "nullable": true
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "78701",
+            "nullable": true
+          },
+          "countryCode": {
+            "type": "string",
+            "example": "US",
+            "nullable": true
+          }
+        },
+        "required": [
+          "fullAddress"
+        ]
+      },
       "SupplierResponse": {
         "type": "object",
         "properties": {
@@ -2788,22 +2830,26 @@
             "example": "Acme Supply"
           },
           "phoneNumber": {
-            "type": "object",
+            "type": "string",
             "example": "+1 555 0100",
             "nullable": true
           },
           "email": {
-            "type": "object",
+            "type": "string",
             "example": "orders@example.com",
             "nullable": true
           },
           "address": {
+            "nullable": true,
             "type": "object",
-            "example": "100 Main Street",
-            "nullable": true
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupplierAddressResponse"
+              }
+            ]
           },
           "website": {
-            "type": "object",
+            "type": "string",
             "example": "https://example.com",
             "nullable": true
           },
