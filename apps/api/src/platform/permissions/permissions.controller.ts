@@ -44,9 +44,13 @@ export class PermissionsController {
   async create(@Body() createPermissionDto: CreatePermissionDto) {
     const permission =
       await this.permissionsService.create(createPermissionDto);
-    return plainToInstance(PermissionResponse, toPermissionResponse(permission), {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      PermissionResponse,
+      toPermissionResponse(permission),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Get()
@@ -77,9 +81,13 @@ export class PermissionsController {
     const permission = await this.permissionsService.findOne(
       parseBigIntId(id, 'permissionId'),
     );
-    return plainToInstance(PermissionResponse, toPermissionResponse(permission), {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      PermissionResponse,
+      toPermissionResponse(permission),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Patch(':id')
@@ -97,9 +105,13 @@ export class PermissionsController {
       parseBigIntId(id, 'permissionId'),
       updatePermissionDto,
     );
-    return plainToInstance(PermissionResponse, toPermissionResponse(permission), {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      PermissionResponse,
+      toPermissionResponse(permission),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Delete(':id')
@@ -113,8 +125,12 @@ export class PermissionsController {
     const permission = await this.permissionsService.remove(
       parseBigIntId(id, 'permissionId'),
     );
-    return plainToInstance(PermissionResponse, toPermissionResponse(permission), {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      PermissionResponse,
+      toPermissionResponse(permission),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 }

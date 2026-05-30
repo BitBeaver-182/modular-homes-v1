@@ -2,11 +2,10 @@ import type { OrganizationMembershipResponse as OrganizationMembershipContract }
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 
-type OrganizationMembershipUserContract = OrganizationMembershipContract['user'];
+type OrganizationMembershipUserContract =
+  OrganizationMembershipContract['user'];
 
-class MembershipUserSummary
-  implements OrganizationMembershipUserContract
-{
+class MembershipUserSummary implements OrganizationMembershipUserContract {
   constructor(partial: OrganizationMembershipUserContract) {
     Object.assign(this, partial);
   }
@@ -28,9 +27,7 @@ class MembershipUserSummary
   avatarUrl!: string | null;
 }
 
-export class OrganizationMembershipResponse
-  implements OrganizationMembershipContract
-{
+export class OrganizationMembershipResponse implements OrganizationMembershipContract {
   constructor(partial: OrganizationMembershipContract) {
     Object.assign(this, partial);
   }

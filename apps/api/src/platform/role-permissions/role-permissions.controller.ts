@@ -55,9 +55,13 @@ export class RolePermissionsController {
       parseBigIntId(roleId, 'roleId'),
       parseBigIntId(assignRolePermissionDto.permissionId, 'permissionId'),
     );
-    return plainToInstance(RolePermissionResponse, toPermissionResponse(permission), {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      RolePermissionResponse,
+      toPermissionResponse(permission),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Get()
@@ -103,8 +107,12 @@ export class RolePermissionsController {
       parseBigIntId(roleId, 'roleId'),
       parseBigIntId(permissionId, 'permissionId'),
     );
-    return plainToInstance(RolePermissionResponse, toPermissionResponse(permission), {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      RolePermissionResponse,
+      toPermissionResponse(permission),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 }

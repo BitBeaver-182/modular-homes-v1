@@ -60,9 +60,13 @@ export class RolesController {
   @ApiOkResponse({ type: RoleResponse, isArray: true })
   async findAll(@OrganizationId() organizationId: bigint) {
     const roles = await this.rolesService.findAll(organizationId);
-    return plainToInstance(RoleResponse, roles.map((role) => toRoleResponse(role)), {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      RoleResponse,
+      roles.map((role) => toRoleResponse(role)),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Get(':id')

@@ -59,7 +59,9 @@ export function toCurrentActorResponse(user: AuthUser): CurrentActorResponse {
   };
 }
 
-export function toSessionResponse(sessionUser: SessionUserRecord): SessionResponse {
+export function toSessionResponse(
+  sessionUser: SessionUserRecord,
+): SessionResponse {
   return {
     user: toUserSummaryResponse(sessionUser),
     memberships: sessionUser.organizationUsers

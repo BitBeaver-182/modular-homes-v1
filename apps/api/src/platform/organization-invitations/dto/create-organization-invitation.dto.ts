@@ -5,9 +5,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsIn } from 'class-validator';
 
-export class CreateOrganizationInvitationDto
-  implements CreateOrganizationInvitationRequest
-{
+export class CreateOrganizationInvitationDto implements CreateOrganizationInvitationRequest {
   @ApiProperty({
     example: 'invitee@example.com',
   })

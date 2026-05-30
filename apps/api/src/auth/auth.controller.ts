@@ -95,9 +95,13 @@ export class AuthController {
   })
   @ApiOkResponse({ type: CurrentActorPresenter })
   me(@CurrentUser() user: AuthUser) {
-    return plainToInstance(CurrentActorPresenter, toCurrentActorResponse(user), {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      CurrentActorPresenter,
+      toCurrentActorResponse(user),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @UseGuards(JwtGuard)

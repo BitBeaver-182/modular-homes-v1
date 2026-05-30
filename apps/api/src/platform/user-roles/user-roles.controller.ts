@@ -74,9 +74,13 @@ export class UserRolesController {
       organizationId,
       parseBigIntId(userId, 'userId'),
     );
-    return plainToInstance(UserRoleResponse, roles.map((role) => toRoleResponse(role)), {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      UserRoleResponse,
+      roles.map((role) => toRoleResponse(role)),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Delete(':roleId')

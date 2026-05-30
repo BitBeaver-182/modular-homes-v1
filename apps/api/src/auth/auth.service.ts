@@ -4,17 +4,18 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { AuthResponse, AuthTokenResponse, SessionResponse } from '@moduflow/types';
+import type {
+  AuthResponse,
+  AuthTokenResponse,
+  SessionResponse,
+} from '@moduflow/types';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../database/prisma.service';
 import type { AccessTokenPayload, AuthUser } from './auth.types';
 import { CreateTokenDto } from './dto/create-token.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
-import {
-  toAuthResponse,
-  toSessionResponse,
-} from './mappers/auth.mapper';
+import { toAuthResponse, toSessionResponse } from './mappers/auth.mapper';
 
 const PASSWORD_HASH_OPTIONS: argon2.Options & { raw?: false } = {
   type: argon2.argon2id,

@@ -2,9 +2,7 @@ import type { OrganizationInvitationOrganizationResponse as InvitationOrganizati
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 
-export class OrganizationInvitationOrganizationResponse
-  implements InvitationOrganizationContract
-{
+export class OrganizationInvitationOrganizationResponse implements InvitationOrganizationContract {
   constructor(partial: InvitationOrganizationContract) {
     Object.assign(this, partial);
   }

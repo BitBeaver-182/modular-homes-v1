@@ -14,7 +14,7 @@
     "dev:dashboard": "pnpm --filter react-dashboard dev",
     "lint": "pnpm --parallel --stream --filter api --filter react-dashboard lint",
     "lint:api": "pnpm --filter api lint",
-    "lint:dashboard": "pnpm --filter react-dashboard lint",
+    "lint:dashboard": "pnpm build:types && pnpm --filter react-dashboard lint",
     "preview:dashboard": "pnpm --filter react-dashboard preview",
     "start": "pnpm --parallel --stream --filter api --filter react-dashboard start",
     "start:api": "pnpm --filter api start",
@@ -23,12 +23,12 @@
     "test": "pnpm build:types && pnpm --parallel --stream --filter api --filter react-dashboard test",
     "test:api": "pnpm --filter api test",
     "test:api:e2e": "pnpm --filter api test:e2e",
-    "test:dashboard": "pnpm --filter react-dashboard test:unit",
+    "test:dashboard": "pnpm build:types && pnpm --filter react-dashboard test:unit",
     "test:dashboard:e2e": "pnpm --filter react-dashboard test:e2e",
     "test:e2e": "pnpm build:types && pnpm --parallel --stream --filter api --filter react-dashboard test:e2e",
     "typecheck": "pnpm build:types && pnpm --parallel --stream --filter api --filter react-dashboard typecheck",
     "typecheck:api": "pnpm --filter api typecheck",
-    "typecheck:dashboard": "pnpm --filter react-dashboard typecheck",
+    "typecheck:dashboard": "pnpm build:types && pnpm --filter react-dashboard typecheck",
     "typecheck:types": "pnpm --filter @moduflow/types typecheck",
     "typecheck:dashboard:e2e": "pnpm --filter react-dashboard exec tsc --project tsconfig.node.json --noEmit"
   }

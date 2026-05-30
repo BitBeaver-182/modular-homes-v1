@@ -4,9 +4,7 @@ import { Type } from 'class-transformer';
 import { Expose } from 'class-transformer';
 import { OrganizationInvitationOrganizationResponse } from './organization-invitation-organization-response.dto';
 
-export class OrganizationInvitationResponse
-  implements OrganizationInvitationContract
-{
+export class OrganizationInvitationResponse implements OrganizationInvitationContract {
   constructor(partial: OrganizationInvitationContract) {
     Object.assign(this, partial);
   }

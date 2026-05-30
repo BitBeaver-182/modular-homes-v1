@@ -58,7 +58,9 @@ export class OrganizationInvitationsController {
 
     return plainToInstance(
       OrganizationInvitationResponse,
-      invitations.map((invitation) => toOrganizationInvitationResponse(invitation)),
+      invitations.map((invitation) =>
+        toOrganizationInvitationResponse(invitation),
+      ),
       {
         excludeExtraneousValues: true,
       },

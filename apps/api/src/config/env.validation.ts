@@ -68,7 +68,10 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
 export function resolveMigrationDatabaseUrl(
   config: Record<string, unknown>,
 ): string {
-  return getOptionalString(config.DIRECT_URL) ?? getRequiredString(config.DATABASE_URL, 'DATABASE_URL');
+  return (
+    getOptionalString(config.DIRECT_URL) ??
+    getRequiredString(config.DATABASE_URL, 'DATABASE_URL')
+  );
 }
 
 function getOptionalString(rawValue: unknown): string | undefined {
