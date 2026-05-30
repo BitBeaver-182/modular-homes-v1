@@ -1,14 +1,9 @@
+import type { RoleResponse as RoleContract } from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 
-export interface RoleDto {
-  id: string;
-  name: string;
-  description: string | null;
-}
-
-export class RoleResponse implements RoleDto {
-  constructor(partial: Partial<RoleDto>) {
+export class RoleResponse implements RoleContract {
+  constructor(partial: RoleContract) {
     Object.assign(this, partial);
   }
 

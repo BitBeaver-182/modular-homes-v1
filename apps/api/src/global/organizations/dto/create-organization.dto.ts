@@ -1,7 +1,8 @@
+import type { CreateOrganizationRequest } from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
 
-export class CreateOrganizationDto {
+export class CreateOrganizationDto implements CreateOrganizationRequest {
   @ApiProperty({
     description: 'Organization name.',
     example: 'Northwind Homes',

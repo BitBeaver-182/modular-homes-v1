@@ -73,7 +73,7 @@ describe('SuppliersController', () => {
     expect(suppliersService.remove).toHaveBeenCalledWith(2n, 1n);
     expect(created).toEqual(
       expect.objectContaining({
-        id: 1n,
+        id: '1',
         name: 'Acme Supply',
         email: 'orders@example.com',
         // Jest asymmetric matchers are typed as any.

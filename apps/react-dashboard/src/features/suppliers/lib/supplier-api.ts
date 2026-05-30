@@ -1,7 +1,13 @@
 import { moduflowRequest } from "@/lib/moduflow/client";
 import type { SuppliersQueryParams } from "@/routes/$locale.o.$organizationSlug._admin._operations.suppliers";
 
-import type { PaginatedResult, Supplier, SupplierWriteInput } from "../types";
+import type {
+	CreateSupplierRequest,
+	SupplierListResponse,
+	SupplierResponse,
+	UpdateSupplierRequest,
+} from "@moduflow/types";
+
 
 export interface SupplierApiContext {
 	organizationId: string;
@@ -24,19 +30,21 @@ const toSupplierQueryString = (params: SuppliersQueryParams): string => {
 	return query.toString();
 };
 
-const sanitizeWriteInput = (input: SupplierWriteInput): SupplierWriteInput => ({
+const sanitizeWriteInput = (
+	input: CreateSupplierRequest
+): CreateSupplierRequest | UpdateSupplierRequest => ({
 	name: input.name.trim(),
-	phoneNumber: input.phoneNumber.trim(),
-	email: input.email.trim(),
+	phoneNumber: input.phoneNumber?.trim(),
+	email: input.email?.trim(),
 	address: {
-		line1: input.address.line1.trim(),
-		line2: input.address.line2.trim(),
-		city: input.address.city.trim(),
-		region: input.address.region.trim(),
-		postalCode: input.address.postalCode.trim(),
-		countryCode: input.address.countryCode.trim().toUpperCase(),
+		line1: input.address?.line1.trim(),
+		line2: input.address?.line2?.trim(),
+		city: input.address?.city?.trim(),
+		region: input.address?.region?.trim(),
+		postalCode: input.address?.postalCode?.trim(),
+		countryCode: input.address?.countryCode?.trim().toUpperCase(),
 	},
-	website: input.website.trim(),
+	website: input.website?.trim(),
 });
 
 const organizationHeaders = ({
@@ -48,10 +56,10 @@ const organizationHeaders = ({
 export const getSuppliers = async (
 	context: SupplierApiContext,
 	params: SuppliersQueryParams
-): Promise<PaginatedResult<Supplier>> => {
+): Promise<SupplierListResponse> => {
 	const queryString = toSupplierQueryString(params);
 
-	return moduflowRequest<PaginatedResult<Supplier>>(
+	return moduflowRequest<SupplierListResponse>(
 		`/suppliers?${queryString}`,
 		{
 			headers: organizationHeaders(context),
@@ -63,17 +71,17 @@ export const getSuppliers = async (
 export const getSupplier = async (
 	context: SupplierApiContext,
 	id: string
-): Promise<Supplier> =>
-	moduflowRequest<Supplier>(`/suppliers/${encodeURIComponent(id)}`, {
+): Promise<SupplierResponse> =>
+	moduflowRequest<SupplierResponse>(`/suppliers/${encodeURIComponent(id)}`, {
 		headers: organizationHeaders(context),
 		method: "GET",
 	});
 
 export const createSupplier = async (
 	context: SupplierApiContext,
-	input: SupplierWriteInput
-): Promise<Supplier> =>
-	moduflowRequest<Supplier>("/suppliers", {
+	input: CreateSupplierRequest
+): Promise<SupplierResponse> =>
+	moduflowRequest<SupplierResponse>("/suppliers", {
 		body: sanitizeWriteInput(input),
 		headers: organizationHeaders(context),
 		method: "POST",
@@ -82,9 +90,9 @@ export const createSupplier = async (
 export const updateSupplier = async (
 	context: SupplierApiContext,
 	id: string,
-	input: SupplierWriteInput
-): Promise<Supplier> =>
-	moduflowRequest<Supplier>(`/suppliers/${encodeURIComponent(id)}`, {
+	input: CreateSupplierRequest
+): Promise<SupplierResponse> =>
+	moduflowRequest<SupplierResponse>(`/suppliers/${encodeURIComponent(id)}`, {
 		body: sanitizeWriteInput(input),
 		headers: organizationHeaders(context),
 		method: "PATCH",

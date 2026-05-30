@@ -1,3 +1,4 @@
+import type { SupplierAddressRequest } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
@@ -17,7 +18,7 @@ const trimString = ({ value }: { value: unknown }): unknown =>
 const trimUppercaseString = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim().toUpperCase() : value;
 
-export class SupplierAddressDto {
+export class SupplierAddressDto implements SupplierAddressRequest {
   @ApiProperty({
     example: '100 Main Street',
     maxLength: 200,

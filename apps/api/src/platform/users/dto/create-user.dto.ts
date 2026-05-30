@@ -1,7 +1,8 @@
+import type { CreateUserRequest } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class CreateUserDto {
+export class CreateUserDto implements CreateUserRequest {
   @ApiProperty({
     description: 'Unique email address for the user.',
     example: 'alex@example.com',

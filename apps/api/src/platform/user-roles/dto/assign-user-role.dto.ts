@@ -1,7 +1,8 @@
+import type { AssignUserRoleRequest } from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class AssignUserRoleDto {
+export class AssignUserRoleDto implements AssignUserRoleRequest {
   @ApiProperty({
     description: 'Role id to assign to the user.',
     example: '1',

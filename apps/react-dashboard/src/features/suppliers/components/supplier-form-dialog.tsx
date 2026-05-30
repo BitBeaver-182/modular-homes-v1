@@ -32,9 +32,10 @@ import {
 import { useStrapiForm } from "@/lib/strapi";
 import { cn } from "@/lib/utilities";
 
-import type { Supplier, SupplierWriteInput } from "../types";
+import type { CreateSupplierRequest, SupplierResponse } from "@moduflow/types";
 
-type SupplierFormValues = SupplierWriteInput & { root?: string };
+
+type SupplierFormValues = CreateSupplierRequest & { root?: string };
 
 interface CountryOption {
 	code: string;
@@ -86,7 +87,7 @@ const countryOptions: Array<CountryOption> = Object.entries(
 	.sort((a, b) => a.name.localeCompare(b.name));
 
 const toFormValues = (
-	supplier: Supplier | null | undefined
+	supplier: SupplierResponse | null | undefined
 ): SupplierFormValues => {
 	if (!supplier) {
 		return EMPTY_VALUES;
@@ -113,8 +114,8 @@ export interface SupplierFormDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	loading: boolean;
-	initialValue?: Supplier | null;
-	onSubmit: (value: SupplierWriteInput) => Promise<void>;
+	initialValue?: SupplierResponse | null;
+	onSubmit: (value: CreateSupplierRequest) => Promise<void>;
 }
 
 export const SupplierFormDialog = ({
@@ -316,7 +317,7 @@ export const SupplierFormDialog = ({
 									render={({ field }) => (
 										<CountryCombobox
 											id="supplier-country-code"
-											value={field.value}
+											value={field.value || ""}
 											onChange={field.onChange}
 										/>
 									)}

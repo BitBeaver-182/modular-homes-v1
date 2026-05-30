@@ -1,10 +1,18 @@
+import type { OrganizationMembershipResponse as OrganizationMembershipContract } from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 
-class MembershipUserSummary {
+type OrganizationMembershipUserContract =
+  OrganizationMembershipContract['user'];
+
+class MembershipUserSummary implements OrganizationMembershipUserContract {
+  constructor(partial: OrganizationMembershipUserContract) {
+    Object.assign(this, partial);
+  }
+
   @Expose()
   @ApiProperty()
-  id!: bigint;
+  id!: string;
 
   @Expose()
   @ApiProperty()
@@ -19,14 +27,18 @@ class MembershipUserSummary {
   avatarUrl!: string | null;
 }
 
-export class OrganizationMembershipResponse {
-  @Expose()
-  @ApiProperty()
-  id!: bigint;
+export class OrganizationMembershipResponse implements OrganizationMembershipContract {
+  constructor(partial: OrganizationMembershipContract) {
+    Object.assign(this, partial);
+  }
 
   @Expose()
   @ApiProperty()
-  organizationId!: bigint;
+  id!: string;
+
+  @Expose()
+  @ApiProperty()
+  organizationId!: string;
 
   @Expose()
   @ApiProperty({ enum: ['owner', 'member'] })

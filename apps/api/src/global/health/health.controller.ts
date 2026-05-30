@@ -1,8 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { plainToInstance } from 'class-transformer';
 import { HealthResponseDto } from './dto/health-response.dto';
 import { HealthService } from './health.service';
+import { toHealthResponse } from './mappers/health.mapper';
 
 @ApiTags('Health')
 @Controller('health')
@@ -17,6 +19,10 @@ export class HealthController {
   })
   @ApiOkResponse({ type: HealthResponseDto })
   getHealthStatus() {
-    return this.healthService.getStatus();
+    return plainToInstance(
+      HealthResponseDto,
+      toHealthResponse(this.healthService.getStatus()),
+      { excludeExtraneousValues: true },
+    );
   }
 }

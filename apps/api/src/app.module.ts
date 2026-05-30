@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { QuerybuilderModule } from 'nestjs-prisma-querybuilder';
 import { HealthModule } from './global/health/health.module';
@@ -8,7 +8,6 @@ import { AppConfigService } from './config/app-config.service';
 import { DatabaseModule } from './database/database.module';
 import { PrismaService } from './database/prisma.service';
 import { OrganizationsModule } from './global/organizations/organizations.module';
-import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
 import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
@@ -45,10 +44,6 @@ import { createValidationException } from './common/errors/api-error';
     OrganizationsModule,
   ],
   providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: BigIntSerializerInterceptor,
-    },
     {
       provide: APP_FILTER,
       useClass: ApiExceptionFilter,

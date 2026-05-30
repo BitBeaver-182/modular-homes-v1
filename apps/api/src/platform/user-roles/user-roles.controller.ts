@@ -25,6 +25,7 @@ import {
 } from '../platform-swagger.decorator';
 import { AssignUserRoleDto } from './dto/assign-user-role.dto';
 import { UserRoleResponse } from './dto/user-role.dto';
+import { toRoleResponse } from '../roles/mappers/role.mapper';
 import { UserRolesService } from './user-roles.service';
 
 @ApiTags('Users/Roles')
@@ -52,7 +53,7 @@ export class UserRolesController {
       parseBigIntId(userId, 'userId'),
       parseBigIntId(assignUserRoleDto.roleId, 'roleId'),
     );
-    return plainToInstance(UserRoleResponse, role, {
+    return plainToInstance(UserRoleResponse, toRoleResponse(role), {
       excludeExtraneousValues: true,
     });
   }
@@ -73,9 +74,13 @@ export class UserRolesController {
       organizationId,
       parseBigIntId(userId, 'userId'),
     );
-    return plainToInstance(UserRoleResponse, roles, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      UserRoleResponse,
+      roles.map((role) => toRoleResponse(role)),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Delete(':roleId')
@@ -96,7 +101,7 @@ export class UserRolesController {
       parseBigIntId(userId, 'userId'),
       parseBigIntId(roleId, 'roleId'),
     );
-    return plainToInstance(UserRoleResponse, role, {
+    return plainToInstance(UserRoleResponse, toRoleResponse(role), {
       excludeExtraneousValues: true,
     });
   }

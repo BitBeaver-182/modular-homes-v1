@@ -7,9 +7,9 @@ import {
 	type InfiniteComboboxProps,
 } from "@/components/forms/inputs/infinite-combobox";
 import { getSuppliers } from "@/features/suppliers/lib/supplier-api";
-import type { Supplier } from "@/features/suppliers/types";
 import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
 
+import type { SupplierResponse } from "@moduflow/types";
 import type { JSX } from "react";
 
 /**
@@ -18,7 +18,7 @@ import type { JSX } from "react";
  * etc.) keep working — only the internals moved into the generic primitive.
  */
 export type SuppliersComboboxProps<M extends boolean = false> = Omit<
-	InfiniteComboboxProps<Supplier, M>,
+	InfiniteComboboxProps<SupplierResponse, M>,
 	"queryKey" | "fetchPage" | "getId" | "getLabel"
 >;
 
@@ -30,7 +30,7 @@ export const SuppliersCombobox = <M extends boolean = false>(
 	const organizationId = activeMembership.organization.id;
 
 	return (
-		<InfiniteCombobox<Supplier, M>
+		<InfiniteCombobox<SupplierResponse, M>
 			getId={(s): string => s.id}
 			getLabel={(s): string => s.name}
 			noResultsLabel={props.noResultsLabel ?? t("suppliers.noSuppliers")}
@@ -41,7 +41,7 @@ export const SuppliersCombobox = <M extends boolean = false>(
 				pageSize,
 				search,
 			}): Promise<{
-				data: Array<Supplier>;
+				data: Array<SupplierResponse>;
 				meta: { pagination: { page: number; pageCount: number } };
 			}> =>
 				getSuppliers(

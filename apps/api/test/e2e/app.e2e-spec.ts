@@ -1,10 +1,12 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
+import type {
+  OrganizationResponse,
+  PermissionResponse,
+  RoleResponse,
+  UserResponse,
+} from '@moduflow/types';
 import { Server } from 'node:http';
 import request, { Response } from 'supertest';
-import type { OrganizationDto } from '../../src/global/organizations/dto/organization-response.dto';
-import type { PermissionDto } from '../../src/platform/permissions/dto/permission-response.dto';
-import type { RoleDto } from '../../src/platform/roles/dto/role-response.dto';
-import type { UserDto } from '../../src/platform/users/dto/user-response.dto';
 import { PrismaService } from '../../src/database/prisma.service';
 import {
   createRealDbTestApp,
@@ -80,7 +82,7 @@ describe('API (e2e)', () => {
       .get('/api/organizations')
       .expect(HttpStatus.OK);
     const organizations = organizationsRes.body as Array<
-      Pick<OrganizationDto, 'id' | 'name' | 'slug'>
+      Pick<OrganizationResponse, 'id' | 'name' | 'slug'>
     >;
     expect(organizations).toHaveLength(1);
     expect(organizations[0]?.id).toBe(organization.id);
@@ -246,7 +248,7 @@ describe('API (e2e)', () => {
         .get('/api/users')
         .set('x-organization-id', organizationA.id)
         .expect(HttpStatus.OK)
-    ).body as UserDto[];
+    ).body as UserResponse[];
     expect(listedUsers).toHaveLength(2);
     expect(
       listedUsers.filter((user) => user.organization?.id === organizationA.id),
@@ -628,7 +630,7 @@ describe('API (e2e)', () => {
         .get('/api/users')
         .set('x-organization-id', organization.id)
         .expect(HttpStatus.OK)
-    ).body as UserDto[];
+    ).body as UserResponse[];
     expect(listedUsersBeforeActivation).toHaveLength(1);
     expect(
       listedUsersBeforeActivation.some(
@@ -659,7 +661,7 @@ describe('API (e2e)', () => {
         .get('/api/users')
         .set('x-organization-id', organization.id)
         .expect(HttpStatus.OK)
-    ).body as UserDto[];
+    ).body as UserResponse[];
     expect(listedUsersAfterActivation).toHaveLength(2);
     expect(
       listedUsersAfterActivation.some(
@@ -887,7 +889,7 @@ describe('API (e2e)', () => {
         .get(`/api/roles/${roleA.id}/permissions`)
         .set('x-organization-id', organizationA.id)
         .expect(HttpStatus.OK)
-    ).body as PermissionDto[];
+    ).body as PermissionResponse[];
     expect(scopedPermissions.map((item) => item.key)).toEqual([
       'catalog.manage',
     ]);
@@ -1120,8 +1122,11 @@ describe('API (e2e)', () => {
 
 function expectOrganizationResponse(
   body: unknown,
-): Pick<OrganizationDto, 'id' | 'name' | 'slug'> {
-  const organization = body as Pick<OrganizationDto, 'id' | 'name' | 'slug'>;
+): Pick<OrganizationResponse, 'id' | 'name' | 'slug'> {
+  const organization = body as Pick<
+    OrganizationResponse,
+    'id' | 'name' | 'slug'
+  >;
   expect(organization.id).toEqual(expect.any(String));
   expect(organization.name).toEqual(expect.any(String));
   expect(organization.slug).toEqual(expect.any(String));
@@ -1131,11 +1136,11 @@ function expectOrganizationResponse(
 function expectUserResponse(
   body: unknown,
 ): Pick<
-  UserDto,
+  UserResponse,
   'id' | 'email' | 'name' | 'avatarUrl' | 'organization' | 'roles'
 > {
   const user = body as Pick<
-    UserDto,
+    UserResponse,
     'id' | 'email' | 'name' | 'avatarUrl' | 'organization' | 'roles'
   >;
 
@@ -1146,8 +1151,8 @@ function expectUserResponse(
   return user;
 }
 
-function expectRoleResponse(body: unknown): Pick<RoleDto, 'id' | 'name'> {
-  const role = body as Pick<RoleDto, 'id' | 'name'>;
+function expectRoleResponse(body: unknown): Pick<RoleResponse, 'id' | 'name'> {
+  const role = body as Pick<RoleResponse, 'id' | 'name'>;
   expect(role.id).toEqual(expect.any(String));
   expect(role.name).toEqual(expect.any(String));
   return role;
@@ -1155,8 +1160,8 @@ function expectRoleResponse(body: unknown): Pick<RoleDto, 'id' | 'name'> {
 
 function expectPermissionResponse(
   body: unknown,
-): Pick<PermissionDto, 'id' | 'key'> {
-  const permission = body as Pick<PermissionDto, 'id' | 'key'>;
+): Pick<PermissionResponse, 'id' | 'key'> {
+  const permission = body as Pick<PermissionResponse, 'id' | 'key'>;
   expect(permission.id).toEqual(expect.any(String));
   expect(permission.key).toEqual(expect.any(String));
   return permission;

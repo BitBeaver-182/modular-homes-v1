@@ -26,6 +26,7 @@ import {
 import { CreateRoleDto } from './dto/create-role.dto';
 import { RoleResponse } from './dto/role-response.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { toRoleResponse } from './mappers/role.mapper';
 import { RolesService } from './roles.service';
 
 @ApiTags('Roles')
@@ -46,7 +47,7 @@ export class RolesController {
     @Body() createRoleDto: CreateRoleDto,
   ) {
     const role = await this.rolesService.create(organizationId, createRoleDto);
-    return plainToInstance(RoleResponse, role, {
+    return plainToInstance(RoleResponse, toRoleResponse(role), {
       excludeExtraneousValues: true,
     });
   }
@@ -59,9 +60,13 @@ export class RolesController {
   @ApiOkResponse({ type: RoleResponse, isArray: true })
   async findAll(@OrganizationId() organizationId: bigint) {
     const roles = await this.rolesService.findAll(organizationId);
-    return plainToInstance(RoleResponse, roles, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      RoleResponse,
+      roles.map((role) => toRoleResponse(role)),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Get(':id')
@@ -79,7 +84,7 @@ export class RolesController {
       organizationId,
       parseBigIntId(id, 'roleId'),
     );
-    return plainToInstance(RoleResponse, role, {
+    return plainToInstance(RoleResponse, toRoleResponse(role), {
       excludeExtraneousValues: true,
     });
   }
@@ -101,7 +106,7 @@ export class RolesController {
       parseBigIntId(id, 'roleId'),
       updateRoleDto,
     );
-    return plainToInstance(RoleResponse, role, {
+    return plainToInstance(RoleResponse, toRoleResponse(role), {
       excludeExtraneousValues: true,
     });
   }
@@ -121,7 +126,7 @@ export class RolesController {
       organizationId,
       parseBigIntId(id, 'roleId'),
     );
-    return plainToInstance(RoleResponse, role, {
+    return plainToInstance(RoleResponse, toRoleResponse(role), {
       excludeExtraneousValues: true,
     });
   }

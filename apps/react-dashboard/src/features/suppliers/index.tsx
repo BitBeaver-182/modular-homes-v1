@@ -34,7 +34,7 @@ import { useGetSuppliers } from "./hooks/use-get-suppliers";
 import { useSuppliersTable } from "./hooks/use-suppliers-table";
 import { useUpdateSupplier } from "./hooks/use-update-supplier";
 
-import type { Supplier, SupplierWriteInput } from "./types";
+import type { SupplierResponse, CreateSupplierRequest } from "@moduflow/types";
 
 const SuppliersPage = (): JSX.Element => {
 	const { t } = useTranslation();
@@ -43,8 +43,8 @@ const SuppliersPage = (): JSX.Element => {
 	const { activeMembership } = Route.useRouteContext();
 	const organizationId = activeMembership.organization.id;
 	const [createOpen, setCreateOpen] = useState(false);
-	const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-	const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(
+	const [editingSupplier, setEditingSupplier] = useState<SupplierResponse | null>(null);
+	const [deletingSupplier, setDeletingSupplier] = useState<SupplierResponse | null>(
 		null
 	);
 
@@ -74,10 +74,10 @@ const SuppliersPage = (): JSX.Element => {
 	const recordCount = pagination?.total ?? 0;
 	const pageCount = pagination?.pageCount ?? 0;
 	const { columns } = useSuppliersTable({
-		onEdit: (supplier: Supplier) => {
+		onEdit: (supplier: SupplierResponse) => {
 			setEditingSupplier(supplier);
 		},
-		onDelete: (supplier: Supplier) => {
+		onDelete: (supplier: SupplierResponse) => {
 			setDeletingSupplier(supplier);
 		},
 	});
@@ -102,11 +102,11 @@ const SuppliersPage = (): JSX.Element => {
 		[updateSearchParams]
 	);
 
-	const handleCreate = async (value: SupplierWriteInput): Promise<void> => {
+	const handleCreate = async (value: CreateSupplierRequest): Promise<void> => {
 		await createSupplier(value);
 	};
 
-	const handleUpdate = async (value: SupplierWriteInput): Promise<void> => {
+	const handleUpdate = async (value: CreateSupplierRequest): Promise<void> => {
 		if (!editingSupplier) {
 			return;
 		}
@@ -117,7 +117,7 @@ const SuppliersPage = (): JSX.Element => {
 		});
 	};
 
-	const handleDelete = async (supplier: Supplier): Promise<void> => {
+	const handleDelete = async (supplier: SupplierResponse): Promise<void> => {
 		await deleteSupplier(supplier.id);
 	};
 

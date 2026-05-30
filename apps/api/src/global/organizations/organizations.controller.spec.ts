@@ -55,11 +55,11 @@ describe('OrganizationsController', () => {
     expect(organizationsService.findOne).toHaveBeenCalledWith(2n);
     expect(organizationsService.update).toHaveBeenCalledWith(2n, updateDto);
     expect(organizationsService.removeForUser).toHaveBeenCalledWith(7n, 2n);
-    expect(created.deletedAt).toBeUndefined();
-    expect(list[0].deletedAt).toBeUndefined();
+    expect(created).not.toHaveProperty('deletedAt');
+    expect(list[0]).not.toHaveProperty('deletedAt');
     expect(one.slug).toBe('acme');
     expect(updated.name).toBe('Acme');
-    expect(removed.id).toBe(2n);
+    expect(removed.id).toBe('2');
   });
 
   it('rejects malformed ids before hitting service', async () => {

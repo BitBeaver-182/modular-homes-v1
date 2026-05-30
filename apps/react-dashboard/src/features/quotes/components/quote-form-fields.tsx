@@ -21,7 +21,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Supplier } from "@/features/suppliers/types";
 import { parseYmdLocal } from "@/lib/date-ymd";
 
 import {
@@ -30,6 +29,7 @@ import {
 } from "../lib/quote-attachments";
 
 import type { Quote, QuoteWriteInput } from "../types";
+import type { SupplierResponse } from "@moduflow/types";
 
 /** RHF values = write payload + optional `root` for server-only errors. */
 export type QuoteFormValues = QuoteWriteInput & { root?: string };
@@ -64,7 +64,7 @@ export const QuoteFormFields = ({
 	const notesError = errors.notes?.message;
 	const pdfError = errors.pdfFile?.message;
 
-	const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
+	const [selectedSupplier, setSelectedSupplier] = useState<SupplierResponse | null>(
 		initialQuote?.supplier ?? null
 	);
 	const supplierValue = supplierId ? selectedSupplier : null;
@@ -283,10 +283,10 @@ export const QuoteFormFields = ({
 							existingFile={
 								initialQuote?.pdf?.url && initialQuote.pdf.name
 									? {
-											href: initialQuote.pdf.url,
-											name: initialQuote.pdf.name,
-											size: initialQuote.pdf.size,
-										}
+										href: initialQuote.pdf.url,
+										name: initialQuote.pdf.name,
+										size: initialQuote.pdf.size,
+									}
 									: null
 							}
 							hint={t("quotes.pdfHint")}

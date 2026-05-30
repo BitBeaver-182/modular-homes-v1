@@ -1,7 +1,11 @@
+import {
+  CreateOrganizationInvitationRequest,
+  GOVERNANCE_ROLES,
+} from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsIn } from 'class-validator';
 
-export class CreateOrganizationInvitationDto {
+export class CreateOrganizationInvitationDto implements CreateOrganizationInvitationRequest {
   @ApiProperty({
     example: 'invitee@example.com',
   })
@@ -9,9 +13,9 @@ export class CreateOrganizationInvitationDto {
   email!: string;
 
   @ApiProperty({
-    enum: ['owner', 'member'],
+    enum: GOVERNANCE_ROLES,
     example: 'member',
   })
-  @IsIn(['owner', 'member'])
+  @IsIn(GOVERNANCE_ROLES)
   governanceRole!: 'owner' | 'member';
 }

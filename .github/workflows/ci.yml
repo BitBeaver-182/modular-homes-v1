@@ -20,6 +20,13 @@ jobs:
   api-lint:
     name: api / lint
     runs-on: ubuntu-latest
+    environment: testing
+    env:
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      THROTTLE_LIMIT: ${{ vars.THROTTLE_LIMIT }}
+      THROTTLE_TTL_MS: ${{ vars.THROTTLE_TTL_MS }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -46,6 +53,13 @@ jobs:
   api-typecheck:
     name: api / typecheck
     runs-on: ubuntu-latest
+    environment: testing
+    env:
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      THROTTLE_LIMIT: ${{ vars.THROTTLE_LIMIT }}
+      THROTTLE_TTL_MS: ${{ vars.THROTTLE_TTL_MS }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -75,6 +89,13 @@ jobs:
     needs:
       - api-lint
       - api-typecheck
+    environment: testing
+    env:
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      THROTTLE_LIMIT: ${{ vars.THROTTLE_LIMIT }}
+      THROTTLE_TTL_MS: ${{ vars.THROTTLE_TTL_MS }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

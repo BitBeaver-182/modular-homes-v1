@@ -5,16 +5,16 @@ import { useMemo, type JSX } from "react";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { Button } from "@/components/ui/button";
 
-import type { Supplier } from "../types";
+import type { SupplierResponse } from "@moduflow/types";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface UseSuppliersTableProps {
-	onEdit?: (supplier: Supplier) => void;
-	onDelete?: (supplier: Supplier) => void;
+	onEdit?: (supplier: SupplierResponse) => void;
+	onDelete?: (supplier: SupplierResponse) => void;
 }
 
 interface UseSuppliersTableReturn {
-	columns: Array<ColumnDef<Supplier>>;
+	columns: Array<ColumnDef<SupplierResponse>>;
 }
 
 /**
@@ -30,8 +30,8 @@ export const useSuppliersTable = ({
 	onEdit,
 	onDelete,
 }: UseSuppliersTableProps): UseSuppliersTableReturn => {
-	const columns = useMemo<Array<ColumnDef<Supplier>>>(
-		(): Array<ColumnDef<Supplier>> => [
+	const columns = useMemo<Array<ColumnDef<SupplierResponse>>>(
+		(): Array<ColumnDef<SupplierResponse>> => [
 			{
 				accessorKey: "name",
 				meta: { flex: true },

@@ -1,3 +1,7 @@
+import type {
+  UpdateSupplierAddressRequest,
+  UpdateSupplierRequest,
+} from '@moduflow/types';
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
@@ -23,7 +27,10 @@ const trimString = ({ value }: { value: unknown }): unknown =>
 const trimUppercaseString = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim().toUpperCase() : value;
 
-export class UpdateSupplierAddressDto extends PartialType(SupplierAddressDto) {
+export class UpdateSupplierAddressDto
+  extends PartialType(SupplierAddressDto)
+  implements UpdateSupplierAddressRequest
+{
   @ApiPropertyOptional({
     example: '100 Main Street',
     maxLength: 200,
@@ -88,7 +95,10 @@ class UpdateSupplierBaseDto extends PartialType(
   ] as const),
 ) {}
 
-export class UpdateSupplierDto extends UpdateSupplierBaseDto {
+export class UpdateSupplierDto
+  extends UpdateSupplierBaseDto
+  implements UpdateSupplierRequest
+{
   @ApiPropertyOptional({ example: '+1 555 0100' })
   @Transform(trimString)
   @ValidateIf((_, value: unknown) => value !== '')

@@ -8,7 +8,7 @@ import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin
 
 import { getSuppliers } from "../lib/supplier-api";
 
-import type { Supplier } from "../types";
+import type { SupplierResponse } from "@moduflow/types";
 import type { JSX } from "react";
 
 export interface SupplierFilterProps {
@@ -36,7 +36,7 @@ export const SupplierFilter = ({
 	const organizationId = activeMembership.organization.id;
 
 	return (
-		<InfiniteComboboxFilter<Supplier>
+		<InfiniteComboboxFilter<SupplierResponse>
 			className={className}
 			disabled={disabled}
 			getId={(s): string => s.id}
@@ -52,7 +52,7 @@ export const SupplierFilter = ({
 				pageSize,
 				search,
 			}): Promise<{
-				data: Array<Supplier>;
+				data: Array<SupplierResponse>;
 				meta: { pagination: { page: number; pageCount: number } };
 			}> =>
 				getSuppliers(

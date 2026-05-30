@@ -1,3 +1,4 @@
+import type { RegisterUserRequest } from '@moduflow/types';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
@@ -7,7 +8,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class RegisterUserDto {
+export class RegisterUserDto implements RegisterUserRequest {
   @ApiProperty({
     example: 'owner@example.com',
   })

@@ -25,6 +25,7 @@ import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { parseBigIntId } from '../../common/ids/parse-bigint-id';
 import { OrganizationResponse } from './dto/organization-response.dto';
 import { ApiBigIntIdParam } from '../../platform/platform-swagger.decorator';
+import { toOrganizationResponse } from './mappers/organization.mapper';
 
 @ApiTags('Organizations')
 @Controller('organizations')
@@ -47,9 +48,13 @@ export class OrganizationsController {
       user.userId,
       createOrganizationDto,
     );
-    return plainToInstance(OrganizationResponse, organization, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      OrganizationResponse,
+      toOrganizationResponse(organization),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Get()
@@ -60,9 +65,13 @@ export class OrganizationsController {
   @ApiOkResponse({ type: OrganizationResponse, isArray: true })
   async findAll() {
     const organizations = await this.organizationsService.findAll();
-    return plainToInstance(OrganizationResponse, organizations, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      OrganizationResponse,
+      organizations.map((organization) => toOrganizationResponse(organization)),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Get(':id')
@@ -76,9 +85,13 @@ export class OrganizationsController {
     const organization = await this.organizationsService.findOne(
       parseBigIntId(id, 'organizationId'),
     );
-    return plainToInstance(OrganizationResponse, organization, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      OrganizationResponse,
+      toOrganizationResponse(organization),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Patch(':id')
@@ -96,9 +109,13 @@ export class OrganizationsController {
       parseBigIntId(id, 'organizationId'),
       updateOrganizationDto,
     );
-    return plainToInstance(OrganizationResponse, organization, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      OrganizationResponse,
+      toOrganizationResponse(organization),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 
   @Delete(':id')
@@ -115,8 +132,12 @@ export class OrganizationsController {
       user.userId,
       parseBigIntId(id, 'organizationId'),
     );
-    return plainToInstance(OrganizationResponse, organization, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      OrganizationResponse,
+      toOrganizationResponse(organization),
+      {
+        excludeExtraneousValues: true,
+      },
+    );
   }
 }

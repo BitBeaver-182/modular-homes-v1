@@ -56,13 +56,13 @@ describe('UsersController', () => {
     });
     expect(usersService.remove).toHaveBeenCalledWith(2n, 1n);
     expect(created.organization).toEqual(
-      expect.objectContaining({ id: 2n, name: 'Acme', slug: 'acme' }),
+      expect.objectContaining({ id: '2', name: 'Acme', slug: 'acme' }),
     );
     expect(created.roles).toEqual([
-      expect.objectContaining({ id: 7n, name: 'Admin' }),
+      expect.objectContaining({ id: '7', name: 'Admin' }),
     ]);
     expect('organizationUsers' in list[0]).toBe(false);
-    expect(one.organization?.id).toBe(2n);
+    expect(one.organization?.id).toBe('2');
     expect(updated.roles).toHaveLength(1);
   });
 
