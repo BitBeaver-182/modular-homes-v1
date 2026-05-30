@@ -21,7 +21,9 @@ describe('StorageService', () => {
   };
   const config = {
     supabaseUrl: 'https://project.supabase.co',
-    supabaseServiceRoleKey: 'service-role-key',
+    supabaseSecretKey: 'secret-key',
+    supabasePublicAssetsBucket: 'public-assets',
+    supabasePrivateDocumentsBucket: 'private-documents',
   };
 
   let service: StorageService;
@@ -51,8 +53,14 @@ describe('StorageService', () => {
       get supabaseUrl(): string {
         throw new Error('SUPABASE_URL missing');
       },
-      get supabaseServiceRoleKey(): string {
-        throw new Error('SUPABASE_SERVICE_ROLE_KEY missing');
+      get supabaseSecretKey(): string {
+        throw new Error('SUPABASE_SECRET_KEY missing');
+      },
+      get supabasePublicAssetsBucket(): string {
+        return 'public-assets';
+      },
+      get supabasePrivateDocumentsBucket(): string {
+        return 'private-documents';
       },
     };
 

@@ -4,9 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 import { AppConfigService } from '../config/app-config.service';
 import type { IStorageService } from './storage.service.interface';
 
-export const PUBLIC_ASSETS_BUCKET = 'public-assets';
-export const PRIVATE_DOCUMENTS_BUCKET = 'private-documents';
-
 @Injectable()
 export class StorageService implements IStorageService {
   private supabase?: ReturnType<typeof createClient>;
@@ -14,7 +11,11 @@ export class StorageService implements IStorageService {
   constructor(private readonly config: AppConfigService) {}
 
   bucketForContext(context: FileContext): string {
-    return bucketFor(context);
+    return resolveBucketForContext(
+      context,
+      this.config.supabasePublicAssetsBucket,
+      this.config.supabasePrivateDocumentsBucket,
+    );
   }
 
   async presignUpload(
@@ -85,7 +86,7 @@ export class StorageService implements IStorageService {
   private getSupabaseClient(): ReturnType<typeof createClient> {
     this.supabase ??= createClient(
       this.config.supabaseUrl,
-      this.config.supabaseServiceRoleKey,
+      this.config.supabaseSecretKey,
       {
         auth: {
           autoRefreshToken: false,
@@ -98,13 +99,17 @@ export class StorageService implements IStorageService {
   }
 }
 
-export function bucketFor(context: FileContext): string {
+function resolveBucketForContext(
+  context: FileContext,
+  publicAssetsBucket: string,
+  privateDocumentsBucket: string,
+): string {
   switch (context) {
     case 'AVATAR':
     case 'ORGANIZATION_LOGO':
-      return PUBLIC_ASSETS_BUCKET;
+      return publicAssetsBucket;
     case 'SUPPLIER_DOCUMENT':
-      return PRIVATE_DOCUMENTS_BUCKET;
+      return privateDocumentsBucket;
   }
 }
 

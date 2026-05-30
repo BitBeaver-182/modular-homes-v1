@@ -24,7 +24,9 @@ describe('validateEnv', () => {
       THROTTLE_LIMIT: undefined,
       JWT_SECRET: undefined,
       SUPABASE_URL: undefined,
-      SUPABASE_SERVICE_ROLE_KEY: undefined,
+      SUPABASE_SECRET_KEY: undefined,
+      SUPABASE_PUBLIC_ASSETS_BUCKET: undefined,
+      SUPABASE_PRIVATE_DOCUMENTS_BUCKET: undefined,
     });
   });
 
@@ -94,7 +96,30 @@ describe('validateEnv', () => {
         JWT_SECRET: 'super-secret',
         SUPABASE_URL: 'https://project.supabase.co',
       }),
-    ).toThrow('SUPABASE_SERVICE_ROLE_KEY is required in production');
+    ).toThrow('SUPABASE_SECRET_KEY is required in production');
+
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+        JWT_SECRET: 'super-secret',
+        SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_SECRET_KEY: 'secret-key',
+      }),
+    ).toThrow('SUPABASE_PUBLIC_ASSETS_BUCKET is required in production');
+
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+        JWT_SECRET: 'super-secret',
+        SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_SECRET_KEY: 'secret-key',
+        SUPABASE_PUBLIC_ASSETS_BUCKET: 'public-assets',
+      }),
+    ).toThrow('SUPABASE_PRIVATE_DOCUMENTS_BUCKET is required in production');
   });
 
   it('includes JWT_SECRET when provided', () => {
@@ -114,11 +139,15 @@ describe('validateEnv', () => {
       DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
       DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
       SUPABASE_URL: 'https://project.supabase.co',
-      SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',
+      SUPABASE_SECRET_KEY: 'secret-key',
+      SUPABASE_PUBLIC_ASSETS_BUCKET: 'public-assets',
+      SUPABASE_PRIVATE_DOCUMENTS_BUCKET: 'private-documents',
     });
 
     expect(result.SUPABASE_URL).toBe('https://project.supabase.co');
-    expect(result.SUPABASE_SERVICE_ROLE_KEY).toBe('service-role-key');
+    expect(result.SUPABASE_SECRET_KEY).toBe('secret-key');
+    expect(result.SUPABASE_PUBLIC_ASSETS_BUCKET).toBe('public-assets');
+    expect(result.SUPABASE_PRIVATE_DOCUMENTS_BUCKET).toBe('private-documents');
   });
 
   it('uses PORT when provided', () => {

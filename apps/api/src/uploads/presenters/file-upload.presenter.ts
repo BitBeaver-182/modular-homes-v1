@@ -53,7 +53,7 @@ export class PresignUploadPresenter {
   @Expose()
   @ApiProperty({
     example:
-      'https://example.supabase.co/storage/v1/object/upload/sign/private-documents/...',
+      'https://example.supabase.co/storage/v1/object/upload/sign/<bucket>/...',
   })
   uploadUrl!: string;
 

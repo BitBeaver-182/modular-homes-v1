@@ -125,7 +125,15 @@ export class AppConfigService {
     return this.configService.getOrThrow('SUPABASE_URL');
   }
 
-  get supabaseServiceRoleKey(): string {
-    return this.configService.getOrThrow('SUPABASE_SERVICE_ROLE_KEY');
+  get supabaseSecretKey(): string {
+    return this.configService.getOrThrow('SUPABASE_SECRET_KEY');
+  }
+
+  get supabasePublicAssetsBucket(): string {
+    return this.configService.getOrThrow('SUPABASE_PUBLIC_ASSETS_BUCKET');
+  }
+
+  get supabasePrivateDocumentsBucket(): string {
+    return this.configService.getOrThrow('SUPABASE_PRIVATE_DOCUMENTS_BUCKET');
   }
 }
