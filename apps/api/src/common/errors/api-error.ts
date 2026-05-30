@@ -1,17 +1,9 @@
 import { BadRequestException, ValidationError } from '@nestjs/common';
-
-export interface ApiErrorDetail {
-  path: Array<string | number>;
-  message: string;
-  name: string;
-  key?: string | null;
-  params?: Record<string, string | number>;
-}
-
-export interface ApiErrorHttpResponse {
-  message: string;
-  errors?: ApiErrorDetail[];
-}
+import type {
+  ApiErrorDetail,
+  ApiErrorHttpResponse,
+  ApiErrorKey,
+} from '@moduflow/types';
 
 export function createApiErrorDetail(detail: ApiErrorDetail): ApiErrorDetail {
   return detail;
@@ -94,8 +86,8 @@ function flattenValidationErrors(
   });
 }
 
-function getValidationErrorKey(constraint: string): string | null {
-  const keyMap: Record<string, string> = {
+function getValidationErrorKey(constraint: string): ApiErrorKey {
+  const keyMap: Record<string, ApiErrorKey> = {
     isEmail: 'validation.email',
     isGooglePhoneNumber: 'validation.phone',
     isISO31661Alpha2: 'validation.countryCode',

@@ -5,8 +5,9 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import type { ApiErrorDetail, ApiErrorKey } from '@moduflow/types';
 import type { Response } from 'express';
-import { ApiErrorDetail, isApiErrorHttpResponse } from '../errors/api-error';
+import { isApiErrorHttpResponse } from '../errors/api-error';
 
 interface ApiErrorResponse {
   data: null;
@@ -160,7 +161,7 @@ function hasStringArrayProperty<T extends string>(
   );
 }
 
-function getHttpErrorKey(status: number): string {
+function getHttpErrorKey(status: number): ApiErrorKey {
   if (status === 400) {
     return 'http.badRequest';
   }
