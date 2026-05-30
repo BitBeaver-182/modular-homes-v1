@@ -22,5 +22,9 @@ export const QuoteStatusBadge = ({
 		return <Badge variant="destructive-light">{t("quotes.statusRejected")}</Badge>;
 	}
 
-	return <Badge variant="warning-light">{t("quotes.statusPending")}</Badge>;
+	if (status === "expired") {
+		return <Badge variant="secondary">{t("quotes.statusExpired")}</Badge>;
+	}
+
+	return <Badge variant="warning-light">{t("quotes.statusReceived")}</Badge>;
 };

@@ -7,15 +7,19 @@ import {
 import { quoteKeys } from "./quote-keys";
 import { deleteQuote } from "../lib/quote-api";
 
-export const useDeleteQuote = (): UseMutationResult<void, Error, string> => {
+export const useDeleteQuote = (
+	organizationId: string
+): UseMutationResult<void, Error, string> => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (documentId: string) => deleteQuote(documentId),
-		onSuccess: async (_data, documentId): Promise<void> => {
+		mutationFn: (id: string) => deleteQuote({ organizationId }, id),
+		onSuccess: async (_data, id): Promise<void> => {
 			await Promise.all([
-				queryClient.invalidateQueries({ queryKey: quoteKeys.lists() }),
-				queryClient.removeQueries({ queryKey: quoteKeys.detail(documentId) }),
+				queryClient.invalidateQueries({
+					queryKey: quoteKeys.lists(organizationId),
+				}),
+				queryClient.removeQueries({ queryKey: quoteKeys.detail(id) }),
 			]);
 		},
 	});

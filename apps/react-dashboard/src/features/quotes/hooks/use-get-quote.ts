@@ -6,11 +6,12 @@ import { getQuote } from "../lib/quote-api";
 import type { Quote } from "../types";
 
 export const useGetQuote = (
-	documentId: string | undefined | null,
+	organizationId: string,
+	id: string | undefined | null,
 ): UseQueryResult<Quote, Error> => {
 	return useQuery({
-		queryKey: quoteKeys.detail(documentId ?? ""),
-		queryFn: () => getQuote(documentId!),
-		enabled: Boolean(documentId),
+		queryKey: quoteKeys.detail(id ?? ""),
+		queryFn: () => getQuote({ organizationId }, id!),
+		enabled: Boolean(id),
 	});
 };

@@ -20,12 +20,13 @@ import type { Quote, QuoteWriteInput } from "../types";
 
 const EMPTY_VALUES: QuoteFormValues = {
 	supplierId: "",
+	quoteNumber: "",
 	quotationDate: "",
 	expirationDate: "",
 	amount: "",
 	currencyCode: "EUR",
 	notes: "",
-	status: "pending",
+	status: "received",
 	pdfFile: null,
 	removeExistingPdf: false,
 };
@@ -54,19 +55,23 @@ const mapQuoteField = (
 		return "supplierId";
 	}
 
-	if (key === "issueAt" || key === "quotation_date") {
+	if (key === "quoteNumber" || key === "quote_number") {
+		return "quoteNumber";
+	}
+
+	if (key === "quoteDate" || key === "issueAt" || key === "quotation_date") {
 		return "quotationDate";
 	}
 
-	if (key === "expiresAt" || key === "expiration_date") {
+	if (key === "validUntil" || key === "expiresAt" || key === "expiration_date") {
 		return "expirationDate";
 	}
 
-	if (key === "quoteStatus" || key === "quote_status") {
+	if (key === "status" || key === "quoteStatus" || key === "quote_status") {
 		return "status";
 	}
 
-	if (key === "attachment" || key === "pdf") {
+	if (key === "attachmentId" || key === "attachment" || key === "pdf") {
 		return "pdfFile";
 	}
 

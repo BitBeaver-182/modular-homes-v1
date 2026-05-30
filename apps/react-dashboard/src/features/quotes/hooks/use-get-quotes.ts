@@ -8,11 +8,12 @@ import { getQuotes } from "../lib/quote-api";
 import type { PaginatedResult, Quote } from "../types";
 
 export const useGetQuotes = (
+	organizationId: string,
 	params: QuotesQueryParams
 ): UseQueryResult<PaginatedResult<Quote>, Error> => {
 	return useQuery({
-		queryKey: quoteKeys.list(params),
-		queryFn: () => getQuotes(params),
+		queryKey: quoteKeys.list(organizationId, params),
+		queryFn: () => getQuotes({ organizationId }, params),
 		placeholderData: (previousData) => previousData,
 	});
 };

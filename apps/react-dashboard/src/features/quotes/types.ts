@@ -1,58 +1,37 @@
+import type {
+	FileUploadResponse,
+	SupplierQuoteListResponse,
+	SupplierQuoteResponse,
+	SupplierQuoteStatus,
+} from "@moduflow/types";
+import { SUPPLIER_QUOTE_STATUSES } from "@moduflow/types";
 
-import type { AttachmentMedia } from "@/lib/strapi";
-
-import type { SupplierResponse } from "@moduflow/types";
-
-
-export const QUOTE_STATUSES = ["pending", "accepted", "rejected"] as const;
-export type QuoteStatus = (typeof QUOTE_STATUSES)[number];
+export const QUOTE_STATUSES = SUPPLIER_QUOTE_STATUSES;
+export type QuoteStatus = SupplierQuoteStatus;
 
 export const QUOTE_SORT_FIELDS = [
 	"createdAt",
-	"total.amount",
+	"quoteDate",
+	"validUntil",
+	"totalAmount",
 	"supplier.name",
-	"quoteStatus",
+	"status",
+	"quoteNumber",
 ] as const;
 export type QuoteSortField = (typeof QUOTE_SORT_FIELDS)[number];
 
-export interface QuotePdfMedia {
-	id: number;
-	url: string;
-	name: string;
-	size?: number;
-	mime?: string;
-}
-
-export interface QuoteTotal {
-	amount: number;
-	currency_code: string;
-}
-
-export interface QuoteSupplierOrderRef {
-	id: number;
-	documentId: string;
-}
-
-export interface Quote {
-	id: number;
-	documentId: string;
-	quotation_date: string | null;
-	expiration_date: string | null;
-	createdAt: string;
-	updatedAt: string;
-	publishedAt: string;
-	notes: string;
-	quote_status: QuoteStatus | null;
-	supplier: SupplierResponse | null;
-	total: QuoteTotal | null;
-	pdf?: AttachmentMedia;
-	/** Legacy `api::order.order` links; prefer {@link Quote.supplierOrders}. */
-	orders?: Array<QuoteSupplierOrderRef> | null;
-	supplierOrders?: Array<QuoteSupplierOrderRef> | null;
-}
+export type Quote = SupplierQuoteResponse;
+export type QuoteAttachment = FileUploadResponse;
+export type PaginatedResult<T> = T extends Quote
+	? SupplierQuoteListResponse
+	: {
+			data: Array<T>;
+			meta: SupplierQuoteListResponse["meta"];
+		};
 
 export interface QuoteWriteInput {
 	supplierId: string;
+	quoteNumber: string;
 	quotationDate: string;
 	expirationDate: string;
 	amount: string;
@@ -61,16 +40,4 @@ export interface QuoteWriteInput {
 	status: QuoteStatus;
 	pdfFile: File | null;
 	removeExistingPdf: boolean;
-}
-
-export interface PaginatedResult<T> {
-	data: Array<T>;
-	meta: {
-		pagination: {
-			page: number;
-			pageSize: number;
-			pageCount: number;
-			total: number;
-		};
-	};
 }

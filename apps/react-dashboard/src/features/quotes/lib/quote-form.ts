@@ -16,16 +16,14 @@ export const toDateInputValue = (value: string | null): string => {
 };
 
 export const quoteToWriteInput = (quote: Quote): QuoteWriteInput => ({
-	supplierId: quote.supplier?.id ?? "",
-	quotationDate: toDateInputValue(quote.quotation_date),
-	expirationDate: toDateInputValue(quote.expiration_date),
-	amount:
-		quote.total?.amount !== undefined && quote.total?.amount !== null
-			? String(quote.total.amount)
-			: "",
-	currencyCode: quote.total?.currency_code ?? DEFAULT_CURRENCY,
+	supplierId: quote.supplier.id,
+	quoteNumber: quote.quoteNumber ?? "",
+	quotationDate: toDateInputValue(quote.quoteDate),
+	expirationDate: toDateInputValue(quote.validUntil),
+	amount: String(quote.totalAmount ?? ""),
+	currencyCode: quote.currencyCode ?? DEFAULT_CURRENCY,
 	notes: quote.notes ?? "",
-	status: quote.quote_status ?? "pending",
+	status: quote.status,
 	pdfFile: null,
 	removeExistingPdf: false,
 });

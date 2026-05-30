@@ -9,7 +9,9 @@ import { createQuote } from "../lib/quote-api";
 
 import type { Quote, QuoteWriteInput } from "../types";
 
-export const useCreateQuote = (): UseMutationResult<
+export const useCreateQuote = (
+	organizationId: string
+): UseMutationResult<
 	Quote,
 	Error,
 	QuoteWriteInput
@@ -17,9 +19,12 @@ export const useCreateQuote = (): UseMutationResult<
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (input: QuoteWriteInput) => createQuote(input),
+		mutationFn: (input: QuoteWriteInput) =>
+			createQuote({ organizationId }, input),
 		onSuccess: async (): Promise<void> => {
-			await queryClient.invalidateQueries({ queryKey: quoteKeys.lists() });
+			await queryClient.invalidateQueries({
+				queryKey: quoteKeys.lists(organizationId),
+			});
 		},
 	});
 };

@@ -63,7 +63,7 @@ export const QuoteCreateSupplierOrderAlert = ({
 					<AlertDialogDescription>
 						{t("quotes.createSupplierOrderDialogDesc", {
 							supplier: supplierName,
-							documentId: quote?.documentId ?? "",
+							documentId: quote?.id ?? "",
 						})}
 					</AlertDialogDescription>
 				</AlertDialogHeader>

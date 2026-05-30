@@ -10,11 +10,13 @@ import { updateQuote } from "../lib/quote-api";
 import type { Quote, QuoteWriteInput } from "../types";
 
 export interface UpdateQuoteVariables {
-	documentId: string;
+	id: string;
 	input: QuoteWriteInput;
 }
 
-export const useUpdateQuote = (): UseMutationResult<
+export const useUpdateQuote = (
+	organizationId: string
+): UseMutationResult<
 	Quote,
 	Error,
 	UpdateQuoteVariables
@@ -22,13 +24,15 @@ export const useUpdateQuote = (): UseMutationResult<
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({ documentId, input }: UpdateQuoteVariables) =>
-			updateQuote(documentId, input),
+		mutationFn: ({ id, input }: UpdateQuoteVariables) =>
+			updateQuote({ organizationId }, id, input),
 		onSuccess: async (_data, variables): Promise<void> => {
 			await Promise.all([
-				queryClient.invalidateQueries({ queryKey: quoteKeys.lists() }),
 				queryClient.invalidateQueries({
-					queryKey: quoteKeys.detail(variables.documentId),
+					queryKey: quoteKeys.lists(organizationId),
+				}),
+				queryClient.invalidateQueries({
+					queryKey: quoteKeys.detail(variables.id),
 				}),
 			]);
 		},

@@ -60,7 +60,7 @@ export const QuoteDeleteAlert = ({
 					<AlertDialogTitle>{t("quotes.deleteDialogTitle")}</AlertDialogTitle>
 					<AlertDialogDescription>
 						{t("quotes.deleteDialogDesc", {
-							name: quote?.documentId || "",
+							name: quote?.quoteNumber || quote?.id || "",
 						})}
 					</AlertDialogDescription>
 				</AlertDialogHeader>

@@ -1,267 +1,161 @@
-import {
-	strapiClient,
-	strapiConfig,
-	type AttachmentMedia,
-	type StrapiQueryParams,
-} from "@/lib/strapi";
+import { moduflowRequest } from "@/lib/moduflow/client";
 import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._admin._operations.quotes";
 
-import type { PaginatedResult, Quote, QuoteWriteInput } from "../types";
+import { uploadSupplierDocument } from "./upload-api";
 
-const POPULATE = {
-	supplier: true,
-	attachment: true,
-	total: true,
-	supplierOrders: true,
-} as const;
+import type {
+	CreateSupplierQuoteRequest,
+	SupplierQuoteListResponse,
+	UpdateSupplierQuoteRequest,
+} from "@moduflow/types";
+import type { Quote, QuoteWriteInput } from "../types";
 
-interface QuoteApiRecord {
-	id: number;
-	documentId: string;
-	issueAt: string | null;
-	expiresAt: string | null;
-	createdAt: string;
-	updatedAt: string;
-	publishedAt: string;
-	notes: string;
-	quoteStatus: Quote["quote_status"] | null;
-	supplier: Quote["supplier"] | null;
-	total: Quote["total"] | null;
-	attachment?: AttachmentMedia | null;
-	supplierOrders?: Quote["supplierOrders"] | null;
+export interface QuoteApiContext {
+	organizationId: string;
 }
 
-/**
- * Translates our standard route query params into Strapi's specific format.
- * Extra `filters[…]` keys (Zod-passthrough) are decoded via the shared filters
- * adapter and merged with the free-text search `$or` block.
- */
-const toStrapiQueryParameters = (
-	parameters: QuotesQueryParams
-): StrapiQueryParams<Array<QuoteApiRecord>> => {
-	const sort = parameters.sortBy
-		? `${parameters.sortBy}:${parameters.sortOrder === "asc" ? "asc" : "desc"}`
-		: undefined;
-
-	const query: StrapiQueryParams<Array<QuoteApiRecord>> = {
-		pagination: {
-			page: parameters.page,
-			pageSize: parameters.pageSize,
-		},
-		sort,
-		populate: POPULATE,
-	};
-
-	if (
-		Array.isArray(parameters.quote_status) &&
-		parameters.quote_status.length > 0
-	) {
-		query.filters = {
-			...query.filters,
-			quoteStatus: {
-				$in: [...parameters.quote_status],
-			},
-		};
-	}
-
-	if (
-		parameters.createdAt &&
-		(parameters.createdAt.from || parameters.createdAt.to)
-	) {
-		query.filters = {
-			...query.filters,
-			createdAt: {
-				$gte: parameters.createdAt.from,
-				$lte: parameters.createdAt.to,
-			},
-		};
-	}
-
-	if (parameters.amount && (parameters.amount.min || parameters.amount.max)) {
-		query.filters = {
-			...query.filters,
-			total: {
-				amount: {
-					$gte: parameters.amount.min,
-					$lte: parameters.amount.max,
-				},
-			},
-		};
-	}
-
-	if (parameters.supplier_ids) {
-		query.filters = {
-			...query.filters,
-			supplier: {
-				documentId: {
-					$in: [...parameters.supplier_ids],
-				},
-			},
-		};
-	}
-
-	if (parameters.search) {
-		query.filters = {
-			...query.filters,
-			$or: [
-				{ supplier: { name: { $containsi: parameters.search } } },
-				{ notes: { $containsi: parameters.search } },
-				{ attachment: { name: { $containsi: parameters.search } } },
-				{ attachment: { url: { $containsi: parameters.search } } },
-			],
-		};
-	}
-
-	return query;
-};
-
-/** Prepend the Strapi base URL when the backend returns a relative media URL. */
-const withAbsoluteMediaUrl = (
-	media: AttachmentMedia | null | undefined
-): AttachmentMedia | undefined => {
-	if (!media) {
-		return undefined;
-	}
-
-	const pdfUrl = media.url;
-	if (
-		!pdfUrl ||
-		pdfUrl.startsWith("http://") ||
-		pdfUrl.startsWith("https://")
-	) {
-		return media;
-	}
-
-	return {
-		...media,
-		url: `${strapiConfig.baseUrl}${pdfUrl.startsWith("/") ? "" : "/"}${pdfUrl}`,
-	};
-};
-
-const fromQuoteApi = (quote: QuoteApiRecord): Quote => ({
-	id: quote.id,
-	documentId: quote.documentId,
-	quotation_date: quote.issueAt,
-	expiration_date: quote.expiresAt,
-	createdAt: quote.createdAt,
-	updatedAt: quote.updatedAt,
-	publishedAt: quote.publishedAt,
-	notes: quote.notes,
-	quote_status: quote.quoteStatus,
-	supplier: quote.supplier ?? null,
-	total: quote.total ?? null,
-	pdf: withAbsoluteMediaUrl(quote.attachment),
-	supplierOrders: quote.supplierOrders ?? null,
+const organizationHeaders = ({
+	organizationId,
+}: QuoteApiContext): HeadersInit => ({
+	"x-organization-id": organizationId,
 });
 
-const normalizeQuotes = (quotes: Array<QuoteApiRecord>): Array<Quote> =>
-	quotes.map(fromQuoteApi);
+const appendArray = (
+	query: URLSearchParams,
+	key: string,
+	values: Array<string> | undefined
+): void => {
+	if (!values || values.length === 0) {
+		return;
+	}
+	for (const value of values) {
+		query.append(key, value);
+	}
+};
+
+const toQuoteQueryString = (params: QuotesQueryParams): string => {
+	const query = new URLSearchParams();
+	query.set("page", String(params.page));
+	query.set("limit", String(params.pageSize));
+
+	if (params.search) {
+		query.set("search", params.search);
+	}
+	if (params.sortBy) {
+		query.set("sort[field]", params.sortBy);
+		query.set("sort[criteria]", params.sortOrder === "asc" ? "asc" : "desc");
+	}
+	appendArray(query, "status", params.quote_status);
+	appendArray(query, "supplierIds", params.supplier_ids);
+
+	if (params.quoteDate?.from) {
+		query.set("quoteDateFrom", params.quoteDate.from);
+	}
+	if (params.quoteDate?.to) {
+		query.set("quoteDateTo", params.quoteDate.to);
+	}
+	if (params.amount?.min !== undefined) {
+		query.set("totalAmountMin", String(params.amount.min));
+	}
+	if (params.amount?.max !== undefined) {
+		query.set("totalAmountMax", String(params.amount.max));
+	}
+
+	return query.toString();
+};
+
+const numberOrUndefined = (value: string): number | undefined => {
+	const parsed = Number.parseFloat(value);
+	return Number.isFinite(parsed) ? parsed : undefined;
+};
 
 const buildWritePayload = (
 	input: QuoteWriteInput,
-	relationMode: "connect" | "set"
-): Record<string, unknown> => {
-	const numericAmount = Number.parseFloat(input.amount);
-	const hasAmount = Number.isFinite(numericAmount);
-	const normalizedCurrency = input.currencyCode.trim().toUpperCase();
-	const hasCurrency = normalizedCurrency.length === 3;
-
-	const payload: Record<string, unknown> = {
-		issueAt: input.quotationDate || null,
-		expiresAt: input.expirationDate || null,
-		notes: input.notes.trim(),
-		quoteStatus: input.status,
+	attachmentId: string | null | undefined
+): CreateSupplierQuoteRequest | UpdateSupplierQuoteRequest => {
+	const amount = numberOrUndefined(input.amount);
+	const payload: CreateSupplierQuoteRequest | UpdateSupplierQuoteRequest = {
+		supplierId: input.supplierId.trim(),
+		quoteNumber: input.quoteNumber.trim() || null,
+		status: input.status,
+		quoteDate: input.quotationDate || null,
+		validUntil: input.expirationDate || null,
+		currencyCode: input.currencyCode.trim().toUpperCase(),
+		notes: input.notes.trim() || null,
 	};
 
-	if (hasAmount && hasCurrency) {
-		payload["total"] = {
-			amount: numericAmount,
-			currency_code: normalizedCurrency,
-		};
+	if (amount !== undefined) {
+		payload.subtotalAmount = amount;
+		payload.totalAmount = amount;
 	}
-
-	const supplierId = input.supplierId.trim();
-	if (supplierId) {
-		payload["supplier"] =
-			relationMode === "connect"
-				? { connect: [supplierId] }
-				: { set: [supplierId] };
-	}
-
-	if (input.removeExistingPdf && !input.pdfFile) {
-		payload["attachment"] = null;
+	if (attachmentId !== undefined) {
+		payload.attachmentId = attachmentId;
 	}
 
 	return payload;
 };
 
 export const getQuotes = async (
+	context: QuoteApiContext,
 	parameters: QuotesQueryParams
-): Promise<PaginatedResult<Quote>> => {
-	const response = await strapiClient
-		.from<Array<QuoteApiRecord>>("quotes")
-		.find(toStrapiQueryParameters(parameters));
-	const paginated = response as PaginatedResult<QuoteApiRecord>;
-
-	return {
-		...paginated,
-		data: normalizeQuotes(paginated.data),
-	};
-};
-
-export const getQuote = async (documentId: string): Promise<Quote> => {
-	const response = await strapiClient.request<QuoteApiRecord>(
-		`/quotes/${encodeURIComponent(documentId)}`,
+): Promise<SupplierQuoteListResponse> =>
+	moduflowRequest<SupplierQuoteListResponse>(
+		`/supplier-quotes?${toQuoteQueryString(parameters)}`,
 		{
+			headers: organizationHeaders(context),
 			method: "GET",
-			query: { populate: POPULATE },
 		}
 	);
 
-	return fromQuoteApi(response.data);
-};
+export const getQuote = async (
+	context: QuoteApiContext,
+	id: string
+): Promise<Quote> =>
+	moduflowRequest<Quote>(`/supplier-quotes/${encodeURIComponent(id)}`, {
+		headers: organizationHeaders(context),
+		method: "GET",
+	});
 
-export const createQuote = async (input: QuoteWriteInput): Promise<Quote> => {
-	const payload = buildWritePayload(input, "connect");
-	if (input.pdfFile) {
-		const uploadResponse = await strapiClient
-			.from<QuoteApiRecord>("quotes")
-			.uploadFile(input.pdfFile);
-		const [media] = uploadResponse.data;
-		if (media) {
-			payload["attachment"] = media.id;
-		}
-	}
-
-	const response = await strapiClient
-		.from<QuoteApiRecord>("quotes")
-		.create(payload);
-
-	return getQuote(response.data.documentId);
+export const createQuote = async (
+	context: QuoteApiContext,
+	input: QuoteWriteInput
+): Promise<Quote> => {
+	const attachment = input.pdfFile
+		? await uploadSupplierDocument(context, input.pdfFile)
+		: null;
+	return moduflowRequest<Quote>("/supplier-quotes", {
+		body: buildWritePayload(input, attachment?.id),
+		headers: organizationHeaders(context),
+		method: "POST",
+	});
 };
 
 export const updateQuote = async (
-	documentId: string,
+	context: QuoteApiContext,
+	id: string,
 	input: QuoteWriteInput
 ): Promise<Quote> => {
-	const payload = buildWritePayload(input, "set");
-	if (input.pdfFile) {
-		const uploadResponse = await strapiClient
-			.from<QuoteApiRecord>("quotes")
-			.uploadFile(input.pdfFile);
-		const [media] = uploadResponse.data;
-		if (media) {
-			payload["attachment"] = media.id;
-		}
-	}
+	const attachment = input.pdfFile
+		? await uploadSupplierDocument(context, input.pdfFile)
+		: null;
+	const attachmentId = input.pdfFile
+		? attachment?.id
+		: input.removeExistingPdf
+			? null
+			: undefined;
 
-	await strapiClient
-		.from<QuoteApiRecord>("quotes")
-		.update(documentId, payload);
-
-	return getQuote(documentId);
+	return moduflowRequest<Quote>(`/supplier-quotes/${encodeURIComponent(id)}`, {
+		body: buildWritePayload(input, attachmentId),
+		headers: organizationHeaders(context),
+		method: "PATCH",
+	});
 };
 
-export const deleteQuote = async (documentId: string): Promise<void> => {
-	await strapiClient.from<Quote>("quotes").delete(documentId);
-};
+export const deleteQuote = async (
+	context: QuoteApiContext,
+	id: string
+): Promise<void> =>
+	moduflowRequest<void>(`/supplier-quotes/${encodeURIComponent(id)}`, {
+		headers: organizationHeaders(context),
+		method: "DELETE",
+	});

@@ -20,7 +20,7 @@ export const tableFiltersSchema = z.object({
 
 const quoteFiltersSchema = z.object({
 	quote_status: z.array(quoteStatusSchema).optional(),
-	createdAt: dateRangeSchema.optional().catch(undefined),
+	quoteDate: dateRangeSchema.optional().catch(undefined),
 	// Using flat keys for cleaner URLs as discussed
 	supplier_ids: z.array(z.string()).optional().catch(undefined),
 	amount: numberRangeSchema.optional().catch(undefined),
