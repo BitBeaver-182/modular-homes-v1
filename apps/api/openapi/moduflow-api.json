@@ -1703,6 +1703,218 @@
         ]
       }
     },
+    "/api/supplier-quotes": {
+      "post": {
+        "description": "Create a supplier quote in the active organization.",
+        "operationId": "SupplierQuotesController_create",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupplierQuoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierQuoteResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create Supplier Quote",
+        "tags": [
+          "Supplier Quotes"
+        ]
+      },
+      "get": {
+        "description": "Return supplier quotes in the active organization.",
+        "operationId": "SupplierQuotesController_findAll",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierQuoteListResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Supplier Quotes",
+        "tags": [
+          "Supplier Quotes"
+        ]
+      }
+    },
+    "/api/supplier-quotes/{id}": {
+      "get": {
+        "description": "Return a single supplier quote in the active organization.",
+        "operationId": "SupplierQuotesController_findOne",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the supplier quote.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierQuoteResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Supplier Quote",
+        "tags": [
+          "Supplier Quotes"
+        ]
+      },
+      "patch": {
+        "description": "Update a supplier quote in the active organization.",
+        "operationId": "SupplierQuotesController_update",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the supplier quote.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSupplierQuoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierQuoteResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update Supplier Quote",
+        "tags": [
+          "Supplier Quotes"
+        ]
+      },
+      "delete": {
+        "description": "Soft-delete a supplier quote in the active organization.",
+        "operationId": "SupplierQuotesController_remove",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "BigInt identifier for the supplier quote.",
+            "schema": {
+              "type": "string",
+              "example": "1"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Delete Supplier Quote",
+        "tags": [
+          "Supplier Quotes"
+        ]
+      }
+    },
     "/api/organizations": {
       "post": {
         "description": "Create a new organization for the authenticated user.",
@@ -2982,6 +3194,454 @@
           }
         }
       },
+      "SupplierQuoteLineDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "houseModelId": {
+            "type": "object",
+            "example": "12",
+            "nullable": true
+          },
+          "productConfigurationId": {
+            "type": "object",
+            "example": "25",
+            "nullable": true
+          },
+          "description": {
+            "type": "object",
+            "example": "Two-bedroom modular home shell"
+          },
+          "estimatedProductionDays": {
+            "type": "object",
+            "example": 45,
+            "nullable": true
+          },
+          "notes": {
+            "type": "object",
+            "example": "Includes standard fixture package"
+          }
+        }
+      },
+      "CreateSupplierQuoteDto": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "example": "1"
+          },
+          "attachmentId": {
+            "type": "object",
+            "example": "ckvxo0n1a000001l46me8xz6u",
+            "nullable": true
+          },
+          "quoteNumber": {
+            "type": "object",
+            "example": "SQ-2026-001",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "received",
+              "accepted",
+              "rejected",
+              "expired"
+            ],
+            "default": "received"
+          },
+          "quoteDate": {
+            "type": "object",
+            "example": "2026-05-30",
+            "nullable": true
+          },
+          "validUntil": {
+            "type": "object",
+            "example": "2026-06-30",
+            "nullable": true
+          },
+          "currencyCode": {
+            "type": "string",
+            "example": "USD",
+            "default": "USD"
+          },
+          "incoterm": {
+            "type": "object",
+            "example": "FOB",
+            "nullable": true
+          },
+          "paymentTerms": {
+            "type": "object",
+            "example": "50% deposit, net 30",
+            "nullable": true
+          },
+          "loadingPort": {
+            "type": "object",
+            "example": "Shanghai",
+            "nullable": true
+          },
+          "destinationPort": {
+            "type": "object",
+            "example": "Rotterdam",
+            "nullable": true
+          },
+          "notes": {
+            "type": "object",
+            "example": "Supplier confirmed production slot."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierQuoteLineDto"
+            }
+          }
+        },
+        "required": [
+          "supplierId"
+        ]
+      },
+      "FileUploadPresenter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckvxo0n1a000001l46me8xz6u"
+          },
+          "filename": {
+            "type": "string",
+            "example": "floor-plan.pdf"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://example.supabase.co/storage/v1/object/..."
+          },
+          "context": {
+            "type": "string",
+            "enum": [
+              "AVATAR",
+              "ORGANIZATION_LOGO",
+              "SUPPLIER_DOCUMENT"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "ORPHANED",
+              "DELETED"
+            ]
+          },
+          "uploadedAt": {
+            "type": "string",
+            "example": "2026-05-30T08:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "mimeType",
+          "url",
+          "context",
+          "status",
+          "uploadedAt"
+        ]
+      },
+      "SupplierQuoteLineResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "houseModelId": {
+            "type": "object",
+            "example": "12",
+            "nullable": true
+          },
+          "productConfigurationId": {
+            "type": "object",
+            "example": "25",
+            "nullable": true
+          },
+          "description": {
+            "type": "object",
+            "example": "Two-bedroom modular home shell"
+          },
+          "quantity": {
+            "type": "number",
+            "example": 2
+          },
+          "unitCost": {
+            "type": "number",
+            "example": 25000
+          },
+          "lineTotal": {
+            "type": "number",
+            "example": 50000
+          },
+          "estimatedProductionDays": {
+            "type": "object",
+            "example": 45,
+            "nullable": true
+          },
+          "notes": {
+            "type": "object",
+            "example": "Includes standard fixture package"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "quantity",
+          "unitCost",
+          "lineTotal",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SupplierQuoteResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/SupplierResponse"
+          },
+          "attachment": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FileUploadPresenter"
+              }
+            ]
+          },
+          "quoteNumber": {
+            "type": "object",
+            "example": "SQ-2026-001",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "received",
+              "accepted",
+              "rejected",
+              "expired"
+            ]
+          },
+          "quoteDate": {
+            "type": "object",
+            "example": "2026-05-30",
+            "nullable": true
+          },
+          "validUntil": {
+            "type": "object",
+            "example": "2026-06-30",
+            "nullable": true
+          },
+          "currencyCode": {
+            "type": "string",
+            "example": "USD"
+          },
+          "subtotalAmount": {
+            "type": "number",
+            "example": 50000
+          },
+          "shippingAmount": {
+            "type": "number",
+            "example": 1200
+          },
+          "taxAmount": {
+            "type": "number",
+            "example": 450
+          },
+          "totalAmount": {
+            "type": "number",
+            "example": 51650
+          },
+          "incoterm": {
+            "type": "object",
+            "example": "FOB",
+            "nullable": true
+          },
+          "paymentTerms": {
+            "type": "object",
+            "example": "50% deposit, net 30",
+            "nullable": true
+          },
+          "loadingPort": {
+            "type": "object",
+            "example": "Shanghai",
+            "nullable": true
+          },
+          "destinationPort": {
+            "type": "object",
+            "example": "Rotterdam",
+            "nullable": true
+          },
+          "notes": {
+            "type": "object",
+            "example": "Supplier confirmed production slot."
+          },
+          "acceptedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "rejectedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "acceptedByUserId": {
+            "type": "object",
+            "example": "1",
+            "nullable": true
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierQuoteLineResponse"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "supplier",
+          "status",
+          "currencyCode",
+          "subtotalAmount",
+          "shippingAmount",
+          "taxAmount",
+          "totalAmount",
+          "lines",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SupplierQuoteListMetaResponse": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/SupplierPaginationResponse"
+          }
+        },
+        "required": [
+          "pagination"
+        ]
+      },
+      "SupplierQuoteListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierQuoteResponse"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SupplierQuoteListMetaResponse"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "UpdateSupplierQuoteDto": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "example": "1"
+          },
+          "attachmentId": {
+            "type": "object",
+            "example": "ckvxo0n1a000001l46me8xz6u",
+            "nullable": true
+          },
+          "quoteNumber": {
+            "type": "object",
+            "example": "SQ-2026-001",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "received",
+              "accepted",
+              "rejected",
+              "expired"
+            ],
+            "default": "received"
+          },
+          "quoteDate": {
+            "type": "object",
+            "example": "2026-05-30",
+            "nullable": true
+          },
+          "validUntil": {
+            "type": "object",
+            "example": "2026-06-30",
+            "nullable": true
+          },
+          "currencyCode": {
+            "type": "string",
+            "example": "USD",
+            "default": "USD"
+          },
+          "incoterm": {
+            "type": "object",
+            "example": "FOB",
+            "nullable": true
+          },
+          "paymentTerms": {
+            "type": "object",
+            "example": "50% deposit, net 30",
+            "nullable": true
+          },
+          "loadingPort": {
+            "type": "object",
+            "example": "Shanghai",
+            "nullable": true
+          },
+          "destinationPort": {
+            "type": "object",
+            "example": "Rotterdam",
+            "nullable": true
+          },
+          "notes": {
+            "type": "object",
+            "example": "Supplier confirmed production slot."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierQuoteLineDto"
+            }
+          }
+        }
+      },
       "CreateOrganizationDto": {
         "type": "object",
         "properties": {
@@ -3070,57 +3730,6 @@
           "fileId",
           "uploadUrl",
           "expiresIn"
-        ]
-      },
-      "FileUploadPresenter": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "ckvxo0n1a000001l46me8xz6u"
-          },
-          "filename": {
-            "type": "string",
-            "example": "floor-plan.pdf"
-          },
-          "mimeType": {
-            "type": "string",
-            "example": "application/pdf"
-          },
-          "url": {
-            "type": "string",
-            "example": "https://example.supabase.co/storage/v1/object/..."
-          },
-          "context": {
-            "type": "string",
-            "enum": [
-              "AVATAR",
-              "ORGANIZATION_LOGO",
-              "SUPPLIER_DOCUMENT"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "CONFIRMED",
-              "ORPHANED",
-              "DELETED"
-            ]
-          },
-          "uploadedAt": {
-            "type": "string",
-            "example": "2026-05-30T08:00:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "filename",
-          "mimeType",
-          "url",
-          "context",
-          "status",
-          "uploadedAt"
         ]
       },
       "SignedReadUrlPresenter": {

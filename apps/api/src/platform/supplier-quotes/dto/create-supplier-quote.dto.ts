@@ -2,9 +2,7 @@ import type {
   CreateSupplierQuoteRequest,
   SupplierQuoteStatus,
 } from '@moduflow/types';
-import {
-  SUPPLIER_QUOTE_STATUSES,
-} from '@moduflow/types';
+import { SUPPLIER_QUOTE_STATUSES } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {

@@ -98,6 +98,8 @@ describe('SupplierQuotesService', () => {
       select: { id: true },
     });
     expect(prisma.supplierQuote.create).toHaveBeenCalledWith({
+      // Jest asymmetric matchers are typed as any.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       data: expect.objectContaining({
         organizationId: 4n,
         supplierId: 8n,
@@ -120,6 +122,8 @@ describe('SupplierQuotesService', () => {
           ],
         },
       }),
+      // Jest asymmetric matchers are typed as any.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       include: expect.any(Object),
     });
   });
@@ -169,6 +173,8 @@ describe('SupplierQuotesService', () => {
     });
 
     expect(prisma.supplierQuote.findMany).toHaveBeenCalledWith({
+      // Jest asymmetric matchers are typed as any.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       where: expect.objectContaining({
         organizationId: 4n,
         deletedAt: null,
@@ -186,6 +192,8 @@ describe('SupplierQuotesService', () => {
       orderBy: [{ supplier: { name: 'asc' } }, { id: 'asc' }],
       skip: 0,
       take: 25,
+      // Jest asymmetric matchers are typed as any.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       include: expect.any(Object),
     });
   });
@@ -220,12 +228,18 @@ describe('SupplierQuotesService', () => {
 
     expect(prisma.supplierQuote.update).toHaveBeenCalledWith({
       where: { id: 1n },
+      // Jest asymmetric matchers are typed as any.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       data: expect.objectContaining({
         status: 'accepted',
+        // Jest asymmetric matchers are typed as any.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         acceptedAt: expect.any(Date),
         acceptedByUserId: 9n,
         rejectedAt: null,
       }),
+      // Jest asymmetric matchers are typed as any.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       include: expect.any(Object),
     });
   });

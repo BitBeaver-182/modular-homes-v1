@@ -1,10 +1,10 @@
-import type {
-	FileUploadResponse,
-	SupplierQuoteListResponse,
-	SupplierQuoteResponse,
-	SupplierQuoteStatus,
+import {
+	SUPPLIER_QUOTE_STATUSES,
+	type FileUploadResponse,
+	type SupplierQuoteListResponse,
+	type SupplierQuoteResponse,
+	type SupplierQuoteStatus,
 } from "@moduflow/types";
-import { SUPPLIER_QUOTE_STATUSES } from "@moduflow/types";
 
 export const QUOTE_STATUSES = SUPPLIER_QUOTE_STATUSES;
 export type QuoteStatus = SupplierQuoteStatus;

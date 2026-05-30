@@ -9,9 +9,7 @@ import type {
 import { SUPPLIER_QUOTE_STATUSES } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import {
-  FileUploadPresenter,
-} from '../../../uploads/presenters/file-upload.presenter';
+import { FileUploadPresenter } from '../../../uploads/presenters/file-upload.presenter';
 import {
   SupplierPaginationResponse,
   SupplierResponse,
@@ -168,9 +166,7 @@ export class SupplierQuoteResponse implements SupplierQuoteContract {
   updatedAt!: string;
 }
 
-export class SupplierQuoteListMetaResponse
-  implements SupplierQuoteListMetaContract
-{
+export class SupplierQuoteListMetaResponse implements SupplierQuoteListMetaContract {
   constructor(partial: SupplierQuoteListMetaContract) {
     Object.assign(this, partial);
   }

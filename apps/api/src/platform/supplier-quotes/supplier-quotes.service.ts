@@ -75,7 +75,10 @@ export class SupplierQuotesService {
       actor.organizationId,
       normalizeOptionalString(dto.quoteNumber),
     );
-    await this.assertAttachmentAvailable(actor.organizationId, dto.attachmentId);
+    await this.assertAttachmentAvailable(
+      actor.organizationId,
+      dto.attachmentId,
+    );
 
     const amounts = calculateAmounts(dto);
     const statusData = getStatusAuditData(dto.status ?? 'received', actor);
@@ -120,7 +123,10 @@ export class SupplierQuotesService {
   async findAll(
     organizationId: bigint,
     query: SupplierQuoteQuery,
-  ): Promise<{ data: SupplierQuoteWithRelations[]; meta: SupplierQuoteListMeta }> {
+  ): Promise<{
+    data: SupplierQuoteWithRelations[];
+    meta: SupplierQuoteListMeta;
+  }> {
     assertSupportedQuery(query);
 
     const builtQuery = await this.querybuilder.query({
@@ -222,7 +228,10 @@ export class SupplierQuotesService {
       return await this.prisma.$transaction(async (tx) => {
         if (dto.lines !== undefined) {
           await tx.supplierQuoteLine.deleteMany({
-            where: { supplierQuoteId: id, organizationId: actor.organizationId },
+            where: {
+              supplierQuoteId: id,
+              organizationId: actor.organizationId,
+            },
           });
         }
 
@@ -233,7 +242,9 @@ export class SupplierQuotesService {
             ...(dto.attachmentId !== undefined
               ? { attachmentId: normalizeOptionalString(dto.attachmentId) }
               : {}),
-            ...(dto.quoteNumber !== undefined ? { quoteNumber: nextQuoteNumber } : {}),
+            ...(dto.quoteNumber !== undefined
+              ? { quoteNumber: nextQuoteNumber }
+              : {}),
             ...(dto.status !== undefined ? { status: dto.status } : {}),
             ...(dto.quoteDate !== undefined
               ? { quoteDate: parseOptionalDate(dto.quoteDate) }
@@ -258,7 +269,9 @@ export class SupplierQuotesService {
               ? { loadingPort: normalizeOptionalString(dto.loadingPort) }
               : {}),
             ...(dto.destinationPort !== undefined
-              ? { destinationPort: normalizeOptionalString(dto.destinationPort) }
+              ? {
+                  destinationPort: normalizeOptionalString(dto.destinationPort),
+                }
               : {}),
             ...(dto.notes !== undefined
               ? { notes: normalizeOptionalString(dto.notes) }
@@ -347,7 +360,9 @@ export class SupplierQuotesService {
       select: { id: true },
     });
     if (!upload) {
-      throw new BadRequestException('Attachment must be a confirmed supplier document');
+      throw new BadRequestException(
+        'Attachment must be a confirmed supplier document',
+      );
     }
 
     const existingQuote = await this.prisma.supplierQuote.findFirst({
@@ -398,10 +413,7 @@ function calculateAmounts(input: SupplierQuoteWrite): {
 } {
   const hasLines = Array.isArray(input.lines) && input.lines.length > 0;
   const lineSubtotal = hasLines
-    ? input.lines!.reduce(
-        (sum, line) => sum + line.quantity * line.unitCost,
-        0,
-      )
+    ? input.lines!.reduce((sum, line) => sum + line.quantity * line.unitCost, 0)
     : undefined;
   const subtotalAmount = lineSubtotal ?? input.subtotalAmount ?? 0;
   const shippingAmount = input.shippingAmount ?? 0;
@@ -437,10 +449,8 @@ function mergeQuoteInput(
         ? current.validUntil.toISOString().slice(0, 10)
         : null),
     currencyCode: input.currencyCode ?? current.currencyCode,
-    subtotalAmount:
-      input.subtotalAmount ?? Number(current.subtotalAmount),
-    shippingAmount:
-      input.shippingAmount ?? Number(current.shippingAmount),
+    subtotalAmount: input.subtotalAmount ?? Number(current.subtotalAmount),
+    shippingAmount: input.shippingAmount ?? Number(current.shippingAmount),
     taxAmount: input.taxAmount ?? Number(current.taxAmount),
     totalAmount: input.totalAmount ?? Number(current.totalAmount),
     incoterm: input.incoterm ?? current.incoterm,
@@ -453,8 +463,7 @@ function mergeQuoteInput(
       current.lines.map((line) => ({
         id: line.id.toString(),
         houseModelId: line.houseModelId?.toString() ?? null,
-        productConfigurationId:
-          line.productConfigurationId?.toString() ?? null,
+        productConfigurationId: line.productConfigurationId?.toString() ?? null,
         description: line.description,
         quantity: line.quantity,
         unitCost: Number(line.unitCost),
@@ -518,7 +527,12 @@ function buildSupplierQuoteWhere(
   }
   addDateRange(where, 'quoteDate', query.quoteDateFrom, query.quoteDateTo);
   addDateRange(where, 'validUntil', query.validUntilFrom, query.validUntilTo);
-  addNumberRange(where, 'totalAmount', query.totalAmountMin, query.totalAmountMax);
+  addNumberRange(
+    where,
+    'totalAmount',
+    query.totalAmountMin,
+    query.totalAmountMax,
+  );
 
   if (search) {
     where.OR = [
@@ -629,7 +643,9 @@ function assertSafeSort(query: SupplierQuoteQuery): void {
   const nestedSort = query.sort;
 
   if (Array.isArray(nestedSort)) {
-    throw new BadRequestException('Only one supplier quote sort field is supported');
+    throw new BadRequestException(
+      'Only one supplier quote sort field is supported',
+    );
   }
   if (nestedSort !== undefined && !isPlainObject(nestedSort)) {
     throw new BadRequestException('Invalid supplier quote sort parameter');
@@ -647,10 +663,14 @@ function assertSafeSort(query: SupplierQuoteQuery): void {
   const field = flatField ?? getStringValue(nestedSort?.field);
   const criteria = flatCriteria ?? getStringValue(nestedSort?.criteria);
   if (field && !isSupplierQuoteSortField(field)) {
-    throw new BadRequestException(`Unsupported supplier quote sort field: ${field}`);
+    throw new BadRequestException(
+      `Unsupported supplier quote sort field: ${field}`,
+    );
   }
   if (criteria && criteria !== 'asc' && criteria !== 'desc') {
-    throw new BadRequestException('Supplier quote sort criteria must be asc or desc');
+    throw new BadRequestException(
+      'Supplier quote sort criteria must be asc or desc',
+    );
   }
 }
 
@@ -673,12 +693,17 @@ function getSafeOrderBy(
     }
     const [[field, direction]] = entries;
     if (!isSupplierQuoteSortField(field)) {
-      throw new BadRequestException(`Unsupported supplier quote sort field: ${field}`);
+      throw new BadRequestException(
+        `Unsupported supplier quote sort field: ${field}`,
+      );
     }
     if (direction !== 'asc' && direction !== 'desc') {
-      throw new BadRequestException('Supplier quote sort criteria must be asc or desc');
+      throw new BadRequestException(
+        'Supplier quote sort criteria must be asc or desc',
+      );
     }
-    const sortDirection = direction as Prisma.SortOrder;
+    const sortDirection: Prisma.SortOrder =
+      direction === 'asc' ? 'asc' : 'desc';
     if (field === 'supplier.name') {
       return { supplier: { name: sortDirection } };
     }
@@ -703,7 +728,9 @@ function parseOptionalBigInt(
 
 function parseOptionalDate(value: string | null | undefined): Date | null {
   const normalized = normalizeOptionalString(value);
-  return normalized ? new Date(`${normalized.slice(0, 10)}T00:00:00.000Z`) : null;
+  return normalized
+    ? new Date(`${normalized.slice(0, 10)}T00:00:00.000Z`)
+    : null;
 }
 
 function normalizeOptionalString(
