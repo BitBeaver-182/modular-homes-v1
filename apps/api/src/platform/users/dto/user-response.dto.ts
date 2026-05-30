@@ -18,11 +18,12 @@ export class UserResponse implements UserContract {
   email!: string;
 
   @Expose()
-  @ApiProperty({ example: 'Alex Johnson', nullable: true })
+  @ApiProperty({ type: String, example: 'Alex Johnson', nullable: true })
   name!: string | null;
 
   @Expose()
   @ApiProperty({
+    type: String,
     example: 'https://example.com/avatar.png',
     nullable: true,
   })

@@ -151,4 +151,27 @@ describe('AppConfigService', () => {
 
     expect(service.jwtSecret).toBe('moduflow-local-jwt-secret');
   });
+
+  it('returns supabase credentials and bucket config from env', () => {
+    configService.getOrThrow.mockImplementation((key: string) => {
+      if (key === 'SUPABASE_URL') {
+        return 'https://project.supabase.co';
+      }
+      if (key === 'SUPABASE_SECRET_KEY') {
+        return 'secret-key';
+      }
+      if (key === 'SUPABASE_PUBLIC_ASSETS_BUCKET') {
+        return 'public-assets';
+      }
+      if (key === 'SUPABASE_PRIVATE_DOCUMENTS_BUCKET') {
+        return 'private-documents';
+      }
+      return '';
+    });
+
+    expect(service.supabaseUrl).toBe('https://project.supabase.co');
+    expect(service.supabaseSecretKey).toBe('secret-key');
+    expect(service.supabasePublicAssetsBucket).toBe('public-assets');
+    expect(service.supabasePrivateDocumentsBucket).toBe('private-documents');
+  });
 });

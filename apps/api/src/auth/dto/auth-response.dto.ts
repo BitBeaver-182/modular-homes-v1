@@ -24,11 +24,15 @@ export class AuthUserPresenter implements UserSummaryResponse {
   email!: string;
 
   @Expose()
-  @ApiProperty({ example: 'Owner User', nullable: true })
+  @ApiProperty({ type: String, example: 'Owner User', nullable: true })
   name!: string | null;
 
   @Expose()
-  @ApiProperty({ example: 'https://example.com/avatar.png', nullable: true })
+  @ApiProperty({
+    type: String,
+    example: 'https://example.com/avatar.png',
+    nullable: true,
+  })
   avatarUrl!: string | null;
 }
 

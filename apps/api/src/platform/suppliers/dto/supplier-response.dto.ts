@@ -20,20 +20,32 @@ export class SupplierResponse implements SupplierContract {
   @Expose()
   name!: string;
 
-  @ApiPropertyOptional({ example: '+1 555 0100', nullable: true })
+  @ApiPropertyOptional({
+    type: String,
+    example: '+1 555 0100',
+    nullable: true,
+  })
   @Expose()
   phoneNumber!: string | null;
 
-  @ApiPropertyOptional({ example: 'orders@example.com', nullable: true })
+  @ApiPropertyOptional({
+    type: String,
+    example: 'orders@example.com',
+    nullable: true,
+  })
   @Expose()
   email!: string | null;
 
-  @ApiPropertyOptional({ example: '100 Main Street', nullable: true })
+  @ApiPropertyOptional({ type: () => SupplierAddressResponse, nullable: true })
   @Expose()
   @Type(() => SupplierAddressResponse)
   address!: SupplierAddressResponse | null;
 
-  @ApiPropertyOptional({ example: 'https://example.com', nullable: true })
+  @ApiPropertyOptional({
+    type: String,
+    example: 'https://example.com',
+    nullable: true,
+  })
   @Expose()
   website!: string | null;
 
@@ -55,27 +67,31 @@ export class SupplierAddressResponse implements SupplierAddressContract {
   @Expose()
   fullAddress!: string;
 
-  @ApiPropertyOptional({ example: '100 Main Street', nullable: true })
+  @ApiPropertyOptional({
+    type: String,
+    example: '100 Main Street',
+    nullable: true,
+  })
   @Expose()
   line1!: string | null;
 
-  @ApiPropertyOptional({ example: 'Suite 200', nullable: true })
+  @ApiPropertyOptional({ type: String, example: 'Suite 200', nullable: true })
   @Expose()
   line2!: string | null;
 
-  @ApiPropertyOptional({ example: 'Austin', nullable: true })
+  @ApiPropertyOptional({ type: String, example: 'Austin', nullable: true })
   @Expose()
   city!: string | null;
 
-  @ApiPropertyOptional({ example: 'TX', nullable: true })
+  @ApiPropertyOptional({ type: String, example: 'TX', nullable: true })
   @Expose()
   region!: string | null;
 
-  @ApiPropertyOptional({ example: '78701', nullable: true })
+  @ApiPropertyOptional({ type: String, example: '78701', nullable: true })
   @Expose()
   postalCode!: string | null;
 
-  @ApiPropertyOptional({ example: 'US', nullable: true })
+  @ApiPropertyOptional({ type: String, example: 'US', nullable: true })
   @Expose()
   countryCode!: string | null;
 }

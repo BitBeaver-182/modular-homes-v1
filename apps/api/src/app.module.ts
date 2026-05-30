@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { QuerybuilderModule } from 'nestjs-prisma-querybuilder';
 import { HealthModule } from './global/health/health.module';
 import { AppConfigModule } from './config/app-config.module';
@@ -14,6 +15,7 @@ import { BootstrapModule } from './shared/bootstrap/bootstrap.module';
 import { PlatformModule } from './platform/platform.module';
 import { AuthModule } from './auth/auth.module';
 import { createValidationException } from './common/errors/api-error';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -37,11 +39,13 @@ import { createValidationException } from './common/errors/api-error';
       }),
     }),
     AuthModule,
+    ScheduleModule.forRoot(),
     BootstrapModule,
     DatabaseModule,
     HealthModule,
     PlatformModule,
     OrganizationsModule,
+    UploadsModule,
   ],
   providers: [
     {

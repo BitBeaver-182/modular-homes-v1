@@ -23,6 +23,10 @@ describe('validateEnv', () => {
       THROTTLE_TTL_MS: undefined,
       THROTTLE_LIMIT: undefined,
       JWT_SECRET: undefined,
+      SUPABASE_URL: undefined,
+      SUPABASE_SECRET_KEY: undefined,
+      SUPABASE_PUBLIC_ASSETS_BUCKET: undefined,
+      SUPABASE_PRIVATE_DOCUMENTS_BUCKET: undefined,
     });
   });
 
@@ -74,6 +78,50 @@ describe('validateEnv', () => {
     ).toThrow('JWT_SECRET is required in production');
   });
 
+  it('requires Supabase credentials in production', () => {
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+        JWT_SECRET: 'super-secret',
+      }),
+    ).toThrow('SUPABASE_URL is required in production');
+
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+        JWT_SECRET: 'super-secret',
+        SUPABASE_URL: 'https://project.supabase.co',
+      }),
+    ).toThrow('SUPABASE_SECRET_KEY is required in production');
+
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+        JWT_SECRET: 'super-secret',
+        SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_SECRET_KEY: 'secret-key',
+      }),
+    ).toThrow('SUPABASE_PUBLIC_ASSETS_BUCKET is required in production');
+
+    expect(() =>
+      validateEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+        JWT_SECRET: 'super-secret',
+        SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_SECRET_KEY: 'secret-key',
+        SUPABASE_PUBLIC_ASSETS_BUCKET: 'public-assets',
+      }),
+    ).toThrow('SUPABASE_PRIVATE_DOCUMENTS_BUCKET is required in production');
+  });
+
   it('includes JWT_SECRET when provided', () => {
     const result = validateEnv({
       NODE_ENV: 'test',
@@ -83,6 +131,23 @@ describe('validateEnv', () => {
     });
 
     expect(result.JWT_SECRET).toBe('super-secret');
+  });
+
+  it('includes Supabase credentials when provided', () => {
+    const result = validateEnv({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+      DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+      SUPABASE_URL: 'https://project.supabase.co',
+      SUPABASE_SECRET_KEY: 'secret-key',
+      SUPABASE_PUBLIC_ASSETS_BUCKET: 'public-assets',
+      SUPABASE_PRIVATE_DOCUMENTS_BUCKET: 'private-documents',
+    });
+
+    expect(result.SUPABASE_URL).toBe('https://project.supabase.co');
+    expect(result.SUPABASE_SECRET_KEY).toBe('secret-key');
+    expect(result.SUPABASE_PUBLIC_ASSETS_BUCKET).toBe('public-assets');
+    expect(result.SUPABASE_PRIVATE_DOCUMENTS_BUCKET).toBe('private-documents');
   });
 
   it('uses PORT when provided', () => {

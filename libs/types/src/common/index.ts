@@ -1,5 +1,6 @@
 export type ApiId = string;
 export type IsoDateString = string;
+export * from './uploads';
 export const API_ERROR_KEYS = [
   'validation.email',
   'validation.phone',

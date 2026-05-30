@@ -11,6 +11,10 @@ export interface AppEnv {
   THROTTLE_TTL_MS?: number;
   THROTTLE_LIMIT?: number;
   JWT_SECRET?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_SECRET_KEY?: string;
+  SUPABASE_PUBLIC_ASSETS_BUCKET?: string;
+  SUPABASE_PRIVATE_DOCUMENTS_BUCKET?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): AppEnv {
@@ -41,9 +45,35 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
     typeof config.CORS_ORIGINS === 'string' && config.CORS_ORIGINS.length > 0
       ? config.CORS_ORIGINS
       : undefined;
+  const supabaseUrl = getOptionalString(config.SUPABASE_URL);
+  const supabaseSecretKey = getOptionalString(config.SUPABASE_SECRET_KEY);
+  const supabasePublicAssetsBucket = getOptionalString(
+    config.SUPABASE_PUBLIC_ASSETS_BUCKET,
+  );
+  const supabasePrivateDocumentsBucket = getOptionalString(
+    config.SUPABASE_PRIVATE_DOCUMENTS_BUCKET,
+  );
 
   if (rawNodeEnv === 'production' && !jwtSecret) {
     throw new Error('JWT_SECRET is required in production');
+  }
+
+  if (rawNodeEnv === 'production' && !supabaseUrl) {
+    throw new Error('SUPABASE_URL is required in production');
+  }
+
+  if (rawNodeEnv === 'production' && !supabaseSecretKey) {
+    throw new Error('SUPABASE_SECRET_KEY is required in production');
+  }
+
+  if (rawNodeEnv === 'production' && !supabasePublicAssetsBucket) {
+    throw new Error('SUPABASE_PUBLIC_ASSETS_BUCKET is required in production');
+  }
+
+  if (rawNodeEnv === 'production' && !supabasePrivateDocumentsBucket) {
+    throw new Error(
+      'SUPABASE_PRIVATE_DOCUMENTS_BUCKET is required in production',
+    );
   }
 
   return {
@@ -62,6 +92,10 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       'THROTTLE_LIMIT',
     ),
     JWT_SECRET: jwtSecret,
+    SUPABASE_URL: supabaseUrl,
+    SUPABASE_SECRET_KEY: supabaseSecretKey,
+    SUPABASE_PUBLIC_ASSETS_BUCKET: supabasePublicAssetsBucket,
+    SUPABASE_PRIVATE_DOCUMENTS_BUCKET: supabasePrivateDocumentsBucket,
   };
 }
 

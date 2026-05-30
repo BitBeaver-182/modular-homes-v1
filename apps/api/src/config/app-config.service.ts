@@ -120,4 +120,20 @@ export class AppConfigService {
       'moduflow-local-jwt-secret'
     );
   }
+
+  get supabaseUrl(): string {
+    return this.configService.getOrThrow('SUPABASE_URL');
+  }
+
+  get supabaseSecretKey(): string {
+    return this.configService.getOrThrow('SUPABASE_SECRET_KEY');
+  }
+
+  get supabasePublicAssetsBucket(): string {
+    return this.configService.getOrThrow('SUPABASE_PUBLIC_ASSETS_BUCKET');
+  }
+
+  get supabasePrivateDocumentsBucket(): string {
+    return this.configService.getOrThrow('SUPABASE_PRIVATE_DOCUMENTS_BUCKET');
+  }
 }

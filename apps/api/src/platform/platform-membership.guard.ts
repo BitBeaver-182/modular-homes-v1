@@ -20,12 +20,18 @@ export class PlatformMembershipGuard {
         deletedAt: null,
         status: 'active',
       },
-      select: { id: true },
+      select: { governanceRole: true },
     });
 
     if (!membership) {
       throw new ForbiddenException('Organization membership required');
     }
+
+    request.actor = {
+      ...request.user,
+      organizationId: request.organizationId,
+      governanceRole: membership.governanceRole,
+    };
 
     return true;
   }
