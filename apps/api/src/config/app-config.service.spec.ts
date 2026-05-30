@@ -31,10 +31,19 @@ describe('AppConfigService', () => {
   });
 
   it('returns directUrl from the config service', () => {
-    configService.getOrThrow.mockReturnValue('postgresql://direct');
+    configService.get.mockReturnValue('postgresql://direct');
 
     expect(service.directUrl).toBe('postgresql://direct');
-    expect(configService.getOrThrow).toHaveBeenCalledWith('DIRECT_URL');
+    expect(configService.get).toHaveBeenCalledWith('DIRECT_URL');
+  });
+
+  it('falls back to databaseUrl when directUrl is not configured', () => {
+    configService.get.mockReturnValue(undefined);
+    configService.getOrThrow.mockReturnValue('postgresql://db');
+
+    expect(service.directUrl).toBe('postgresql://db');
+    expect(configService.get).toHaveBeenCalledWith('DIRECT_URL');
+    expect(configService.getOrThrow).toHaveBeenCalledWith('DATABASE_URL');
   });
 
   it('returns port from the config service', () => {

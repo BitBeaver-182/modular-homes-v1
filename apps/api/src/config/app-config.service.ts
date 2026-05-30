@@ -36,7 +36,10 @@ export class AppConfigService {
   }
 
   get directUrl(): string {
-    return this.configService.getOrThrow<AppEnv['DIRECT_URL']>('DIRECT_URL');
+    return (
+      this.configService.get<AppEnv['DIRECT_URL']>('DIRECT_URL') ??
+      this.databaseUrl
+    );
   }
 
   get port(): number {

@@ -1,4 +1,4 @@
-import { validateEnv } from './env.validation';
+import { resolveMigrationDatabaseUrl, validateEnv } from './env.validation';
 
 describe('validateEnv', () => {
   it('returns normalized values for valid input', () => {
@@ -53,13 +53,15 @@ describe('validateEnv', () => {
     ).toThrow('DATABASE_URL is required');
   });
 
-  it('throws when DIRECT_URL is missing', () => {
-    expect(() =>
-      validateEnv({
-        NODE_ENV: 'test',
-        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
-      }),
-    ).toThrow('DIRECT_URL is required');
+  it('falls back to DATABASE_URL when DIRECT_URL is missing', () => {
+    const databaseUrl = 'postgresql://postgres:postgres@localhost:6543/app';
+
+    const result = validateEnv({
+      NODE_ENV: 'test',
+      DATABASE_URL: databaseUrl,
+    });
+
+    expect(result.DIRECT_URL).toBe(databaseUrl);
   });
 
   it('requires JWT_SECRET in production', () => {
@@ -162,5 +164,22 @@ describe('validateEnv', () => {
         THROTTLE_LIMIT: '-1',
       }),
     ).toThrow('THROTTLE_LIMIT must be a positive integer');
+  });
+
+  it('uses DIRECT_URL for migrations when provided', () => {
+    expect(
+      resolveMigrationDatabaseUrl({
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+        DIRECT_URL: 'postgresql://postgres:postgres@localhost:5432/app',
+      }),
+    ).toBe('postgresql://postgres:postgres@localhost:5432/app');
+  });
+
+  it('falls back to DATABASE_URL for migrations when DIRECT_URL is missing', () => {
+    expect(
+      resolveMigrationDatabaseUrl({
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:6543/app',
+      }),
+    ).toBe('postgresql://postgres:postgres@localhost:6543/app');
   });
 });

@@ -4,7 +4,7 @@ export type DatabaseType = 'postgresql' | 'mysql' | 'mongodb';
 export interface AppEnv {
   NODE_ENV: NodeEnv;
   DATABASE_URL: string;
-  DIRECT_URL: string;
+  DIRECT_URL?: string;
   PORT: number;
   CORS_ORIGINS?: string;
   CORS_ALLOW_CREDENTIALS?: boolean;
@@ -32,7 +32,7 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
   }
 
   const databaseUrl = getRequiredString(config.DATABASE_URL, 'DATABASE_URL');
-  const directUrl = getRequiredString(config.DIRECT_URL, 'DIRECT_URL');
+  const directUrl = getOptionalString(config.DIRECT_URL) ?? databaseUrl;
   const jwtSecret =
     typeof config.JWT_SECRET === 'string' && config.JWT_SECRET.length > 0
       ? config.JWT_SECRET
@@ -68,12 +68,19 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
 export function resolveMigrationDatabaseUrl(
   config: Record<string, unknown>,
 ): string {
-  return getRequiredString(config.DIRECT_URL, 'DIRECT_URL');
+  return getOptionalString(config.DIRECT_URL) ?? getRequiredString(config.DATABASE_URL, 'DATABASE_URL');
+}
+
+function getOptionalString(rawValue: unknown): string | undefined {
+  return typeof rawValue === 'string' && rawValue.length > 0
+    ? rawValue
+    : undefined;
 }
 
 function getRequiredString(rawValue: unknown, keyName: string): string {
-  if (typeof rawValue === 'string' && rawValue.length > 0) {
-    return rawValue;
+  const normalizedValue = getOptionalString(rawValue);
+  if (normalizedValue) {
+    return normalizedValue;
   }
 
   throw new Error(`${keyName} is required`);
