@@ -25,7 +25,7 @@ interface PrismaMock {
 }
 
 type TransactionInput =
-  | ((client: PrismaMock) => Promise<unknown> | unknown)
+  | ((client: PrismaMock) => unknown)
   | ReadonlyArray<unknown>;
 
 describe('SupplierQuotesService', () => {
