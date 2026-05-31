@@ -89,6 +89,10 @@ export class SupplierQuoteResponse implements SupplierQuoteContract {
   @Expose()
   status!: SupplierQuoteStatus;
 
+  @ApiProperty({ example: false })
+  @Expose()
+  isExpired!: boolean;
+
   @ApiPropertyOptional({ example: '2026-05-30', nullable: true })
   @Expose()
   quoteDate!: string | null;

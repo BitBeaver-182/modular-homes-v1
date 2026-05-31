@@ -77,6 +77,7 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 | 2026-05-31 | Service Boundaries | Exposing service dependencies to controllers through getters like `getStorageService()` | The service should own mapping and dependency usage internally; controllers should call service methods, not reach through to internal collaborators. | v1.0 |
 | 2026-05-31 | Update Semantics | Letting optional array updates silently delete existing records when the caller passes an empty array | Define array-update behavior explicitly; `undefined` means untouched, and empty arrays must not clear data unless the contract explicitly supports clearing. | v1.0 |
 | 2026-05-31 | API Debugging | Starting unrelated frontend processes or asking for more reproduction when the user has already provided an API curl | Run the provided API curl against the running backend, capture the actual HTTP response and server/runtime stack, and avoid touching unrelated services unless needed. | v1.0 |
+| 2026-05-31 | Derived State | Reintroducing removed lifecycle values like supplier quote `expired` as persisted or response `status` values | Keep persisted/contract status enums limited to real writable states; expose derived lifecycle state through explicit booleans like `isExpired`. | v1.0 |
 
 ---
 
@@ -88,3 +89,4 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 - **Log Entry #4 (Frontend Type + Filter Discipline):** Added rules to avoid local aliases for shared contracts and to test query serialization against the real route filter surface.
 - **Log Entry #5 (DTO + Service Semantics):** Added rules for clean Nest query DTOs, service/controller boundaries, and explicit semantics for optional array updates.
 - **Log Entry #6 (API Debugging Discipline):** Added a rule to use provided API curls directly and avoid unrelated frontend work during backend incident debugging.
+- **Log Entry #7 (Derived State Discipline):** Added a rule to keep derived lifecycle state out of persisted/response status enums.

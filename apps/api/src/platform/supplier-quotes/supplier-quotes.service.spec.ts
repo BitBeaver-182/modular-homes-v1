@@ -204,16 +204,7 @@ describe('SupplierQuotesService', () => {
         },
         AND: [
           {
-            OR: [
-              {
-                status: 'received',
-                OR: [
-                  { validUntil: null },
-                  { validUntil: { gte: expect.any(Date) } },
-                ],
-              },
-              { status: 'accepted' },
-            ],
+            status: { in: ['received', 'accepted'] },
           },
           expect.objectContaining({
             OR: expect.arrayContaining([
@@ -231,7 +222,7 @@ describe('SupplierQuotesService', () => {
     });
   });
 
-  it('excludes expired quotes when filtering for received only', async () => {
+  it('filters by persisted quote status only', async () => {
     prisma.supplierQuote.findMany.mockResolvedValue([{ id: 1n }]);
     prisma.supplierQuote.count.mockResolvedValue(1);
 
@@ -243,15 +234,7 @@ describe('SupplierQuotesService', () => {
       where: expect.objectContaining({
         organizationId: 4n,
         deletedAt: null,
-        AND: [
-          {
-            status: 'received',
-            OR: [
-              { validUntil: null },
-              { validUntil: { gte: expect.any(Date) } },
-            ],
-          },
-        ],
+        AND: [{ status: { in: ['received'] } }],
       }),
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       skip: 0,

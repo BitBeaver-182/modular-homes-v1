@@ -75,7 +75,10 @@ export const useQuotesTable = ({
 					<DataGridColumnHeader column={column} title={t("quotes.columnStatus")} />
 				),
 				cell: ({ row }): JSX.Element => (
-					<QuoteStatusBadge status={row.original.status} />
+					<QuoteStatusBadge
+						isExpired={row.original.isExpired}
+						status={row.original.status}
+					/>
 				),
 			},
 			{
@@ -131,7 +134,7 @@ export const useQuotesTable = ({
 				header: (): null => null,
 				cell: ({ row }): JSX.Element => {
 					const quote = row.original;
-					const isReceived = quote.status === "received";
+					const isReceived = quote.status === "received" && !quote.isExpired;
 
 					return (
 						<div className="flex justify-end gap-1">

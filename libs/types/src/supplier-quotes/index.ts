@@ -12,10 +12,7 @@ export const SUPPLIER_QUOTE_WRITABLE_STATUSES = [
   'rejected',
 ] as const;
 
-export const SUPPLIER_QUOTE_STATUSES = [
-  ...SUPPLIER_QUOTE_WRITABLE_STATUSES,
-  'expired',
-] as const;
+export const SUPPLIER_QUOTE_STATUSES = SUPPLIER_QUOTE_WRITABLE_STATUSES;
 
 export type SupplierQuoteWritableStatus =
   (typeof SUPPLIER_QUOTE_WRITABLE_STATUSES)[number];
@@ -86,6 +83,7 @@ export interface SupplierQuoteResponse {
   attachment: FileUploadResponse | null;
   quoteNumber: string | null;
   status: SupplierQuoteStatus;
+  isExpired: boolean;
   quoteDate: string | null;
   validUntil: string | null;
   currencyCode: string;

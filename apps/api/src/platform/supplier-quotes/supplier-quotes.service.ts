@@ -750,33 +750,7 @@ function addStatusFilter(
     return;
   }
 
-  const statusFilters: Prisma.SupplierQuoteWhereInput[] = [];
-
-  if (statuses.includes('received')) {
-    statusFilters.push({
-      status: 'received',
-      OR: [{ validUntil: null }, { validUntil: { gte: startOfUtcToday() } }],
-    });
-  }
-
-  if (statuses.includes('accepted')) {
-    statusFilters.push({ status: 'accepted' });
-  }
-
-  if (statuses.includes('rejected')) {
-    statusFilters.push({ status: 'rejected' });
-  }
-
-  if (statuses.includes('expired')) {
-    statusFilters.push({
-      status: 'received',
-      validUntil: { lt: startOfUtcToday() },
-    });
-  }
-
-  andFilters.push(
-    statusFilters.length === 1 ? statusFilters[0] : { OR: statusFilters },
-  );
+  andFilters.push({ status: { in: statuses } });
 }
 
 function addDateRange(
@@ -877,13 +851,6 @@ function toOptionalNumber(value: unknown): number | undefined {
     return Number.isFinite(parsed) ? parsed : undefined;
   }
   return undefined;
-}
-
-function startOfUtcToday(): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
 }
 
 function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {

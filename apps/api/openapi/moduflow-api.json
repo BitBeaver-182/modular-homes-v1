@@ -1803,8 +1803,7 @@
                 "enum": [
                   "received",
                   "accepted",
-                  "rejected",
-                  "expired"
+                  "rejected"
                 ]
               }
             }
@@ -3617,9 +3616,12 @@
             "enum": [
               "received",
               "accepted",
-              "rejected",
-              "expired"
+              "rejected"
             ]
+          },
+          "isExpired": {
+            "type": "boolean",
+            "example": false
           },
           "quoteDate": {
             "type": "object",
@@ -3686,6 +3688,7 @@
           "id",
           "supplier",
           "status",
+          "isExpired",
           "currencyCode",
           "subtotalAmount",
           "shippingAmount",

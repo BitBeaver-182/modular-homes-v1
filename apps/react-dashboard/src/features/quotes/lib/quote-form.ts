@@ -27,7 +27,7 @@ export const quoteToWriteInput = (
 	amount: String(quote.subtotalAmount ?? ""),
 	currencyCode: quote.currencyCode ?? DEFAULT_CURRENCY,
 	notes: quote.notes ?? "",
-	status: quote.status === "expired" ? "received" : quote.status,
+	status: quote.status,
 	pdfFile: null,
 	removeExistingPdf: false,
 });

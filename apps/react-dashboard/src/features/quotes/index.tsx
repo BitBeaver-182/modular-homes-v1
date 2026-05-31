@@ -56,7 +56,7 @@ import type {
 
 interface StatusAction {
 	quote: SupplierQuoteResponse;
-	status: Extract<SupplierQuoteStatus, "accepted" | "rejected">;
+	status: Extract<SupplierQuoteWritableStatus, "accepted" | "rejected">;
 }
 
 const QuotesPage = (): JSX.Element => {
@@ -126,7 +126,6 @@ const QuotesPage = (): JSX.Element => {
 			{ value: "received", label: t("quotes.statusReceived") },
 			{ value: "accepted", label: t("quotes.statusAccepted") },
 			{ value: "rejected", label: t("quotes.statusRejected") },
-			{ value: "expired", label: t("quotes.statusExpired") },
 		],
 		[t]
 	);
