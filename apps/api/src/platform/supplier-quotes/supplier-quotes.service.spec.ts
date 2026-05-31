@@ -6,6 +6,7 @@ interface PrismaMock {
   $transaction: jest.Mock;
   fileUpload: {
     findFirst: jest.Mock;
+    updateMany: jest.Mock;
   };
   supplier: {
     findFirst: jest.Mock;
@@ -27,6 +28,7 @@ describe('SupplierQuotesService', () => {
     $transaction: jest.fn(),
     fileUpload: {
       findFirst: jest.fn(),
+      updateMany: jest.fn(),
     },
     supplier: {
       findFirst: jest.fn(),
@@ -42,7 +44,9 @@ describe('SupplierQuotesService', () => {
       deleteMany: jest.fn(),
     },
   };
-  const storageService = {};
+  const storageService = {
+    delete: jest.fn(),
+  };
   const actor = {
     userId: 9n,
     email: 'buyer@example.com',
@@ -59,6 +63,7 @@ describe('SupplierQuotesService', () => {
     );
     prisma.supplier.findFirst.mockResolvedValue({ id: 8n });
     prisma.fileUpload.findFirst.mockResolvedValue(null);
+    prisma.fileUpload.updateMany.mockResolvedValue({ count: 1 });
     prisma.supplierQuote.findFirst.mockResolvedValue(null);
     service = new SupplierQuotesService(
       prisma as never,
@@ -283,5 +288,95 @@ describe('SupplierQuotesService', () => {
       }),
       include: expect.any(Object),
     });
+  });
+
+  it('cleans up replaced attachments after a successful update', async () => {
+    prisma.supplierQuote.findFirst
+      .mockResolvedValueOnce({
+        id: 1n,
+        organizationId: 4n,
+        supplierId: 8n,
+        attachmentId: 'old_file',
+        quoteNumber: 'SQ-1',
+        status: 'received',
+        quoteDate: null,
+        validUntil: null,
+        currencyCode: 'USD',
+        subtotalAmount: new Prisma.Decimal('100'),
+        shippingAmount: new Prisma.Decimal('10'),
+        taxAmount: new Prisma.Decimal('5'),
+        totalAmount: new Prisma.Decimal('115'),
+        paymentTerms: null,
+        notes: null,
+        statusUpdatedAt: null,
+        statusUpdatedByUserId: null,
+        lines: [],
+      })
+      .mockResolvedValueOnce(null);
+    prisma.fileUpload.findFirst
+      .mockResolvedValueOnce({ id: 'new_file' })
+      .mockResolvedValueOnce({
+        id: 'old_file',
+        context: 'SUPPLIER_DOCUMENT',
+        key: '4/SUPPLIER_DOCUMENT/old_file',
+      });
+    prisma.supplierQuote.update.mockResolvedValue({ id: 1n, attachmentId: 'new_file' });
+
+    await service.update(actor, 1n, { attachmentId: 'new_file' });
+
+    expect(storageService.delete).toHaveBeenCalledWith(
+      'SUPPLIER_DOCUMENT',
+      '4/SUPPLIER_DOCUMENT/old_file',
+    );
+    expect(prisma.fileUpload.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'old_file',
+        organizationId: 4n,
+        status: { not: 'DELETED' },
+      },
+      data: { status: 'DELETED' },
+    });
+  });
+
+  it('soft deletes quotes and cleans up linked attachments', async () => {
+    prisma.supplierQuote.findFirst.mockResolvedValue({
+      id: 1n,
+      organizationId: 4n,
+      supplierId: 8n,
+      attachmentId: 'file_123',
+      quoteNumber: 'SQ-1',
+      status: 'received',
+      quoteDate: null,
+      validUntil: null,
+      currencyCode: 'USD',
+      subtotalAmount: new Prisma.Decimal('100'),
+      shippingAmount: new Prisma.Decimal('0'),
+      taxAmount: new Prisma.Decimal('0'),
+      totalAmount: new Prisma.Decimal('100'),
+      paymentTerms: null,
+      notes: null,
+      statusUpdatedAt: null,
+      statusUpdatedByUserId: null,
+      lines: [],
+    });
+    prisma.fileUpload.findFirst.mockResolvedValueOnce({
+      id: 'file_123',
+      context: 'SUPPLIER_DOCUMENT',
+      key: '4/SUPPLIER_DOCUMENT/file_123',
+    });
+
+    await service.remove(4n, 1n);
+
+    expect(prisma.supplierQuote.update).toHaveBeenCalledWith({
+      where: { id: 1n },
+      data: {
+        attachmentId: null,
+        deletedAt: expect.any(Date),
+      },
+    });
+    expect(storageService.delete).toHaveBeenCalledWith(
+      'SUPPLIER_DOCUMENT',
+      '4/SUPPLIER_DOCUMENT/file_123',
+    );
   });
 });

@@ -238,9 +238,14 @@ export class SupplierQuotesService {
     const amounts = calculateAmounts(merged);
     const statusData =
       dto.status !== undefined ? getStatusAuditData(dto.status, actor) : {};
+    const previousAttachmentId = current.attachmentId;
+    const nextAttachmentId =
+      dto.attachmentId !== undefined
+        ? normalizeOptionalString(dto.attachmentId)
+        : current.attachmentId;
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const updatedQuote = await this.prisma.$transaction(async (tx) => {
         if (hasLineReplacements(dto.lines)) {
           await tx.supplierQuoteLine.deleteMany({
             where: {
@@ -292,6 +297,12 @@ export class SupplierQuotesService {
           include: INCLUDE_RELATIONS,
         });
       });
+
+      if (previousAttachmentId && previousAttachmentId !== nextAttachmentId) {
+        await this.cleanupStoredUpload(actor.organizationId, previousAttachmentId);
+      }
+
+      return updatedQuote;
     } catch (error) {
       if (isUniqueConstraintError(error)) {
         throw new BadRequestException('Quote number must be unique');
@@ -301,11 +312,16 @@ export class SupplierQuotesService {
   }
 
   async remove(organizationId: bigint, id: bigint): Promise<void> {
-    await this.findOne(organizationId, id);
+    const quote = await this.findOne(organizationId, id);
     await this.prisma.supplierQuote.update({
       where: { id },
-      data: { deletedAt: new Date() },
+      data: {
+        attachmentId: null,
+        deletedAt: new Date(),
+      },
     });
+
+    await this.cleanupStoredUpload(organizationId, quote.attachmentId);
   }
 
   private async assertSupplierBelongsToOrganization(
@@ -386,6 +402,44 @@ export class SupplierQuotesService {
       throw new BadRequestException('Attachment is already linked to a quote');
     }
   }
+
+  private async cleanupStoredUpload(
+    organizationId: bigint,
+    attachmentId: string | null,
+  ): Promise<void> {
+    if (!attachmentId) {
+      return;
+    }
+
+    const upload = await this.prisma.fileUpload.findFirst({
+      where: {
+        id: attachmentId,
+        organizationId,
+        status: { not: 'DELETED' },
+      },
+      select: {
+        id: true,
+        context: true,
+        key: true,
+      },
+    });
+
+    if (!upload) {
+      return;
+    }
+
+    await this.storageService.delete(upload.context, upload.key);
+    await this.prisma.fileUpload.updateMany({
+      where: {
+        id: attachmentId,
+        organizationId,
+        status: { not: 'DELETED' },
+      },
+      data: {
+        status: 'DELETED',
+      },
+    });
+  }
 }
 
 function sanitizeLines(
@@ -446,6 +500,13 @@ function mergeQuoteInput(
   current: SupplierQuoteWithRelations,
   input: UpdateSupplierQuoteRequest,
 ): SupplierQuoteWrite {
+  const shouldRecomputeTotal =
+    input.totalAmount === undefined &&
+    (input.subtotalAmount !== undefined ||
+      input.shippingAmount !== undefined ||
+      input.taxAmount !== undefined ||
+      input.lines !== undefined);
+
   return {
     supplierId: current.supplierId.toString(),
     attachmentId: current.attachmentId,
@@ -463,7 +524,9 @@ function mergeQuoteInput(
     subtotalAmount: input.subtotalAmount ?? Number(current.subtotalAmount),
     shippingAmount: input.shippingAmount ?? Number(current.shippingAmount),
     taxAmount: input.taxAmount ?? Number(current.taxAmount),
-    totalAmount: input.totalAmount ?? Number(current.totalAmount),
+    totalAmount: shouldRecomputeTotal
+      ? undefined
+      : input.totalAmount ?? Number(current.totalAmount),
     paymentTerms: input.paymentTerms ?? current.paymentTerms,
     notes: input.notes ?? current.notes,
     lines:
@@ -539,6 +602,20 @@ function buildSupplierQuoteWhere(
         { quoteNumber: { contains: search, mode: 'insensitive' } },
         { notes: { contains: search, mode: 'insensitive' } },
         { paymentTerms: { contains: search, mode: 'insensitive' } },
+        {
+          attachment: {
+            is: {
+              filename: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
+        {
+          attachment: {
+            is: {
+              key: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
         {
           supplier: {
             is: {

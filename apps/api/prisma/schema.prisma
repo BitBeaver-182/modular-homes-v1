@@ -192,7 +192,7 @@ model SupplierQuote {
   lines               SupplierQuoteLine[]
 
   @@unique([organizationId, id])
-  @@unique([organizationId, quoteNumber])
+  @@index([organizationId, quoteNumber])
   @@index([organizationId])
   @@index([organizationId, deletedAt])
   @@index([organizationId, createdAt])

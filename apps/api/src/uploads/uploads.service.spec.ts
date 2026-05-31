@@ -8,6 +8,9 @@ describe('UploadsService', () => {
       findFirst: jest.fn(),
       updateMany: jest.fn(),
     },
+    supplierQuote: {
+      findFirst: jest.fn(),
+    },
   };
   const storageService = {
     bucketForContext: jest.fn(),
@@ -37,6 +40,7 @@ describe('UploadsService', () => {
     );
     storageService.exists.mockResolvedValue(true);
     prisma.fileUpload.updateMany.mockResolvedValue({ count: 1 });
+    prisma.supplierQuote.findFirst.mockResolvedValue(null);
     service = new UploadsService(prisma as never, storageService as never);
   });
 
@@ -170,6 +174,39 @@ describe('UploadsService', () => {
         organizationId: 4n,
         status: 'CONFIRMED',
       },
+    });
+  });
+
+  it('remove deletes an unlinked upload in the active organization', async () => {
+    prisma.fileUpload.findFirst.mockResolvedValue({
+      id: 'file_123',
+      organizationId: 4n,
+      context: 'SUPPLIER_DOCUMENT',
+      key: '4/SUPPLIER_DOCUMENT/file_123',
+      status: 'CONFIRMED',
+    });
+
+    await expect(service.remove('file_123', actor)).resolves.toBeUndefined();
+
+    expect(prisma.supplierQuote.findFirst).toHaveBeenCalledWith({
+      where: {
+        organizationId: 4n,
+        attachmentId: 'file_123',
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    expect(storageService.delete).toHaveBeenCalledWith(
+      'SUPPLIER_DOCUMENT',
+      '4/SUPPLIER_DOCUMENT/file_123',
+    );
+    expect(prisma.fileUpload.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'file_123',
+        organizationId: 4n,
+        status: { not: 'DELETED' },
+      },
+      data: { status: 'DELETED' },
     });
   });
 });

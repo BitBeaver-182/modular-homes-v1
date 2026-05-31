@@ -5,7 +5,11 @@ import type {
   PresignUploadResponse,
 } from '@moduflow/types';
 import { createId } from '@paralleldrive/cuid2';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { AuthenticatedActor } from '../auth/auth.types';
 import { PrismaService } from '../database/prisma.service';
 import { StorageService } from '../storage/storage.service';
@@ -144,6 +148,47 @@ export class UploadsService {
       fileUpload.key,
       READ_URL_TTL_SECONDS,
     );
+  }
+
+  async remove(fileId: string, actor: AuthenticatedActor): Promise<void> {
+    const fileUpload = await this.prisma.fileUpload.findFirst({
+      where: {
+        id: fileId,
+        organizationId: actor.organizationId,
+        status: { not: 'DELETED' },
+      },
+    });
+
+    if (!fileUpload) {
+      throw new NotFoundException('File upload not found');
+    }
+
+    const linkedQuote = await this.prisma.supplierQuote.findFirst({
+      where: {
+        organizationId: actor.organizationId,
+        attachmentId: fileId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (linkedQuote) {
+      throw new BadRequestException(
+        'File upload is still linked to a supplier quote',
+      );
+    }
+
+    await this.storageService.delete(fileUpload.context, fileUpload.key);
+    await this.prisma.fileUpload.updateMany({
+      where: {
+        id: fileId,
+        organizationId: actor.organizationId,
+        status: { not: 'DELETED' },
+      },
+      data: {
+        status: 'DELETED',
+      },
+    });
   }
 }
 
