@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { SupplierQuotesService } from './supplier-quotes.service';
@@ -22,6 +23,10 @@ interface PrismaMock {
     deleteMany: jest.Mock;
   };
 }
+
+type TransactionInput =
+  | ((client: PrismaMock) => Promise<unknown> | unknown)
+  | ReadonlyArray<unknown>;
 
 describe('SupplierQuotesService', () => {
   const prisma: PrismaMock = {
@@ -59,12 +64,13 @@ describe('SupplierQuotesService', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     prisma.$transaction.mockImplementation(
-      (
-        input:
-          | ((client: PrismaMock) => unknown)
-          | Array<Promise<unknown> | unknown>,
-      ) =>
-        Array.isArray(input) ? Promise.all(input) : input(prisma),
+      (input: TransactionInput): Promise<unknown> => {
+        if (typeof input === 'function') {
+          return Promise.resolve(input(prisma));
+        }
+
+        return Promise.all(input);
+      },
     );
     prisma.supplier.findFirst.mockResolvedValue({ id: 8n });
     prisma.fileUpload.findFirst.mockResolvedValue(null);
@@ -100,7 +106,7 @@ describe('SupplierQuotesService', () => {
     });
     expect(prisma.supplierQuote.create).toHaveBeenCalledWith({
       // Jest asymmetric matchers are typed as any.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       data: expect.objectContaining({
         organizationId: 4n,
         supplierId: 8n,
@@ -124,7 +130,7 @@ describe('SupplierQuotesService', () => {
         },
       }),
       // Jest asymmetric matchers are typed as any.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       include: expect.any(Object),
     });
   });
@@ -183,7 +189,7 @@ describe('SupplierQuotesService', () => {
 
     expect(prisma.supplierQuote.findMany).toHaveBeenCalledWith({
       // Jest asymmetric matchers are typed as any.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       where: expect.objectContaining({
         organizationId: 4n,
         deletedAt: null,
@@ -197,7 +203,18 @@ describe('SupplierQuotesService', () => {
           lte: new Prisma.Decimal('2000.00'),
         },
         AND: [
-          { status: { in: ['received', 'accepted'] } },
+          {
+            OR: [
+              {
+                status: 'received',
+                OR: [
+                  { validUntil: null },
+                  { validUntil: { gte: expect.any(Date) } },
+                ],
+              },
+              { status: 'accepted' },
+            ],
+          },
           expect.objectContaining({
             OR: expect.arrayContaining([
               { quoteNumber: { contains: 'sq', mode: 'insensitive' } },
@@ -209,7 +226,36 @@ describe('SupplierQuotesService', () => {
       skip: 0,
       take: 25,
       // Jest asymmetric matchers are typed as any.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
+      include: expect.any(Object),
+    });
+  });
+
+  it('excludes expired quotes when filtering for received only', async () => {
+    prisma.supplierQuote.findMany.mockResolvedValue([{ id: 1n }]);
+    prisma.supplierQuote.count.mockResolvedValue(1);
+
+    await service.findAll(4n, {
+      status: ['received'],
+    });
+
+    expect(prisma.supplierQuote.findMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        organizationId: 4n,
+        deletedAt: null,
+        AND: [
+          {
+            status: 'received',
+            OR: [
+              { validUntil: null },
+              { validUntil: { gte: expect.any(Date) } },
+            ],
+          },
+        ],
+      }),
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      skip: 0,
+      take: 10,
       include: expect.any(Object),
     });
   });
@@ -244,16 +290,16 @@ describe('SupplierQuotesService', () => {
     expect(prisma.supplierQuote.update).toHaveBeenCalledWith({
       where: { id: 1n },
       // Jest asymmetric matchers are typed as any.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       data: expect.objectContaining({
         status: 'accepted',
         // Jest asymmetric matchers are typed as any.
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
         statusUpdatedAt: expect.any(Date),
         statusUpdatedByUserId: 9n,
       }),
       // Jest asymmetric matchers are typed as any.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       include: expect.any(Object),
     });
   });
@@ -335,7 +381,10 @@ describe('SupplierQuotesService', () => {
       })
       .mockResolvedValueOnce(null);
     prisma.fileUpload.findFirst.mockResolvedValueOnce({ id: 'new_file' });
-    prisma.supplierQuote.update.mockResolvedValue({ id: 1n, attachmentId: 'new_file' });
+    prisma.supplierQuote.update.mockResolvedValue({
+      id: 1n,
+      attachmentId: 'new_file',
+    });
 
     await service.update(actor, 1n, { attachmentId: 'new_file' });
 

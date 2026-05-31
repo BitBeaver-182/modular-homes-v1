@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { OrphanCleanupTask } from './orphan-cleanup.task';
 
 describe('OrphanCleanupTask', () => {

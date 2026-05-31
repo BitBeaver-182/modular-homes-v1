@@ -33,8 +33,7 @@ export const SUPPLIER_QUOTE_SORT_FIELDS = [
 export const SUPPLIER_QUOTE_SORT_CRITERIA = ['asc', 'desc'] as const;
 
 type SupplierQuoteSortField = (typeof SUPPLIER_QUOTE_SORT_FIELDS)[number];
-type SupplierQuoteSortCriteria =
-  (typeof SUPPLIER_QUOTE_SORT_CRITERIA)[number];
+type SupplierQuoteSortCriteria = (typeof SUPPLIER_QUOTE_SORT_CRITERIA)[number];
 
 const toStringArray = ({ value }: { value: unknown }): string[] | undefined => {
   if (Array.isArray(value)) {

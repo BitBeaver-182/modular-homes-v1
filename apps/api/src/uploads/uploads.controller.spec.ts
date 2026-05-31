@@ -78,9 +78,9 @@ describe('UploadsController', () => {
     ).resolves.toMatchObject({
       url: 'https://uploads.example.com/read',
     });
-    await expect(controller.remove(actor, { fileId: 'file_123' })).resolves.toBe(
-      undefined,
-    );
+    await expect(
+      controller.remove(actor, { fileId: 'file_123' }),
+    ).resolves.toBe(undefined);
 
     expect(uploadsService.presign).toHaveBeenCalledWith(
       {

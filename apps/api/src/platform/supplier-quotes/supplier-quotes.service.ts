@@ -329,9 +329,10 @@ export class SupplierQuotesService {
       });
 
       if (previousAttachmentId && previousAttachmentId !== nextAttachmentId) {
-        void this.deleteStoredObject(actor.organizationId, previousAttachment).catch(
-          () => undefined,
-        );
+        void this.deleteStoredObject(
+          actor.organizationId,
+          previousAttachment,
+        ).catch(() => undefined);
       }
 
       return updatedQuote;
@@ -508,7 +509,10 @@ export class SupplierQuotesService {
   private async deleteStoredObject(
     organizationId: bigint,
     attachment:
-      | Pick<NonNullable<SupplierQuoteWithRelations['attachment']>, 'context' | 'key'>
+      | Pick<
+          NonNullable<SupplierQuoteWithRelations['attachment']>,
+          'context' | 'key'
+        >
       | null
       | undefined,
   ): Promise<void> {
@@ -612,7 +616,7 @@ function mergeQuoteInput(
     taxAmount: input.taxAmount ?? Number(current.taxAmount),
     totalAmount: shouldRecomputeTotal
       ? undefined
-      : input.totalAmount ?? Number(current.totalAmount),
+      : (input.totalAmount ?? Number(current.totalAmount)),
     paymentTerms: input.paymentTerms ?? current.paymentTerms,
     notes: input.notes ?? current.notes,
     lines:
@@ -746,13 +750,21 @@ function addStatusFilter(
     return;
   }
 
-  const persistedStatuses = statuses.filter(
-    (status): status is PersistedSupplierQuoteStatus => status !== 'expired',
-  );
   const statusFilters: Prisma.SupplierQuoteWhereInput[] = [];
 
-  if (persistedStatuses.length > 0) {
-    statusFilters.push({ status: { in: persistedStatuses } });
+  if (statuses.includes('received')) {
+    statusFilters.push({
+      status: 'received',
+      OR: [{ validUntil: null }, { validUntil: { gte: startOfUtcToday() } }],
+    });
+  }
+
+  if (statuses.includes('accepted')) {
+    statusFilters.push({ status: 'accepted' });
+  }
+
+  if (statuses.includes('rejected')) {
+    statusFilters.push({ status: 'rejected' });
   }
 
   if (statuses.includes('expired')) {
