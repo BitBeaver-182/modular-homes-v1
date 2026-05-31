@@ -133,7 +133,6 @@ const QuotesPage = (): JSX.Element => {
 			{ value: "received", label: t("quotes.statusReceived") },
 			{ value: "accepted", label: t("quotes.statusAccepted") },
 			{ value: "rejected", label: t("quotes.statusRejected") },
-			{ value: "expired", label: t("quotes.statusExpired") },
 		],
 		[t]
 	);
