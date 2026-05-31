@@ -59,7 +59,12 @@ describe('SupplierQuotesService', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     prisma.$transaction.mockImplementation(
-      (callback: (client: PrismaMock) => unknown) => callback(prisma),
+      (
+        input:
+          | ((client: PrismaMock) => unknown)
+          | Array<Promise<unknown> | unknown>,
+      ) =>
+        Array.isArray(input) ? Promise.all(input) : input(prisma),
     );
     prisma.supplier.findFirst.mockResolvedValue({ id: 8n });
     prisma.fileUpload.findFirst.mockResolvedValue(null);
@@ -122,6 +127,18 @@ describe('SupplierQuotesService', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       include: expect.any(Object),
     });
+  });
+
+  it('rejects quote windows where valid until is before the quote date', async () => {
+    await expect(
+      service.create(actor, {
+        supplierId: '8',
+        quoteDate: '2026-06-10',
+        validUntil: '2026-06-01',
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(prisma.supplierQuote.create).not.toHaveBeenCalled();
   });
 
   it('rejects attachments outside the active organization or not confirmed', async () => {
@@ -310,16 +327,14 @@ describe('SupplierQuotesService', () => {
         notes: null,
         statusUpdatedAt: null,
         statusUpdatedByUserId: null,
+        attachment: {
+          context: 'SUPPLIER_DOCUMENT',
+          key: '4/SUPPLIER_DOCUMENT/old_file',
+        },
         lines: [],
       })
       .mockResolvedValueOnce(null);
-    prisma.fileUpload.findFirst
-      .mockResolvedValueOnce({ id: 'new_file' })
-      .mockResolvedValueOnce({
-        id: 'old_file',
-        context: 'SUPPLIER_DOCUMENT',
-        key: '4/SUPPLIER_DOCUMENT/old_file',
-      });
+    prisma.fileUpload.findFirst.mockResolvedValueOnce({ id: 'new_file' });
     prisma.supplierQuote.update.mockResolvedValue({ id: 1n, attachmentId: 'new_file' });
 
     await service.update(actor, 1n, { attachmentId: 'new_file' });
@@ -357,12 +372,11 @@ describe('SupplierQuotesService', () => {
       notes: null,
       statusUpdatedAt: null,
       statusUpdatedByUserId: null,
+      attachment: {
+        context: 'SUPPLIER_DOCUMENT',
+        key: '4/SUPPLIER_DOCUMENT/file_123',
+      },
       lines: [],
-    });
-    prisma.fileUpload.findFirst.mockResolvedValueOnce({
-      id: 'file_123',
-      context: 'SUPPLIER_DOCUMENT',
-      key: '4/SUPPLIER_DOCUMENT/file_123',
     });
 
     await service.remove(4n, 1n);

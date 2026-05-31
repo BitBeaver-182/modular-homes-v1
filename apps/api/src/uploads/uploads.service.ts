@@ -178,7 +178,6 @@ export class UploadsService {
       );
     }
 
-    await this.storageService.delete(fileUpload.context, fileUpload.key);
     await this.prisma.fileUpload.updateMany({
       where: {
         id: fileId,
@@ -189,6 +188,12 @@ export class UploadsService {
         status: 'DELETED',
       },
     });
+
+    try {
+      await this.storageService.delete(fileUpload.context, fileUpload.key);
+    } catch {
+      // The record is already retired; scheduled cleanup will retry storage deletion.
+    }
   }
 }
 

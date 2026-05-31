@@ -209,4 +209,26 @@ describe('UploadsService', () => {
       data: { status: 'DELETED' },
     });
   });
+
+  it('remove still retires the upload when storage deletion fails', async () => {
+    prisma.fileUpload.findFirst.mockResolvedValue({
+      id: 'file_123',
+      organizationId: 4n,
+      context: 'SUPPLIER_DOCUMENT',
+      key: '4/SUPPLIER_DOCUMENT/file_123',
+      status: 'CONFIRMED',
+    });
+    storageService.delete.mockRejectedValueOnce(new Error('boom'));
+
+    await expect(service.remove('file_123', actor)).resolves.toBeUndefined();
+
+    expect(prisma.fileUpload.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'file_123',
+        organizationId: 4n,
+        status: { not: 'DELETED' },
+      },
+      data: { status: 'DELETED' },
+    });
+  });
 });

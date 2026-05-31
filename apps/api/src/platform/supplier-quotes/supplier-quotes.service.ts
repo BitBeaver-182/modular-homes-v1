@@ -105,6 +105,7 @@ export class SupplierQuotesService {
       actor.organizationId,
       dto.attachmentId,
     );
+    assertValidDateWindow(dto.quoteDate, dto.validUntil);
 
     const amounts = calculateAmounts(dto);
     const statusData = getStatusAuditData(dto.status ?? 'received', actor);
@@ -235,10 +236,12 @@ export class SupplierQuotesService {
     }
 
     const merged = mergeQuoteInput(current, dto);
+    assertValidDateWindow(merged.quoteDate, merged.validUntil);
     const amounts = calculateAmounts(merged);
     const statusData =
       dto.status !== undefined ? getStatusAuditData(dto.status, actor) : {};
     const previousAttachmentId = current.attachmentId;
+    const previousAttachment = current.attachment;
     const nextAttachmentId =
       dto.attachmentId !== undefined
         ? normalizeOptionalString(dto.attachmentId)
@@ -253,6 +256,14 @@ export class SupplierQuotesService {
               organizationId: actor.organizationId,
             },
           });
+        }
+
+        if (previousAttachmentId && previousAttachmentId !== nextAttachmentId) {
+          await this.retireAttachment(
+            tx,
+            actor.organizationId,
+            previousAttachmentId,
+          );
         }
 
         return tx.supplierQuote.update({
@@ -299,7 +310,7 @@ export class SupplierQuotesService {
       });
 
       if (previousAttachmentId && previousAttachmentId !== nextAttachmentId) {
-        await this.cleanupStoredUpload(actor.organizationId, previousAttachmentId);
+        void this.deleteStoredObject(previousAttachment).catch(() => undefined);
       }
 
       return updatedQuote;
@@ -313,15 +324,54 @@ export class SupplierQuotesService {
 
   async remove(organizationId: bigint, id: bigint): Promise<void> {
     const quote = await this.findOne(organizationId, id);
-    await this.prisma.supplierQuote.update({
-      where: { id },
+    const currentAttachment = quote.attachment;
+
+    await this.prisma.$transaction([
+      this.prisma.supplierQuote.update({
+        where: { id },
+        data: {
+          attachmentId: null,
+          deletedAt: new Date(),
+        },
+      }),
+      ...(quote.attachmentId
+        ? [
+            this.prisma.fileUpload.updateMany({
+              where: {
+                id: quote.attachmentId,
+                organizationId,
+                status: { not: 'DELETED' },
+              },
+              data: {
+                status: 'DELETED',
+              },
+            }),
+          ]
+        : []),
+    ]);
+
+    void this.deleteStoredObject(currentAttachment).catch(() => undefined);
+  }
+
+  private async retireAttachment(
+    tx: Prisma.TransactionClient,
+    organizationId: bigint,
+    attachmentId: string | null,
+  ): Promise<void> {
+    if (!attachmentId) {
+      return;
+    }
+
+    await tx.fileUpload.updateMany({
+      where: {
+        id: attachmentId,
+        organizationId,
+        status: { not: 'DELETED' },
+      },
       data: {
-        attachmentId: null,
-        deletedAt: new Date(),
+        status: 'DELETED',
       },
     });
-
-    await this.cleanupStoredUpload(organizationId, quote.attachmentId);
   }
 
   private async assertSupplierBelongsToOrganization(
@@ -403,42 +453,17 @@ export class SupplierQuotesService {
     }
   }
 
-  private async cleanupStoredUpload(
-    organizationId: bigint,
-    attachmentId: string | null,
+  private async deleteStoredObject(
+    attachment:
+      | Pick<NonNullable<SupplierQuoteWithRelations['attachment']>, 'context' | 'key'>
+      | null
+      | undefined,
   ): Promise<void> {
-    if (!attachmentId) {
+    if (!attachment) {
       return;
     }
 
-    const upload = await this.prisma.fileUpload.findFirst({
-      where: {
-        id: attachmentId,
-        organizationId,
-        status: { not: 'DELETED' },
-      },
-      select: {
-        id: true,
-        context: true,
-        key: true,
-      },
-    });
-
-    if (!upload) {
-      return;
-    }
-
-    await this.storageService.delete(upload.context, upload.key);
-    await this.prisma.fileUpload.updateMany({
-      where: {
-        id: attachmentId,
-        organizationId,
-        status: { not: 'DELETED' },
-      },
-      data: {
-        status: 'DELETED',
-      },
-    });
+    await this.storageService.delete(attachment.context, attachment.key);
   }
 }
 
@@ -542,6 +567,24 @@ function mergeQuoteInput(
         notes: line.notes,
       })),
   };
+}
+
+function assertValidDateWindow(
+  quoteDate: string | null | undefined,
+  validUntil: string | null | undefined,
+): void {
+  const parsedQuoteDate = parseOptionalDate(quoteDate);
+  const parsedValidUntil = parseOptionalDate(validUntil);
+
+  if (
+    parsedQuoteDate &&
+    parsedValidUntil &&
+    parsedValidUntil.getTime() < parsedQuoteDate.getTime()
+  ) {
+    throw new BadRequestException(
+      'Valid until date must be on or after quote date',
+    );
+  }
 }
 
 function getStatusAuditData(
