@@ -1,110 +1,88 @@
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
-import { strapiClient, type StrapiQueryParams } from "@/lib/strapi";
+import { moduflowRequest } from "@/lib/moduflow/client";
+import { strapiClient } from "@/lib/strapi";
 
+import type { SupplierOrder } from "../types";
 import type {
-	PaginatedResult,
-	SupplierOrder,
-} from "../types";
+	SupplierOrderListResponse,
+} from "@moduflow/types";
 
-const LIST_POPULATE = {
-	quote: {
-		populate: {
-			supplier: true,
-			total: true,
-			pdf: true,
-		},
-	},
-	supplier: true,
-	invoices: {
-		populate: {
-			total: true,
-			amountPaid: true,
-			amountRemaining: true,
-		},
-	},
-} as const;
+export interface SupplierOrderApiContext {
+	organizationId: string;
+}
 
-const toStrapiQueryParameters = (
-	parameters: SupplierOrdersSearchParameters,
-): StrapiQueryParams<Array<SupplierOrder>> => {
-	const sort = parameters.sortBy
-		? `${parameters.sortBy}:${parameters.sortOrder === "asc" ? "asc" : "desc"}`
-		: undefined;
+const organizationHeaders = ({
+	organizationId,
+}: SupplierOrderApiContext): HeadersInit => ({
+	"x-organization-id": organizationId,
+});
 
-	const query: StrapiQueryParams<Array<SupplierOrder>> = {
-		pagination: {
-			page: parameters.page,
-			pageSize: parameters.pageSize,
-		},
-		sort,
-		populate: LIST_POPULATE,
-	};
-
-	if (
-		Array.isArray(parameters.order_status) &&
-		parameters.order_status.length > 0
-	) {
-		query.filters = {
-			...query.filters,
-			orderStatus: {
-				$in: [...parameters.order_status],
-			},
-		};
+const appendArray = (
+	query: URLSearchParams,
+	key: string,
+	values: Array<string> | undefined
+): void => {
+	if (!values || values.length === 0) {
+		return;
 	}
 
-	if (
-		parameters.createdAt &&
-		(parameters.createdAt.from || parameters.createdAt.to)
-	) {
-		query.filters = {
-			...query.filters,
-			createdAt: {
-				$gte: parameters.createdAt.from,
-				$lte: parameters.createdAt.to,
-			},
-		};
+	for (const value of values.map((item) => item.trim()).filter(Boolean)) {
+		query.append(key, value);
+	}
+};
+
+const appendOptionalString = (
+	query: URLSearchParams,
+	key: string,
+	value: string | undefined
+): void => {
+	const normalized = value?.trim();
+	if (normalized) {
+		query.set(key, normalized);
+	}
+};
+
+export const toSupplierOrderQueryString = (
+	parameters: SupplierOrdersSearchParameters
+): string => {
+	const query = new URLSearchParams();
+	query.set("page", String(parameters.page));
+	query.set("limit", String(parameters.pageSize));
+
+	appendOptionalString(query, "search", parameters.search);
+
+	if (parameters.sortBy && parameters.sortOrder) {
+		query.set("sortField", parameters.sortBy === "orderStatus" ? "status" : parameters.sortBy);
+		query.set(
+			"sortCriteria",
+			parameters.sortOrder === "asc" ? "asc" : "desc"
+		);
 	}
 
-	if (parameters.supplier_ids) {
-		query.filters = {
-			...query.filters,
-			supplier: {
-				documentId: {
-					$in: [...parameters.supplier_ids],
-				},
-			},
-		};
+	appendArray(query, "status", parameters.order_status);
+	appendArray(query, "supplierIds", parameters.supplier_ids);
+
+	if (parameters.createdAt?.from) {
+		query.set("createdFrom", parameters.createdAt.from);
+	}
+	if (parameters.createdAt?.to) {
+		query.set("createdTo", parameters.createdAt.to);
 	}
 
-	if (parameters.search) {
-		const trimmed = parameters.search.trim();
-		if (trimmed.length === 0) {
-			return query;
-		}
-		const parsedNumeric = Number.parseInt(trimmed, 10);
-		const hasNumericToken = Number.isFinite(parsedNumeric);
-
-		query.filters = {
-			...query.filters,
-			$or: [
-				{ documentId: { $containsi: trimmed } },
-				...(hasNumericToken ? [{ id: { $eq: parsedNumeric } }] : []),
-			],
-		};
-	}
-
-	return query;
+	return query.toString();
 };
 
 export const getSupplierOrders = async (
+	context: SupplierOrderApiContext,
 	parameters: SupplierOrdersSearchParameters,
-): Promise<PaginatedResult<SupplierOrder>> => {
-	const response = await strapiClient
-		.from<Array<SupplierOrder>>("supplier-orders")
-		.find(toStrapiQueryParameters(parameters));
-
-	return response as PaginatedResult<SupplierOrder>;
-};
+): Promise<SupplierOrderListResponse> =>
+	moduflowRequest<SupplierOrderListResponse>(
+		`/supplier-orders?${toSupplierOrderQueryString(parameters)}`,
+		{
+			headers: organizationHeaders(context),
+			method: "GET",
+		}
+	);
 
 export const createSupplierOrderFromQuote = async (args: {
 	quoteDocumentId: string;

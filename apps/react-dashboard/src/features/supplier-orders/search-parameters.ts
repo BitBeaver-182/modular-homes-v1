@@ -8,7 +8,7 @@ import {
 import {
 	SUPPLIER_ORDER_SORT_FIELDS,
 	SUPPLIER_ORDER_STATUSES,
-} from "@/features/supplier-orders/types";
+} from "@/features/supplier-orders/list-types";
 
 const supplierOrderStatusSchema = z.enum(SUPPLIER_ORDER_STATUSES);
 const supplierOrderSortSchema = createSortSchema(SUPPLIER_ORDER_SORT_FIELDS);

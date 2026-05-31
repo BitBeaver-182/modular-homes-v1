@@ -1703,6 +1703,144 @@
         ]
       }
     },
+    "/api/supplier-orders": {
+      "get": {
+        "description": "Return supplier orders in the active organization.",
+        "operationId": "SupplierOrdersController_findAll",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "SO-2026-001",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "processing",
+                  "shipped",
+                  "delivered",
+                  "cancelled"
+                ]
+              }
+            }
+          },
+          {
+            "name": "supplierIds",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "createdFrom",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-06-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "createdTo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-06-30",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortField",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "id",
+                "createdAt",
+                "status",
+                "supplier.name"
+              ]
+            }
+          },
+          {
+            "name": "sortCriteria",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierOrderListResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List Supplier Orders",
+        "tags": [
+          "Supplier Orders"
+        ]
+      }
+    },
     "/api/supplier-quotes": {
       "post": {
         "description": "Create a supplier quote in the active organization.",
@@ -3384,6 +3522,166 @@
             "example": "https://example.com"
           }
         }
+      },
+      "SupplierOrderListMoneyResponse": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": 12500
+          },
+          "currencyCode": {
+            "type": "string",
+            "example": "EUR"
+          }
+        },
+        "required": [
+          "amount",
+          "currencyCode"
+        ]
+      },
+      "SupplierOrderListQuoteResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "12"
+          },
+          "supplier": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupplierResponse"
+              }
+            ]
+          },
+          "total": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupplierOrderListMoneyResponse"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "SupplierOrderListInvoiceResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "77"
+          },
+          "total": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupplierOrderListMoneyResponse"
+              }
+            ]
+          },
+          "amountPaid": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupplierOrderListMoneyResponse"
+              }
+            ]
+          },
+          "balanceDue": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupplierOrderListMoneyResponse"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "SupplierOrderListItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "101"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "orderStatus": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "processing",
+              "shipped",
+              "delivered",
+              "cancelled"
+            ]
+          },
+          "supplier": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupplierResponse"
+              }
+            ]
+          },
+          "quote": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupplierOrderListQuoteResponse"
+              }
+            ]
+          },
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierOrderListInvoiceResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "updatedAt",
+          "orderStatus",
+          "invoices"
+        ]
+      },
+      "SupplierOrderListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierOrderListItemResponse"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginatedListMetaResponseDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
       },
       "SupplierQuoteLineDto": {
         "type": "object",
