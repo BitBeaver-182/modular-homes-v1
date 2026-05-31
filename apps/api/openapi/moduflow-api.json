@@ -2339,6 +2339,48 @@
         ]
       }
     },
+    "/api/uploads/{fileId}": {
+      "delete": {
+        "description": "Delete an upload in the active organization when it is no longer linked.",
+        "operationId": "UploadsController_remove",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "fileId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "ckvxo0n1a000001l46me8xz6u",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete upload",
+        "tags": [
+          "Uploads"
+        ]
+      }
+    },
     "/api/uploads/{fileId}/url": {
       "get": {
         "description": "Return a response-time read URL for a confirmed upload.",

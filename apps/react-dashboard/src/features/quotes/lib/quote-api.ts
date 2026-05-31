@@ -122,7 +122,6 @@ const buildWritePayload = (
 
 	if (amount !== undefined) {
 		payload.subtotalAmount = amount;
-		payload.totalAmount = amount;
 	}
 	if (attachmentId !== undefined) {
 		payload.attachmentId = attachmentId;
@@ -130,6 +129,15 @@ const buildWritePayload = (
 
 	return payload;
 };
+
+const deleteUploadedSupplierDocument = async (
+	context: QuoteApiContext,
+	fileId: string
+): Promise<void> =>
+	moduflowRequest<void>(`/uploads/${encodeURIComponent(fileId)}`, {
+		headers: organizationHeaders(context),
+		method: "DELETE",
+	});
 
 export const getQuotes = async (
 	context: QuoteApiContext,
@@ -162,11 +170,18 @@ export const createQuote = async (
 	const attachment = input.pdfFile
 		? await uploadSupplierDocument(context, input.pdfFile)
 		: null;
-	return moduflowRequest<SupplierQuoteResponse>("/supplier-quotes", {
-		body: buildWritePayload(input, attachment?.id),
-		headers: organizationHeaders(context),
-		method: "POST",
-	});
+	try {
+		return await moduflowRequest<SupplierQuoteResponse>("/supplier-quotes", {
+			body: buildWritePayload(input, attachment?.id),
+			headers: organizationHeaders(context),
+			method: "POST",
+		});
+	} catch (error) {
+		if (attachment?.id) {
+			void deleteUploadedSupplierDocument(context, attachment.id).catch(() => undefined);
+		}
+		throw error;
+	}
 };
 
 export const updateQuote = async (
@@ -183,14 +198,21 @@ export const updateQuote = async (
 			? null
 			: undefined;
 
-	return moduflowRequest<SupplierQuoteResponse>(
-		`/supplier-quotes/${encodeURIComponent(id)}`,
-		{
-			body: buildWritePayload(input, attachmentId),
-			headers: organizationHeaders(context),
-			method: "PATCH",
+	try {
+		return await moduflowRequest<SupplierQuoteResponse>(
+			`/supplier-quotes/${encodeURIComponent(id)}`,
+			{
+				body: buildWritePayload(input, attachmentId),
+				headers: organizationHeaders(context),
+				method: "PATCH",
+			}
+		);
+	} catch (error) {
+		if (attachment?.id) {
+			void deleteUploadedSupplierDocument(context, attachment.id).catch(() => undefined);
 		}
-	);
+		throw error;
+	}
 };
 
 export const deleteQuote = async (

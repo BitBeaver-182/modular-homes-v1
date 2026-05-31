@@ -24,7 +24,7 @@ export const quoteToWriteInput = (
 	quoteNumber: quote.quoteNumber ?? "",
 	quotationDate: toDateInputValue(quote.quoteDate),
 	expirationDate: toDateInputValue(quote.validUntil),
-	amount: String(quote.totalAmount ?? ""),
+	amount: String(quote.subtotalAmount ?? ""),
 	currencyCode: quote.currencyCode ?? DEFAULT_CURRENCY,
 	notes: quote.notes ?? "",
 	status: quote.status === "expired" ? "received" : quote.status,
