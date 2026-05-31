@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { Check, ExternalLink, Pencil, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMemo, type JSX } from "react";
 
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
@@ -25,6 +25,7 @@ interface UseQuotesTableProps {
 		quote: SupplierQuoteResponse,
 		status: Extract<SupplierQuoteStatus, "accepted" | "rejected">,
 	) => void;
+	onCreateSupplierOrder?: (quote: SupplierQuoteResponse) => void;
 }
 
 interface UseQuotesTableReturn {
@@ -41,6 +42,7 @@ export const useQuotesTable = ({
 	onEdit,
 	onDelete,
 	onRequestStatus,
+	onCreateSupplierOrder,
 }: UseQuotesTableProps): UseQuotesTableReturn => {
 	const { formatAmount } = useCurrency();
 	const columns = useMemo<Array<ColumnDef<SupplierQuoteResponse>>>(
@@ -135,6 +137,10 @@ export const useQuotesTable = ({
 				cell: ({ row }): JSX.Element => {
 					const quote = row.original;
 					const isReceived = quote.status === "received" && !quote.isExpired;
+					const canCreateSupplierOrder =
+						quote.status === "accepted" &&
+						!quote.isExpired &&
+						!!onCreateSupplierOrder;
 
 					return (
 						<div className="flex justify-end gap-1">
@@ -163,6 +169,19 @@ export const useQuotesTable = ({
 										<X className="size-4 text-red-600" />
 									</Button>
 								</>
+							) : null}
+							{canCreateSupplierOrder ? (
+								<Button
+									size="icon-sm"
+									title={t("quotes.titleCreateSupplierOrder")}
+									type="button"
+									variant="ghost"
+									onClick={(): void => {
+										onCreateSupplierOrder?.(quote);
+									}}
+								>
+									<Plus className="size-4" />
+								</Button>
 							) : null}
 							{onEdit ? (
 								<Button
@@ -195,7 +214,7 @@ export const useQuotesTable = ({
 				},
 			},
 		],
-		[formatAmount, onEdit, onDelete, onRequestStatus],
+		[formatAmount, onCreateSupplierOrder, onDelete, onEdit, onRequestStatus],
 	);
 
 	return useMemo(() => ({ columns }), [columns]);

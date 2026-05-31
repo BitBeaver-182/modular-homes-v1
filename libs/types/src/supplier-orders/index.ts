@@ -40,5 +40,9 @@ export interface SupplierOrderListItemResponse {
   invoices: SupplierOrderListInvoiceResponse[];
 }
 
+export interface CreateSupplierOrderRequest {
+  quoteId: string;
+}
+
 export type SupplierOrderListResponse =
   PaginatedListResponse<SupplierOrderListItemResponse>;

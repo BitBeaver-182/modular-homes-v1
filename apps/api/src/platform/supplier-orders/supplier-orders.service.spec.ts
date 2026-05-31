@@ -1,10 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { Prisma } from '@prisma/client';
 import { SupplierOrdersService } from './supplier-orders.service';
 
 describe('SupplierOrdersService', () => {
   const prisma = {
+    supplierQuote: {
+      findFirst: jest.fn(),
+    },
     supplierOrder: {
+      create: jest.fn(),
       count: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
     },
   };
@@ -13,9 +19,52 @@ describe('SupplierOrdersService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    prisma.supplierQuote.findFirst.mockResolvedValue(null);
+    prisma.supplierOrder.findFirst.mockResolvedValue(null);
     prisma.supplierOrder.findMany.mockResolvedValue([{ id: 1n }]);
     prisma.supplierOrder.count.mockResolvedValue(1);
     service = new SupplierOrdersService(prisma as never);
+  });
+
+  it('creates a draft supplier order from an accepted quote', async () => {
+    prisma.supplierQuote.findFirst.mockResolvedValue({
+      id: 12n,
+      organizationId: 4n,
+      supplierId: 8n,
+      status: 'accepted',
+      validUntil: new Date('2099-06-30T00:00:00.000Z'),
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('1000.00'),
+      shippingAmount: new Prisma.Decimal('100.00'),
+      taxAmount: new Prisma.Decimal('50.00'),
+      totalAmount: new Prisma.Decimal('1150.00'),
+      paymentTerms: 'Net 30',
+      notes: 'Ready to order',
+      supplier: null,
+    });
+    prisma.supplierOrder.create.mockResolvedValue({ id: 101n });
+
+    await service.create(
+      {
+        userId: 9n,
+        email: 'buyer@example.com',
+        organizationId: 4n,
+        governanceRole: 'member',
+      },
+      { quoteId: '12' },
+    );
+
+    expect(prisma.supplierOrder.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        organizationId: 4n,
+        supplierId: 8n,
+        supplierQuoteId: 12n,
+        status: 'draft',
+        createdByUserId: 9n,
+        currencyCode: 'EUR',
+      }),
+      include: expect.any(Object),
+    });
   });
 
   it('lists supplier orders with safe filters and sorting', async () => {

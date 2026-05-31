@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import type {
   Prisma,
   SupplierOrderStatus as PersistedSupplierOrderStatus,
 } from '@prisma/client';
+import type { AuthenticatedActor } from '../../auth/auth.types';
 import { PrismaService } from '../../database/prisma.service';
 import { parseBigIntId } from '../../common/ids/parse-bigint-id';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
 import type { SupplierOrderWithRelations } from './mappers/supplier-order.mapper';
+import type { CreateSupplierOrderRequest } from '@moduflow/types';
 
 type SupplierOrderListMeta = {
   pagination: {
@@ -40,6 +42,69 @@ const STATUS_MAP = {
 @Injectable()
 export class SupplierOrdersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async create(
+    actor: AuthenticatedActor,
+    dto: CreateSupplierOrderRequest,
+  ): Promise<SupplierOrderWithRelations> {
+    const quoteId = parseBigIntId(dto.quoteId, 'quoteId');
+    const quote = await this.prisma.supplierQuote.findFirst({
+      where: {
+        id: quoteId,
+        organizationId: actor.organizationId,
+        deletedAt: null,
+      },
+      include: {
+        supplier: { include: { address: true } },
+      },
+    });
+
+    if (!quote) {
+      throw new BadRequestException('Supplier quote not found');
+    }
+    if (quote.status !== 'accepted') {
+      throw new BadRequestException(
+        'Only accepted quotes can be converted into supplier orders',
+      );
+    }
+    if (isExpiredQuote(quote.validUntil)) {
+      throw new BadRequestException(
+        'Expired quotes cannot be converted into supplier orders',
+      );
+    }
+
+    const existingOrder = await this.prisma.supplierOrder.findFirst({
+      where: {
+        organizationId: actor.organizationId,
+        supplierQuoteId: quote.id,
+      },
+      select: { id: true },
+    });
+
+    if (existingOrder) {
+      throw new BadRequestException(
+        'A supplier order already exists for this quote',
+      );
+    }
+
+    return this.prisma.supplierOrder.create({
+      data: {
+        organizationId: actor.organizationId,
+        supplierId: quote.supplierId,
+        supplierQuoteId: quote.id,
+        status: 'draft',
+        currencyCode: quote.currencyCode,
+        subtotalAmount: quote.subtotalAmount,
+        shippingAmount: quote.shippingAmount,
+        taxAmount: quote.taxAmount,
+        totalAmount: quote.totalAmount,
+        paymentTerms: quote.paymentTerms,
+        notes: quote.notes,
+        createdByUserId: actor.userId,
+      },
+      include: INCLUDE_RELATIONS,
+    });
+  }
 
   async findAll(
     organizationId: bigint,
@@ -155,4 +220,19 @@ function startOfUtcDay(value: string): Date {
 
 function endOfUtcDay(value: string): Date {
   return new Date(`${value}T23:59:59.999Z`);
+}
+
+function isExpiredQuote(value: Date | null): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return value.getTime() < startOfUtcToday().getTime();
+}
+
+function startOfUtcToday(): Date {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
 }

@@ -1704,6 +1704,49 @@
       }
     },
     "/api/supplier-orders": {
+      "post": {
+        "description": "Create a supplier order from an accepted quote in the active organization.",
+        "operationId": "SupplierOrdersController_create",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupplierOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierOrderListItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create Supplier Order",
+        "tags": [
+          "Supplier Orders"
+        ]
+      },
       "get": {
         "description": "Return supplier orders in the active organization.",
         "operationId": "SupplierOrdersController_findAll",
@@ -3522,6 +3565,18 @@
             "example": "https://example.com"
           }
         }
+      },
+      "CreateSupplierOrderDto": {
+        "type": "object",
+        "properties": {
+          "quoteId": {
+            "type": "string",
+            "example": "12"
+          }
+        },
+        "required": [
+          "quoteId"
+        ]
       },
       "SupplierOrderListMoneyResponse": {
         "type": "object",

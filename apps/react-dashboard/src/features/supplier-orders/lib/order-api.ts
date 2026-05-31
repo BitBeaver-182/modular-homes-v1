@@ -1,9 +1,9 @@
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
 import { moduflowRequest } from "@/lib/moduflow/client";
-import { strapiClient } from "@/lib/strapi";
 
-import type { SupplierOrder } from "../types";
 import type {
+	CreateSupplierOrderRequest,
+	SupplierOrderListItemResponse,
 	SupplierOrderListResponse,
 } from "@moduflow/types";
 
@@ -85,15 +85,13 @@ export const getSupplierOrders = async (
 	);
 
 export const createSupplierOrderFromQuote = async (args: {
-	quoteDocumentId: string;
-}): Promise<SupplierOrder> => {
-	const payload = {
-		quote: { connect: [args.quoteDocumentId] as [string] },
-	};
-
-	const response = await strapiClient.from<SupplierOrder>("supplier-orders").create(
-		payload as unknown as Partial<SupplierOrder>,
-	);
-
-	return response.data;
-};
+	organizationId: string;
+	quoteId: string;
+}): Promise<SupplierOrderListItemResponse> =>
+	moduflowRequest<SupplierOrderListItemResponse>("/supplier-orders", {
+		body: {
+			quoteId: args.quoteId,
+		} satisfies CreateSupplierOrderRequest,
+		headers: organizationHeaders({ organizationId: args.organizationId }),
+		method: "POST",
+	});
