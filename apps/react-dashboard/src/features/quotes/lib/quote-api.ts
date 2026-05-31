@@ -3,6 +3,7 @@ import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._ad
 
 import { uploadSupplierDocument } from "./upload-api";
 
+import type { QuoteWriteInput } from "../types";
 import type {
 	CreateSupplierQuoteRequest,
 	SupplierQuoteResponse,
@@ -10,7 +11,6 @@ import type {
 	UpdateSupplierQuoteRequest,
 } from "@moduflow/types";
 
-import type { QuoteWriteInput } from "../types";
 
 export interface QuoteApiContext {
 	organizationId: string;

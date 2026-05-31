@@ -1,6 +1,6 @@
+import type { QuoteWriteInput } from "../types";
 import type { SupplierQuoteResponse } from "@moduflow/types";
 
-import type { QuoteWriteInput } from "../types";
 
 const DEFAULT_CURRENCY = "EUR";
 

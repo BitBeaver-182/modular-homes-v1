@@ -56,7 +56,10 @@ export class SupplierQuotesService {
       actor.organizationId,
       normalizeOptionalString(dto.quoteNumber),
     );
-    await this.assertAttachmentAvailable(actor.organizationId, dto.attachmentId);
+    await this.assertAttachmentAvailable(
+      actor.organizationId,
+      dto.attachmentId,
+    );
 
     const amounts = calculateAmounts(dto);
     const statusData = getStatusAuditData(dto.status ?? 'received', actor);

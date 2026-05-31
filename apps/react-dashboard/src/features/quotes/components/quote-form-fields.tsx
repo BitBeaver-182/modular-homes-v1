@@ -1,7 +1,3 @@
-import type {
-	SupplierQuoteResponse,
-	SupplierResponse,
-} from "@moduflow/types";
 import { startOfDay } from "date-fns";
 import { useMemo, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
@@ -34,6 +30,10 @@ import {
 } from "../lib/quote-attachments";
 
 import type { QuoteWriteInput } from "../types";
+import type {
+	SupplierQuoteResponse,
+	SupplierResponse,
+} from "@moduflow/types";
 
 /** RHF values = write payload + optional `root` for server-only errors. */
 export type QuoteFormValues = QuoteWriteInput & { root?: string };

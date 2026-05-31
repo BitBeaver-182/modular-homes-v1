@@ -1,4 +1,3 @@
-import type { SupplierQuoteResponse } from "@moduflow/types";
 import { type JSX, useEffect } from "react";
 import { FormProvider, type FieldPath } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -18,6 +17,7 @@ import { QuoteFormFields, type QuoteFormValues } from "./quote-form-fields";
 import { quoteToWriteInput } from "../lib/quote-form";
 
 import type { QuoteWriteInput } from "../types";
+import type { SupplierQuoteResponse } from "@moduflow/types";
 
 const EMPTY_VALUES: QuoteFormValues = {
 	supplierId: "",

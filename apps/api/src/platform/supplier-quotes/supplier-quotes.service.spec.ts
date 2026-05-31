@@ -60,7 +60,10 @@ describe('SupplierQuotesService', () => {
     prisma.supplier.findFirst.mockResolvedValue({ id: 8n });
     prisma.fileUpload.findFirst.mockResolvedValue(null);
     prisma.supplierQuote.findFirst.mockResolvedValue(null);
-    service = new SupplierQuotesService(prisma as never, storageService as never);
+    service = new SupplierQuotesService(
+      prisma as never,
+      storageService as never,
+    );
   });
 
   it('creates quotes scoped to the actor organization and calculates line totals', async () => {

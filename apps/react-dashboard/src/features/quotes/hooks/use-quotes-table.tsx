@@ -1,7 +1,3 @@
-import type {
-	SupplierQuoteResponse,
-	SupplierQuoteStatus,
-} from "@moduflow/types";
 import { t } from "i18next";
 import { Check, ExternalLink, Pencil, Trash2, X } from "lucide-react";
 import { useMemo, type JSX } from "react";
@@ -11,6 +7,11 @@ import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/hooks/use-currency";
 
 import { QuoteStatusBadge } from "../components/quote-status-badge";
+
+import type {
+	SupplierQuoteResponse,
+	SupplierQuoteStatus,
+} from "@moduflow/types";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const DEFAULT_CURRENCY = "EUR";

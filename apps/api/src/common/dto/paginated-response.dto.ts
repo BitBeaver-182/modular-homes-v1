@@ -27,9 +27,7 @@ export class PaginationMetaResponseDto implements PaginationMetaContract {
   total!: number;
 }
 
-export class PaginatedListMetaResponseDto
-  implements PaginatedListMetaContract
-{
+export class PaginatedListMetaResponseDto implements PaginatedListMetaContract {
   constructor(partial: PaginatedListMetaContract) {
     Object.assign(this, partial);
   }

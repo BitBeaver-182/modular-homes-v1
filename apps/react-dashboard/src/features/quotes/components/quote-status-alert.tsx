@@ -1,8 +1,4 @@
  
-import type {
-	SupplierQuoteResponse,
-	SupplierQuoteWritableStatus,
-} from "@moduflow/types";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -16,6 +12,11 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+import type {
+	SupplierQuoteResponse,
+	SupplierQuoteWritableStatus,
+} from "@moduflow/types";
 
 export interface QuoteStatusAlertProps {
 	open: boolean;

@@ -18,7 +18,9 @@ export function toOptionalIsoDateString(
   return value ? toIsoDateString(value) : null;
 }
 
-export function toDateOnlyString(value: Date | null | undefined): string | null {
+export function toDateOnlyString(
+  value: Date | null | undefined,
+): string | null {
   return value ? value.toISOString().slice(0, 10) : null;
 }
 

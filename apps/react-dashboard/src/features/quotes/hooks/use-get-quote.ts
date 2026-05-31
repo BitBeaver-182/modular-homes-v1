@@ -1,8 +1,9 @@
-import type { SupplierQuoteResponse } from "@moduflow/types";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import { quoteKeys } from "./quote-keys";
 import { getQuote } from "../lib/quote-api";
+
+import type { SupplierQuoteResponse } from "@moduflow/types";
 
 export const useGetQuote = (
 	organizationId: string,
