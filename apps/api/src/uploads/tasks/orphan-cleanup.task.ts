@@ -54,6 +54,13 @@ export class OrphanCleanupTask {
     for (const upload of deletedUploads) {
       try {
         await this.storageService.delete(upload.context, upload.key);
+        await this.prisma.fileUpload.deleteMany({
+          where: {
+            id: upload.id,
+            organizationId: upload.organizationId,
+            status: 'DELETED',
+          },
+        });
         cleanedCount += 1;
       } catch (error) {
         this.logger.warn(
@@ -76,6 +83,7 @@ export class OrphanCleanupTask {
       where: {
         status: 'CONFIRMED',
         context: 'SUPPLIER_DOCUMENT',
+        expiresAt: { not: null },
         confirmedAt: { lt: cutoff },
         OR: [
           { supplierQuote: null },
@@ -100,6 +108,13 @@ export class OrphanCleanupTask {
 
       try {
         await this.storageService.delete(upload.context, upload.key);
+        await this.prisma.fileUpload.deleteMany({
+          where: {
+            id: upload.id,
+            organizationId: upload.organizationId,
+            status: 'DELETED',
+          },
+        });
       } catch (error) {
         this.logger.warn(
           `Failed to delete stale confirmed upload ${upload.id}: ${

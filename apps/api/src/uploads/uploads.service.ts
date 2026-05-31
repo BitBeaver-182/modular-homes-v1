@@ -163,34 +163,38 @@ export class UploadsService {
       throw new NotFoundException('File upload not found');
     }
 
-    const linkedQuote = await this.prisma.supplierQuote.findFirst({
-      where: {
-        organizationId: actor.organizationId,
-        attachmentId: fileId,
-        deletedAt: null,
-      },
-      select: { id: true },
-    });
-
-    if (linkedQuote) {
-      throw new BadRequestException(
-        'File upload is still linked to a supplier quote',
-      );
-    }
-
-    await this.prisma.fileUpload.updateMany({
+    const { count } = await this.prisma.fileUpload.updateMany({
       where: {
         id: fileId,
         organizationId: actor.organizationId,
-        status: { not: 'DELETED' },
+        status: { in: ['PENDING', 'ORPHANED', 'CONFIRMED'] },
+        ...(fileUpload.status === 'CONFIRMED'
+          ? {
+              expiresAt: { not: null },
+              supplierQuote: null,
+            }
+          : {}),
       },
       data: {
         status: 'DELETED',
       },
     });
 
+    if (count === 0) {
+      throw new BadRequestException(
+        'File upload is still linked to a supplier quote',
+      );
+    }
+
     try {
       await this.storageService.delete(fileUpload.context, fileUpload.key);
+      await this.prisma.fileUpload.deleteMany({
+        where: {
+          id: fileId,
+          organizationId: actor.organizationId,
+          status: 'DELETED',
+        },
+      });
     } catch {
       // The record is already retired; scheduled cleanup will retry storage deletion.
     }

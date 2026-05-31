@@ -5,6 +5,7 @@ describe('UploadsService', () => {
   const prisma = {
     fileUpload: {
       create: jest.fn(),
+      deleteMany: jest.fn(),
       findFirst: jest.fn(),
       updateMany: jest.fn(),
     },
@@ -184,29 +185,31 @@ describe('UploadsService', () => {
       context: 'SUPPLIER_DOCUMENT',
       key: '4/SUPPLIER_DOCUMENT/file_123',
       status: 'CONFIRMED',
+      expiresAt: new Date('2026-05-31T10:00:00.000Z'),
     });
 
     await expect(service.remove('file_123', actor)).resolves.toBeUndefined();
 
-    expect(prisma.supplierQuote.findFirst).toHaveBeenCalledWith({
+    expect(prisma.fileUpload.updateMany).toHaveBeenCalledWith({
       where: {
+        id: 'file_123',
         organizationId: 4n,
-        attachmentId: 'file_123',
-        deletedAt: null,
+        status: { in: ['PENDING', 'ORPHANED', 'CONFIRMED'] },
+        expiresAt: { not: null },
+        supplierQuote: null,
       },
-      select: { id: true },
+      data: { status: 'DELETED' },
     });
     expect(storageService.delete).toHaveBeenCalledWith(
       'SUPPLIER_DOCUMENT',
       '4/SUPPLIER_DOCUMENT/file_123',
     );
-    expect(prisma.fileUpload.updateMany).toHaveBeenCalledWith({
+    expect(prisma.fileUpload.deleteMany).toHaveBeenCalledWith({
       where: {
         id: 'file_123',
         organizationId: 4n,
-        status: { not: 'DELETED' },
+        status: 'DELETED',
       },
-      data: { status: 'DELETED' },
     });
   });
 
@@ -217,6 +220,7 @@ describe('UploadsService', () => {
       context: 'SUPPLIER_DOCUMENT',
       key: '4/SUPPLIER_DOCUMENT/file_123',
       status: 'CONFIRMED',
+      expiresAt: new Date('2026-05-31T10:00:00.000Z'),
     });
     storageService.delete.mockRejectedValueOnce(new Error('boom'));
 
@@ -226,7 +230,9 @@ describe('UploadsService', () => {
       where: {
         id: 'file_123',
         organizationId: 4n,
-        status: { not: 'DELETED' },
+        status: { in: ['PENDING', 'ORPHANED', 'CONFIRMED'] },
+        expiresAt: { not: null },
+        supplierQuote: null,
       },
       data: { status: 'DELETED' },
     });

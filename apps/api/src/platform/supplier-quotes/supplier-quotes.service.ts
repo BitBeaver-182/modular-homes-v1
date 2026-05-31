@@ -111,29 +111,40 @@ export class SupplierQuotesService {
     const statusData = getStatusAuditData(dto.status ?? 'received', actor);
 
     try {
-      return await this.prisma.supplierQuote.create({
-        data: {
-          organizationId: actor.organizationId,
-          supplierId,
-          attachmentId: normalizeOptionalString(dto.attachmentId),
-          quoteNumber: normalizeOptionalString(dto.quoteNumber),
-          status: dto.status ?? 'received',
-          quoteDate: parseOptionalDate(dto.quoteDate),
-          validUntil: parseOptionalDate(dto.validUntil),
-          currencyCode: normalizeCurrency(dto.currencyCode),
-          subtotalAmount: amounts.subtotalAmount,
-          shippingAmount: amounts.shippingAmount,
-          taxAmount: amounts.taxAmount,
-          totalAmount: amounts.totalAmount,
-          paymentTerms: normalizeOptionalString(dto.paymentTerms),
-          notes: normalizeOptionalString(dto.notes),
-          ...statusData,
-          lines: {
-            create: sanitizeLines(actor.organizationId, dto.lines),
+      const normalizedAttachmentId = normalizeOptionalString(dto.attachmentId);
+      const createdQuote = await this.prisma.$transaction(async (tx) => {
+        await this.claimAttachment(
+          tx,
+          actor.organizationId,
+          normalizedAttachmentId,
+        );
+
+        return tx.supplierQuote.create({
+          data: {
+            organizationId: actor.organizationId,
+            supplierId,
+            attachmentId: normalizedAttachmentId,
+            quoteNumber: normalizeOptionalString(dto.quoteNumber),
+            status: dto.status ?? 'received',
+            quoteDate: parseOptionalDate(dto.quoteDate),
+            validUntil: parseOptionalDate(dto.validUntil),
+            currencyCode: normalizeCurrency(dto.currencyCode),
+            subtotalAmount: amounts.subtotalAmount,
+            shippingAmount: amounts.shippingAmount,
+            taxAmount: amounts.taxAmount,
+            totalAmount: amounts.totalAmount,
+            paymentTerms: normalizeOptionalString(dto.paymentTerms),
+            notes: normalizeOptionalString(dto.notes),
+            ...statusData,
+            lines: {
+              create: sanitizeLines(actor.organizationId, dto.lines),
+            },
           },
-        },
-        include: INCLUDE_RELATIONS,
+          include: INCLUDE_RELATIONS,
+        });
       });
+
+      return createdQuote;
     } catch (error) {
       if (isUniqueConstraintError(error)) {
         throw new BadRequestException('Quote number must be unique');
@@ -266,6 +277,14 @@ export class SupplierQuotesService {
           );
         }
 
+        if (previousAttachmentId !== nextAttachmentId) {
+          await this.claimAttachment(
+            tx,
+            actor.organizationId,
+            nextAttachmentId,
+          );
+        }
+
         return tx.supplierQuote.update({
           where: { id },
           data: {
@@ -310,7 +329,9 @@ export class SupplierQuotesService {
       });
 
       if (previousAttachmentId && previousAttachmentId !== nextAttachmentId) {
-        void this.deleteStoredObject(previousAttachment).catch(() => undefined);
+        void this.deleteStoredObject(actor.organizationId, previousAttachment).catch(
+          () => undefined,
+        );
       }
 
       return updatedQuote;
@@ -350,7 +371,9 @@ export class SupplierQuotesService {
         : []),
     ]);
 
-    void this.deleteStoredObject(currentAttachment).catch(() => undefined);
+    void this.deleteStoredObject(organizationId, currentAttachment).catch(
+      () => undefined,
+    );
   }
 
   private async retireAttachment(
@@ -372,6 +395,35 @@ export class SupplierQuotesService {
         status: 'DELETED',
       },
     });
+  }
+
+  private async claimAttachment(
+    tx: Prisma.TransactionClient,
+    organizationId: bigint,
+    attachmentId: string | null,
+  ): Promise<void> {
+    if (!attachmentId) {
+      return;
+    }
+
+    const { count } = await tx.fileUpload.updateMany({
+      where: {
+        id: attachmentId,
+        organizationId,
+        context: 'SUPPLIER_DOCUMENT',
+        status: 'CONFIRMED',
+        expiresAt: { not: null },
+      },
+      data: {
+        expiresAt: null,
+      },
+    });
+
+    if (count === 0) {
+      throw new BadRequestException(
+        'Attachment must be a confirmed supplier document',
+      );
+    }
   }
 
   private async assertSupplierBelongsToOrganization(
@@ -454,6 +506,7 @@ export class SupplierQuotesService {
   }
 
   private async deleteStoredObject(
+    organizationId: bigint,
     attachment:
       | Pick<NonNullable<SupplierQuoteWithRelations['attachment']>, 'context' | 'key'>
       | null
@@ -464,6 +517,14 @@ export class SupplierQuotesService {
     }
 
     await this.storageService.delete(attachment.context, attachment.key);
+    await this.prisma.fileUpload.deleteMany({
+      where: {
+        organizationId,
+        key: attachment.key,
+        context: attachment.context,
+        status: 'DELETED',
+      },
+    });
   }
 }
 

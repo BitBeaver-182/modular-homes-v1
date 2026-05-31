@@ -4,6 +4,7 @@ describe('OrphanCleanupTask', () => {
   const prisma = {
     fileUpload: {
       findMany: jest.fn(),
+      deleteMany: jest.fn(),
       updateMany: jest.fn(),
     },
   };
@@ -35,6 +36,7 @@ describe('OrphanCleanupTask', () => {
       where: {
         status: 'CONFIRMED',
         context: 'SUPPLIER_DOCUMENT',
+        expiresAt: { not: null },
         confirmedAt: { lt: expect.any(Date) },
         OR: [
           { supplierQuote: null },
@@ -56,5 +58,12 @@ describe('OrphanCleanupTask', () => {
       'SUPPLIER_DOCUMENT',
       '4/SUPPLIER_DOCUMENT/file_123',
     );
+    expect(prisma.fileUpload.deleteMany).toHaveBeenCalledWith({
+      where: {
+        id: 'file_123',
+        organizationId: 4n,
+        status: 'DELETED',
+      },
+    });
   });
 });

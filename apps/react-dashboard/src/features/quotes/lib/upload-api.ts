@@ -32,23 +32,31 @@ export const uploadSupplierDocument = async (
 		}
 	);
 
-	const uploadResponse = await fetch(presigned.uploadUrl, {
-		body: file,
-		headers: {
-			"Content-Type": file.type || "application/octet-stream",
-		},
-		method: "PUT",
-	});
+	try {
+		const uploadResponse = await fetch(presigned.uploadUrl, {
+			body: file,
+			headers: {
+				"Content-Type": file.type || "application/octet-stream",
+			},
+			method: "PUT",
+		});
 
-	if (!uploadResponse.ok) {
-		throw new Error("File upload failed");
-	}
-
-	return moduflowRequest<FileUploadResponse>(
-		`/uploads/${encodeURIComponent(presigned.fileId)}/confirm`,
-		{
-			headers: organizationHeaders(context),
-			method: "POST",
+		if (!uploadResponse.ok) {
+			throw new Error("File upload failed");
 		}
-	);
+
+		return await moduflowRequest<FileUploadResponse>(
+			`/uploads/${encodeURIComponent(presigned.fileId)}/confirm`,
+			{
+				headers: organizationHeaders(context),
+				method: "POST",
+			}
+		);
+	} catch (error) {
+		void moduflowRequest<void>(`/uploads/${encodeURIComponent(presigned.fileId)}`, {
+			headers: organizationHeaders(context),
+			method: "DELETE",
+		}).catch(() => undefined);
+		throw error;
+	}
 };
