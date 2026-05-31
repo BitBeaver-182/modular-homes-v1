@@ -8,15 +8,11 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-
-const emptyToUndefined = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' && value.trim() === '' ? undefined : value;
-
-const trimString = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim() : value;
-
-const trimUppercaseString = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim().toUpperCase() : value;
+import {
+  emptyStringToUndefined,
+  trimString,
+  trimUppercaseString,
+} from '../../../common/transforms/string.transforms';
 
 export class SupplierAddressDto implements SupplierAddressRequest {
   @ApiProperty({
@@ -30,7 +26,7 @@ export class SupplierAddressDto implements SupplierAddressRequest {
   line1!: string;
 
   @ApiPropertyOptional({ example: 'Suite 200', maxLength: 200 })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -38,7 +34,7 @@ export class SupplierAddressDto implements SupplierAddressRequest {
   line2?: string;
 
   @ApiPropertyOptional({ example: 'Austin', maxLength: 120 })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -46,7 +42,7 @@ export class SupplierAddressDto implements SupplierAddressRequest {
   city?: string;
 
   @ApiPropertyOptional({ example: 'TX', maxLength: 120 })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -54,7 +50,7 @@ export class SupplierAddressDto implements SupplierAddressRequest {
   region?: string;
 
   @ApiPropertyOptional({ example: '78701', maxLength: 40 })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -65,7 +61,7 @@ export class SupplierAddressDto implements SupplierAddressRequest {
     description: 'ISO 3166-1 alpha-2 country code.',
     example: 'US',
   })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimUppercaseString)
   @IsOptional()
   @IsString()

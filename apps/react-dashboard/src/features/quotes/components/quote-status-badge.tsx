@@ -2,11 +2,11 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/reui/badge";
 
-import type { QuoteStatus } from "../types";
+import type { SupplierQuoteStatus } from "@moduflow/types";
 import type React from "react";
 
 interface QuoteStatusBadgeProps {
-	status: QuoteStatus | null;
+	status: SupplierQuoteStatus | null;
 }
 
 export const QuoteStatusBadge = ({
@@ -22,5 +22,9 @@ export const QuoteStatusBadge = ({
 		return <Badge variant="destructive-light">{t("quotes.statusRejected")}</Badge>;
 	}
 
-	return <Badge variant="warning-light">{t("quotes.statusPending")}</Badge>;
+	if (status === "expired") {
+		return <Badge variant="secondary">{t("quotes.statusExpired")}</Badge>;
+	}
+
+	return <Badge variant="warning-light">{t("quotes.statusReceived")}</Badge>;
 };

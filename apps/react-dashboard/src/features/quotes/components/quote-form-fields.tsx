@@ -13,6 +13,7 @@ import {
 	FieldGroup,
 	FieldLabel,
 } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -28,15 +29,18 @@ import {
 	QUOTE_MAX_ATTACHMENT_FILES,
 } from "../lib/quote-attachments";
 
-import type { Quote, QuoteWriteInput } from "../types";
-import type { SupplierResponse } from "@moduflow/types";
+import type { QuoteWriteInput } from "../types";
+import type {
+	SupplierQuoteResponse,
+	SupplierResponse,
+} from "@moduflow/types";
 
 /** RHF values = write payload + optional `root` for server-only errors. */
 export type QuoteFormValues = QuoteWriteInput & { root?: string };
 
 export interface QuoteFormFieldsProps {
 	disabled?: boolean;
-	initialQuote?: Quote | null;
+	initialQuote?: SupplierQuoteResponse | null;
 }
 
 export const QuoteFormFields = ({
@@ -57,6 +61,7 @@ export const QuoteFormFields = ({
 	const quotationDate = watch("quotationDate");
 
 	const supplierError = errors.supplierId?.message;
+	const quoteNumberError = errors.quoteNumber?.message;
 	const quotationDateError = errors.quotationDate?.message;
 	const expirationDateError = errors.expirationDate?.message;
 	const amountError = errors.amount?.message;
@@ -107,6 +112,18 @@ export const QuoteFormFields = ({
 					)}
 				/>
 				{supplierError ? <FieldError>{supplierError}</FieldError> : null}
+			</Field>
+
+			<Field data-invalid={Boolean(quoteNumberError) || undefined}>
+				<FieldLabel htmlFor="quote-number">{t("quotes.quoteNumber")}</FieldLabel>
+				<Input
+					aria-invalid={Boolean(quoteNumberError)}
+					disabled={disabled}
+					id="quote-number"
+					placeholder={t("quotes.placeQuoteNumber")}
+					{...register("quoteNumber")}
+				/>
+				{quoteNumberError ? <FieldError>{quoteNumberError}</FieldError> : null}
 			</Field>
 
 			<Field data-invalid={Boolean(quotationDateError) || undefined}>
@@ -232,8 +249,8 @@ export const QuoteFormFields = ({
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="pending">
-									{t("quotes.statusPending")}
+								<SelectItem value="received">
+									{t("quotes.statusReceived")}
 								</SelectItem>
 								<SelectItem value="accepted">
 									{t("quotes.statusAccepted")}
@@ -281,16 +298,15 @@ export const QuoteFormFields = ({
 							disabled={disabled}
 							emptyLabel={t("quotes.dropPdf")}
 							existingFile={
-								initialQuote?.pdf?.url && initialQuote.pdf.name
+								initialQuote?.attachment?.url && initialQuote.attachment.filename
 									? {
-										href: initialQuote.pdf.url,
-										name: initialQuote.pdf.name,
-										size: initialQuote.pdf.size,
+										href: initialQuote.attachment.url,
+										name: initialQuote.attachment.filename,
 									}
 									: null
 							}
 							hint={t("quotes.pdfHint")}
-							key={initialQuote?.documentId ?? "create"}
+							key={initialQuote?.id ?? "create"}
 							maxFiles={QUOTE_MAX_ATTACHMENT_FILES}
 							maxSize={QUOTE_MAX_ATTACHMENT_BYTES}
 							name="quotePdf"

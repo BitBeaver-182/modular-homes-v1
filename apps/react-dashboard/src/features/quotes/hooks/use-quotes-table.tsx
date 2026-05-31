@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { Check, ExternalLink, Pencil, ShoppingCart, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, Pencil, Trash2, X } from "lucide-react";
 import { useMemo, type JSX } from "react";
 
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
@@ -8,7 +8,10 @@ import { useCurrency } from "@/hooks/use-currency";
 
 import { QuoteStatusBadge } from "../components/quote-status-badge";
 
-import type { Quote, QuoteStatus } from "../types";
+import type {
+	SupplierQuoteResponse,
+	SupplierQuoteStatus,
+} from "@moduflow/types";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const DEFAULT_CURRENCY = "EUR";
@@ -16,17 +19,16 @@ const FIXED_SIZE = 140;
 const ACTIONS_SIZE = 176;
 
 interface UseQuotesTableProps {
-	onEdit?: (quote: Quote) => void;
-	onDelete?: (quote: Quote) => void;
-	onCreateSupplierOrder?: (quote: Quote) => void;
+	onEdit?: (quote: SupplierQuoteResponse) => void;
+	onDelete?: (quote: SupplierQuoteResponse) => void;
 	onRequestStatus?: (
-		quote: Quote,
-		status: Extract<QuoteStatus, "accepted" | "rejected">,
+		quote: SupplierQuoteResponse,
+		status: Extract<SupplierQuoteStatus, "accepted" | "rejected">,
 	) => void;
 }
 
 interface UseQuotesTableReturn {
-	columns: Array<ColumnDef<Quote>>;
+	columns: Array<ColumnDef<SupplierQuoteResponse>>;
 }
 
 /**
@@ -38,12 +40,11 @@ interface UseQuotesTableReturn {
 export const useQuotesTable = ({
 	onEdit,
 	onDelete,
-	onCreateSupplierOrder,
 	onRequestStatus,
 }: UseQuotesTableProps): UseQuotesTableReturn => {
 	const { formatAmount } = useCurrency();
-	const columns = useMemo<Array<ColumnDef<Quote>>>(
-		(): Array<ColumnDef<Quote>> => [
+	const columns = useMemo<Array<ColumnDef<SupplierQuoteResponse>>>(
+		(): Array<ColumnDef<SupplierQuoteResponse>> => [
 			{
 				id: "supplier.name",
 				accessorFn: (row): string => row.supplier?.name ?? "",
@@ -55,40 +56,42 @@ export const useQuotesTable = ({
 					row.original.supplier?.name ?? t("quotes.unknownSupplier"),
 			},
 			{
-				accessorKey: "total.amount",
-				id: "total.amount",
+				accessorKey: "totalAmount",
+				id: "totalAmount",
 				size: FIXED_SIZE,
 				header: ({ column }): JSX.Element => (
 					<DataGridColumnHeader column={column} title={t("quotes.columnAmount")} />
 				),
 				cell: ({ row }): string => {
-					const amount = row.original.total?.amount ?? 0;
-					const currency = row.original.total?.currency_code;
+					const amount = row.original.totalAmount ?? 0;
+					const currency = row.original.currencyCode;
 					return formatAmount(amount, currency ?? DEFAULT_CURRENCY);
 				},
 			},
 			{
-				accessorKey: "quote_status",
+				accessorKey: "status",
 				size: FIXED_SIZE,
 				header: ({ column }): JSX.Element => (
 					<DataGridColumnHeader column={column} title={t("quotes.columnStatus")} />
 				),
 				cell: ({ row }): JSX.Element => (
-					<QuoteStatusBadge status={row.original.quote_status} />
+					<QuoteStatusBadge status={row.original.status} />
 				),
 			},
 			{
-				accessorKey: "createdAt",
+				accessorKey: "quoteDate",
 				size: FIXED_SIZE,
 				header: ({ column }): JSX.Element => (
-					<DataGridColumnHeader column={column} title={t("quotes.columnCreated")} />
+					<DataGridColumnHeader column={column} title={t("quotes.columnQuoteDate")} />
 				),
-				cell: ({ row }): string =>
-					new Intl.DateTimeFormat(undefined, {
+				cell: ({ row }): string => {
+					const date = row.original.quoteDate ?? row.original.createdAt;
+					return new Intl.DateTimeFormat(undefined, {
 						year: "numeric",
 						month: "short",
 						day: "2-digit",
-					}).format(new Date(row.original.createdAt)),
+					}).format(new Date(date));
+				},
 			},
 			{
 				accessorKey: "notes",
@@ -107,14 +110,14 @@ export const useQuotesTable = ({
 					<DataGridColumnHeader column={column} title={t("quotes.columnAttachment")} />
 				),
 				cell: ({ row }): JSX.Element | string =>
-					row.original.pdf?.url ? (
+					row.original.attachment?.url ? (
 						<a
 							className="inline-flex items-center gap-1 text-primary underline underline-offset-2"
-							href={row.original.pdf.url}
+							href={row.original.attachment.url}
 							rel="noreferrer"
 							target="_blank"
 						>
-							{row.original.pdf.name}
+							{row.original.attachment.filename}
 							<ExternalLink className="size-3.5" />
 						</a>
 					) : (
@@ -128,15 +131,11 @@ export const useQuotesTable = ({
 				header: (): null => null,
 				cell: ({ row }): JSX.Element => {
 					const quote = row.original;
-					const isPending = quote.quote_status === "pending";
-					const isAccepted = quote.quote_status === "accepted";
-					const hasLinkedOrder =
-						(quote.supplierOrders?.length ?? 0) > 0 ||
-						(quote.orders?.length ?? 0) > 0;
+					const isReceived = quote.status === "received";
 
 					return (
 						<div className="flex justify-end gap-1">
-							{isPending && onRequestStatus ? (
+							{isReceived && onRequestStatus ? (
 								<>
 									<Button
 										size="icon-sm"
@@ -161,19 +160,6 @@ export const useQuotesTable = ({
 										<X className="size-4 text-red-600" />
 									</Button>
 								</>
-							) : null}
-							{isAccepted && onCreateSupplierOrder && !hasLinkedOrder ? (
-								<Button
-									size="icon-sm"
-									title={t("quotes.titleCreateSupplierOrder")}
-									type="button"
-									variant="ghost"
-									onClick={(): void => {
-										onCreateSupplierOrder(quote);
-									}}
-								>
-									<ShoppingCart className="size-4 text-primary" />
-								</Button>
 							) : null}
 							{onEdit ? (
 								<Button
@@ -206,13 +192,7 @@ export const useQuotesTable = ({
 				},
 			},
 		],
-		[
-			formatAmount,
-			onCreateSupplierOrder,
-			onEdit,
-			onDelete,
-			onRequestStatus,
-		],
+		[formatAmount, onEdit, onDelete, onRequestStatus],
 	);
 
 	return useMemo(() => ({ columns }), [columns]);

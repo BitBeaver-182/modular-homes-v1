@@ -13,14 +13,14 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import type { Quote } from "../types";
+import type { SupplierQuoteResponse } from "@moduflow/types";
 
 export interface QuoteCreateSupplierOrderAlertProps {
 	open: boolean;
-	quote: Quote | null;
+	quote: SupplierQuoteResponse | null;
 	loading: boolean;
 	onOpenChange: (open: boolean) => void;
-	onConfirm: (quote: Quote) => Promise<void>;
+	onConfirm: (quote: SupplierQuoteResponse) => Promise<void>;
 }
 
 export const QuoteCreateSupplierOrderAlert = ({
@@ -63,7 +63,7 @@ export const QuoteCreateSupplierOrderAlert = ({
 					<AlertDialogDescription>
 						{t("quotes.createSupplierOrderDialogDesc", {
 							supplier: supplierName,
-							documentId: quote?.documentId ?? "",
+							documentId: quote?.id ?? "",
 						})}
 					</AlertDialogDescription>
 				</AlertDialogHeader>

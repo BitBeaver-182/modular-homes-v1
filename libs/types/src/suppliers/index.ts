@@ -1,4 +1,8 @@
-import type { ApiId, IsoDateString, PaginationMeta } from '../common';
+import type {
+  ApiId,
+  IsoDateString,
+  PaginatedListResponse,
+} from '../common';
 
 export interface SupplierAddressRequest {
   line1: string;
@@ -55,11 +59,4 @@ export interface SupplierResponse {
   updatedAt: IsoDateString;
 }
 
-export interface SupplierListMetaResponse {
-  pagination: PaginationMeta;
-}
-
-export interface SupplierListResponse {
-  data: SupplierResponse[];
-  meta: SupplierListMetaResponse;
-}
+export type SupplierListResponse = PaginatedListResponse<SupplierResponse>;

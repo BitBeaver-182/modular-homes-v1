@@ -7,19 +7,25 @@ import {
 import { quoteKeys } from "./quote-keys";
 import { createQuote } from "../lib/quote-api";
 
-import type { Quote, QuoteWriteInput } from "../types";
+import type { QuoteWriteInput } from "../types";
+import type { SupplierQuoteResponse } from "@moduflow/types";
 
-export const useCreateQuote = (): UseMutationResult<
-	Quote,
+export const useCreateQuote = (
+	organizationId: string
+): UseMutationResult<
+	SupplierQuoteResponse,
 	Error,
 	QuoteWriteInput
 > => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (input: QuoteWriteInput) => createQuote(input),
+		mutationFn: (input: QuoteWriteInput) =>
+			createQuote({ organizationId }, input),
 		onSuccess: async (): Promise<void> => {
-			await queryClient.invalidateQueries({ queryKey: quoteKeys.lists() });
+			await queryClient.invalidateQueries({
+				queryKey: quoteKeys.lists(organizationId),
+			});
 		},
 	});
 };

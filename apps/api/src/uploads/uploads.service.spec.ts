@@ -5,8 +5,12 @@ describe('UploadsService', () => {
   const prisma = {
     fileUpload: {
       create: jest.fn(),
+      deleteMany: jest.fn(),
       findFirst: jest.fn(),
       updateMany: jest.fn(),
+    },
+    supplierQuote: {
+      findFirst: jest.fn(),
     },
   };
   const storageService = {
@@ -37,6 +41,7 @@ describe('UploadsService', () => {
     );
     storageService.exists.mockResolvedValue(true);
     prisma.fileUpload.updateMany.mockResolvedValue({ count: 1 });
+    prisma.supplierQuote.findFirst.mockResolvedValue(null);
     service = new UploadsService(prisma as never, storageService as never);
   });
 
@@ -170,6 +175,66 @@ describe('UploadsService', () => {
         organizationId: 4n,
         status: 'CONFIRMED',
       },
+    });
+  });
+
+  it('remove deletes an unlinked upload in the active organization', async () => {
+    prisma.fileUpload.findFirst.mockResolvedValue({
+      id: 'file_123',
+      organizationId: 4n,
+      context: 'SUPPLIER_DOCUMENT',
+      key: '4/SUPPLIER_DOCUMENT/file_123',
+      status: 'CONFIRMED',
+      expiresAt: new Date('2026-05-31T10:00:00.000Z'),
+    });
+
+    await expect(service.remove('file_123', actor)).resolves.toBeUndefined();
+
+    expect(prisma.fileUpload.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'file_123',
+        organizationId: 4n,
+        status: { in: ['PENDING', 'ORPHANED', 'CONFIRMED'] },
+        expiresAt: { not: null },
+        supplierQuote: null,
+      },
+      data: { status: 'DELETED' },
+    });
+    expect(storageService.delete).toHaveBeenCalledWith(
+      'SUPPLIER_DOCUMENT',
+      '4/SUPPLIER_DOCUMENT/file_123',
+    );
+    expect(prisma.fileUpload.deleteMany).toHaveBeenCalledWith({
+      where: {
+        id: 'file_123',
+        organizationId: 4n,
+        status: 'DELETED',
+      },
+    });
+  });
+
+  it('remove still retires the upload when storage deletion fails', async () => {
+    prisma.fileUpload.findFirst.mockResolvedValue({
+      id: 'file_123',
+      organizationId: 4n,
+      context: 'SUPPLIER_DOCUMENT',
+      key: '4/SUPPLIER_DOCUMENT/file_123',
+      status: 'CONFIRMED',
+      expiresAt: new Date('2026-05-31T10:00:00.000Z'),
+    });
+    storageService.delete.mockRejectedValueOnce(new Error('boom'));
+
+    await expect(service.remove('file_123', actor)).resolves.toBeUndefined();
+
+    expect(prisma.fileUpload.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'file_123',
+        organizationId: 4n,
+        status: { in: ['PENDING', 'ORPHANED', 'CONFIRMED'] },
+        expiresAt: { not: null },
+        supplierQuote: null,
+      },
+      data: { status: 'DELETED' },
     });
   });
 });

@@ -13,14 +13,14 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import type { Quote } from "../types";
+import type { SupplierQuoteResponse } from "@moduflow/types";
 
 export interface QuoteDeleteAlertProps {
 	open: boolean;
-	quote: Quote | null;
+	quote: SupplierQuoteResponse | null;
 	loading: boolean;
 	onOpenChange: (open: boolean) => void;
-	onConfirm: (quote: Quote) => Promise<void>;
+	onConfirm: (quote: SupplierQuoteResponse) => Promise<void>;
 }
 
 export const QuoteDeleteAlert = ({
@@ -60,7 +60,7 @@ export const QuoteDeleteAlert = ({
 					<AlertDialogTitle>{t("quotes.deleteDialogTitle")}</AlertDialogTitle>
 					<AlertDialogDescription>
 						{t("quotes.deleteDialogDesc", {
-							name: quote?.documentId || "",
+							name: quote?.quoteNumber || quote?.id || "",
 						})}
 					</AlertDialogDescription>
 				</AlertDialogHeader>

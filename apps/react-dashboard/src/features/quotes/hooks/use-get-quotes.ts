@@ -5,14 +5,15 @@ import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._ad
 import { quoteKeys } from "./quote-keys";
 import { getQuotes } from "../lib/quote-api";
 
-import type { PaginatedResult, Quote } from "../types";
+import type { SupplierQuoteListResponse } from "@moduflow/types";
 
 export const useGetQuotes = (
+	organizationId: string,
 	params: QuotesQueryParams
-): UseQueryResult<PaginatedResult<Quote>, Error> => {
+): UseQueryResult<SupplierQuoteListResponse, Error> => {
 	return useQuery({
-		queryKey: quoteKeys.list(params),
-		queryFn: () => getQuotes(params),
+		queryKey: quoteKeys.list(organizationId, params),
+		queryFn: () => getQuotes({ organizationId }, params),
 		placeholderData: (previousData) => previousData,
 	});
 };

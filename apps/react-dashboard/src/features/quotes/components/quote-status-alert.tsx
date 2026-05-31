@@ -13,15 +13,21 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import type { Quote, QuoteStatus } from "../types";
+import type {
+	SupplierQuoteResponse,
+	SupplierQuoteWritableStatus,
+} from "@moduflow/types";
 
 export interface QuoteStatusAlertProps {
 	open: boolean;
-	quote: Quote | null;
-	nextStatus: QuoteStatus | null;
+	quote: SupplierQuoteResponse | null;
+	nextStatus: SupplierQuoteWritableStatus | null;
 	loading: boolean;
 	onOpenChange: (open: boolean) => void;
-	onConfirm: (quote: Quote, status: QuoteStatus) => Promise<void>;
+	onConfirm: (
+		quote: SupplierQuoteResponse,
+		status: SupplierQuoteWritableStatus
+	) => Promise<void>;
 }
 
 export const QuoteStatusAlert = ({

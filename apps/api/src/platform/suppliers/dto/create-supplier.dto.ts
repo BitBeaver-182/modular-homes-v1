@@ -10,14 +10,12 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import {
+  emptyStringToUndefined,
+  trimString,
+} from '../../../common/transforms/string.transforms';
 import { IsGooglePhoneNumber } from '../../../common/validators/is-google-phone-number';
 import { SupplierAddressDto } from './supplier-address.dto';
-
-const emptyToUndefined = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' && value.trim() === '' ? undefined : value;
-
-const trimString = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim() : value;
 
 export class CreateSupplierDto implements CreateSupplierRequest {
   @ApiProperty({ example: 'Acme Supply' })
@@ -28,7 +26,7 @@ export class CreateSupplierDto implements CreateSupplierRequest {
   name!: string;
 
   @ApiPropertyOptional({ example: '+1 555 0100' })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -37,7 +35,7 @@ export class CreateSupplierDto implements CreateSupplierRequest {
   phoneNumber?: string;
 
   @ApiPropertyOptional({ example: 'orders@example.com' })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsEmail()
@@ -51,7 +49,7 @@ export class CreateSupplierDto implements CreateSupplierRequest {
   address?: SupplierAddressDto;
 
   @ApiPropertyOptional({ example: 'https://example.com' })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsUrl({ require_protocol: true })

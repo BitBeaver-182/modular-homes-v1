@@ -7,6 +7,7 @@ import { UserRolesModule } from './user-roles/user-roles.module';
 import { RolePermissionsModule } from './role-permissions/role-permissions.module';
 import { OrganizationUsersModule } from './organization-users/organization-users.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
+import { SupplierQuotesModule } from './supplier-quotes/supplier-quotes.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SuppliersModule } from './suppliers/suppliers.module';
     RolePermissionsModule,
     OrganizationUsersModule,
     SuppliersModule,
+    SupplierQuotesModule,
   ],
 })
 export class PlatformModule {}

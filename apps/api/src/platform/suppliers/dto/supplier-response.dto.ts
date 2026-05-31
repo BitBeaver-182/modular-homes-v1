@@ -1,11 +1,11 @@
 import type {
   SupplierAddressResponse as SupplierAddressContract,
-  SupplierListMetaResponse as SupplierListMetaContract,
   SupplierListResponse as SupplierListContract,
   SupplierResponse as SupplierContract,
 } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
+import { createPaginatedResponseDto } from '../../../common/dto/paginated-response.dto';
 
 export class SupplierResponse implements SupplierContract {
   constructor(partial: SupplierContract) {
@@ -96,51 +96,6 @@ export class SupplierAddressResponse implements SupplierAddressContract {
   countryCode!: string | null;
 }
 
-export class SupplierPaginationResponse {
-  constructor(partial: SupplierListMetaContract['pagination']) {
-    Object.assign(this, partial);
-  }
-
-  @ApiProperty({ example: 1 })
-  @Expose()
-  page!: number;
-
-  @ApiProperty({ example: 15 })
-  @Expose()
-  pageSize!: number;
-
-  @ApiProperty({ example: 3 })
-  @Expose()
-  pageCount!: number;
-
-  @ApiProperty({ example: 42 })
-  @Expose()
-  total!: number;
-}
-
-export class SupplierListMetaResponse implements SupplierListMetaContract {
-  constructor(partial: SupplierListMetaContract) {
-    Object.assign(this, partial);
-  }
-
-  @Expose()
-  @Type(() => SupplierPaginationResponse)
-  @ApiProperty({ type: SupplierPaginationResponse })
-  pagination!: SupplierPaginationResponse;
-}
-
-export class SupplierListResponse implements SupplierListContract {
-  constructor(partial: SupplierListContract) {
-    Object.assign(this, partial);
-  }
-
-  @Expose()
-  @Type(() => SupplierResponse)
-  @ApiProperty({ type: SupplierResponse, isArray: true })
-  data!: SupplierResponse[];
-
-  @Expose()
-  @Type(() => SupplierListMetaResponse)
-  @ApiProperty({ type: SupplierListMetaResponse })
-  meta!: SupplierListMetaResponse;
-}
+export class SupplierListResponse
+  extends createPaginatedResponseDto(SupplierResponse)
+  implements SupplierListContract {}

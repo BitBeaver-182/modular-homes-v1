@@ -27,7 +27,6 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { useCreateSupplierOrderFromQuote } from "@/features/supplier-orders-detail/hooks/use-create-supplier-order-from-quote";
 import { SupplierFilter } from "@/features/suppliers/components/supplier-filter";
 import { getCoreRowModel, useReactTable } from "@/lib/tanstack-react-table";
 import {
@@ -35,7 +34,6 @@ import {
 	type QuotesQueryParams,
 } from "@/routes/$locale.o.$organizationSlug._admin._operations.quotes";
 
-import { QuoteCreateSupplierOrderAlert } from "./components/quote-create-supplier-order-alert";
 import { QuoteDeleteAlert } from "./components/quote-delete-alert";
 import { QuoteFormDialog } from "./components/quote-form-dialog";
 import { QuoteStatusAlert } from "./components/quote-status-alert";
@@ -49,24 +47,28 @@ import { quoteToWriteInput } from "./lib/quote-form";
 import { usePaginationHandler } from "../../hooks/use-pagination-handler";
 import { useSortingHandler } from "../../hooks/use-sorting-handler";
 
-import type { Quote, QuoteStatus, QuoteWriteInput } from "./types";
+import type { QuoteWriteInput } from "./types";
+import type {
+	SupplierQuoteResponse,
+	SupplierQuoteStatus,
+	SupplierQuoteWritableStatus,
+} from "@moduflow/types";
 
 interface StatusAction {
-	quote: Quote;
-	status: Extract<QuoteStatus, "accepted" | "rejected">;
+	quote: SupplierQuoteResponse;
+	status: Extract<SupplierQuoteStatus, "accepted" | "rejected">;
 }
 
 const QuotesPage = (): JSX.Element => {
 	const { t } = useTranslation();
-	const { locale, organizationSlug } = Route.useParams();
 	const searchParams = Route.useSearch();
 	const navigate = Route.useNavigate();
+	const { activeMembership } = Route.useRouteContext();
+	const organizationId = activeMembership.organization.id;
 	const [createOpen, setCreateOpen] = useState(false);
-	const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
-	const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
+	const [editingQuote, setEditingQuote] = useState<SupplierQuoteResponse | null>(null);
+	const [deletingQuote, setDeletingQuote] = useState<SupplierQuoteResponse | null>(null);
 	const [statusAction, setStatusAction] = useState<StatusAction | null>(null);
-	const [supplierOrderConfirmQuote, setSupplierOrderConfirmQuote] =
-		useState<Quote | null>(null);
 
 	const { sorting, onSortingChange } = useSortingHandler({
 		currentParams: searchParams,
@@ -82,15 +84,14 @@ const QuotesPage = (): JSX.Element => {
 		data,
 		isLoading: isLoadingList,
 		isError: isErrorList,
-	} = useGetQuotes(searchParams);
+	} = useGetQuotes(organizationId, searchParams);
 
-	const { isPending: isCreating, mutateAsync: createQuote } = useCreateQuote();
-	const { isPending: isUpdating, mutateAsync: updateQuote } = useUpdateQuote();
-	const { isPending: isDeleting, mutateAsync: deleteQuote } = useDeleteQuote();
-	const {
-		mutateAsync: createSupplierOrder,
-		isPending: isCreatingSupplierOrder,
-	} = useCreateSupplierOrderFromQuote();
+	const { isPending: isCreating, mutateAsync: createQuote } =
+		useCreateQuote(organizationId);
+	const { isPending: isUpdating, mutateAsync: updateQuote } =
+		useUpdateQuote(organizationId);
+	const { isPending: isDeleting, mutateAsync: deleteQuote } =
+		useDeleteQuote(organizationId);
 
 	const rows = data?.data ?? [];
 	const pagination = data?.meta.pagination;
@@ -109,35 +110,33 @@ const QuotesPage = (): JSX.Element => {
 	const hasAnyFilter = useMemo((): boolean => {
 		return (
 			searchParams.quote_status !== undefined ||
-			searchParams.createdAt !== undefined ||
+			searchParams.quoteDate !== undefined ||
 			searchParams.amount !== undefined ||
 			searchParams.supplier_ids !== undefined
 		);
 	}, [
 		searchParams.quote_status,
-		searchParams.createdAt,
+		searchParams.quoteDate,
 		searchParams.amount,
 		searchParams.supplier_ids,
 	]);
 
 	const statusOptions = useMemo(
-		(): Array<{ value: QuoteStatus; label: string }> => [
-			{ value: "pending", label: t("quotes.statusPending") },
+		(): Array<{ value: SupplierQuoteStatus; label: string }> => [
+			{ value: "received", label: t("quotes.statusReceived") },
 			{ value: "accepted", label: t("quotes.statusAccepted") },
 			{ value: "rejected", label: t("quotes.statusRejected") },
+			{ value: "expired", label: t("quotes.statusExpired") },
 		],
 		[t]
 	);
 
 	const { columns } = useQuotesTable({
-		onEdit: (quote: Quote): void => {
+		onEdit: (quote: SupplierQuoteResponse): void => {
 			setEditingQuote(quote);
 		},
-		onDelete: (quote: Quote): void => {
+		onDelete: (quote: SupplierQuoteResponse): void => {
 			setDeletingQuote(quote);
-		},
-		onCreateSupplierOrder: (quote: Quote): void => {
-			setSupplierOrderConfirmQuote(quote);
 		},
 		onRequestStatus: (quote, status): void => {
 			setStatusAction({ quote, status });
@@ -175,7 +174,7 @@ const QuotesPage = (): JSX.Element => {
 		onPaginationChange,
 		onSortingChange,
 		pageCount,
-		getRowId: (row): string => row.documentId,
+		getRowId: (row): string => row.id,
 	});
 
 	const handleCreate = async (value: QuoteWriteInput): Promise<void> => {
@@ -187,35 +186,17 @@ const QuotesPage = (): JSX.Element => {
 			return;
 		}
 
-		await updateQuote({ documentId: editingQuote.documentId, input: value });
+		await updateQuote({ id: editingQuote.id, input: value });
 	};
 
-	const handleDelete = async (quote: Quote): Promise<void> => {
-		await deleteQuote(quote.documentId);
-	};
-
-	const handleCreateSupplierOrderConfirm = async (
-		quote: Quote
+	const handleDelete = async (
+		quote: SupplierQuoteResponse
 	): Promise<void> => {
-		const order = await createSupplierOrder({
-			quoteDocumentId: quote.documentId,
-		});
-		void navigate({
-			to: "/$locale/o/$organizationSlug/supplier-orders/$orderId",
-			params: {
-				locale,
-				organizationSlug,
-				orderId: order.documentId,
-			},
-			search: {
-				page: 1,
-				pageSize: 10,
-			},
-		});
+		await deleteQuote(quote.id);
 	};
 
 	const handleStatusChange = useCallback(
-		(next: Array<QuoteStatus>): void => {
+		(next: Array<SupplierQuoteStatus>): void => {
 			if (next.length === 0) {
 				updateSearchParams({ quote_status: undefined, page: 1 });
 				return;
@@ -239,11 +220,11 @@ const QuotesPage = (): JSX.Element => {
 	const handleDateRangeChange = useCallback(
 		(next: YmdPair): void => {
 			if (next.from === undefined && next.to === undefined) {
-				updateSearchParams({ createdAt: undefined, page: 1 });
+				updateSearchParams({ quoteDate: undefined, page: 1 });
 				return;
 			}
 			updateSearchParams({
-				createdAt: { from: next.from, to: next.to },
+				quoteDate: { from: next.from, to: next.to },
 				page: 1,
 			});
 		},
@@ -275,7 +256,7 @@ const QuotesPage = (): JSX.Element => {
 	const resetFilters = useCallback((): void => {
 		updateSearchParams({
 			quote_status: undefined,
-			createdAt: undefined,
+			quoteDate: undefined,
 			amount: undefined,
 			supplier_ids: undefined,
 			page: 1,
@@ -283,11 +264,11 @@ const QuotesPage = (): JSX.Element => {
 	}, [updateSearchParams]);
 
 	const handleStatusConfirm = async (
-		quote: Quote,
-		status: QuoteStatus
+		quote: SupplierQuoteResponse,
+		status: SupplierQuoteWritableStatus
 	): Promise<void> => {
 		await updateQuote({
-			documentId: quote.documentId,
+			id: quote.id,
 			input: { ...quoteToWriteInput(quote), status },
 		});
 	};
@@ -344,7 +325,7 @@ const QuotesPage = (): JSX.Element => {
 						icon={<CalendarIcon className="size-3.5" />}
 						showPresets
 						disableFuture
-						value={searchParams.createdAt}
+						value={searchParams.quoteDate}
 						onApply={handleDateRangeChange}
 					/>
 					<NumberRangeFilter
@@ -418,7 +399,7 @@ const QuotesPage = (): JSX.Element => {
 			/>
 
 			<QuoteDeleteAlert
-				key={deletingQuote?.documentId ?? "none"}
+				key={deletingQuote?.id ?? "none"}
 				loading={isDeleting}
 				open={!!deletingQuote}
 				quote={deletingQuote}
@@ -433,7 +414,7 @@ const QuotesPage = (): JSX.Element => {
 			<QuoteStatusAlert
 				key={
 					statusAction
-						? `${statusAction.quote.documentId}-${statusAction.status}`
+						? `${statusAction.quote.id}-${statusAction.status}`
 						: "none"
 				}
 				loading={isUpdating}
@@ -448,18 +429,6 @@ const QuotesPage = (): JSX.Element => {
 				}}
 			/>
 
-			<QuoteCreateSupplierOrderAlert
-				key={supplierOrderConfirmQuote?.documentId ?? "none"}
-				loading={isCreatingSupplierOrder}
-				open={!!supplierOrderConfirmQuote}
-				quote={supplierOrderConfirmQuote}
-				onConfirm={handleCreateSupplierOrderConfirm}
-				onOpenChange={(open): void => {
-					if (!open) {
-						setSupplierOrderConfirmQuote(null);
-					}
-				}}
-			/>
 		</div>
 	);
 };

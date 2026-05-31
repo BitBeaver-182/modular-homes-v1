@@ -2,8 +2,10 @@ import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._ad
 
 export const quoteKeys = {
 	all: ["quotes"] as const,
-	lists: () => [...quoteKeys.all, "list"] as const,
-	list: (params: QuotesQueryParams) => [...quoteKeys.lists(), params] as const,
+	lists: (organizationId: string) =>
+		[...quoteKeys.all, organizationId, "list"] as const,
+	list: (organizationId: string, params: QuotesQueryParams) =>
+		[...quoteKeys.lists(organizationId), params] as const,
 	details: () => [...quoteKeys.all, "detail"] as const,
-	detail: (documentId: string) => [...quoteKeys.details(), documentId] as const,
+	detail: (id: string) => [...quoteKeys.details(), id] as const,
 };

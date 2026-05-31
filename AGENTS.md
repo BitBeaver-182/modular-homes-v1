@@ -71,6 +71,11 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 | 2026-05-30 | Upload Expiry    | Treating Supabase signed upload URL lifetime as the product contract | Use an app-level 300 second upload window stored in `expiresAt`; cleanup expired pending uploads by `expiresAt`. | v1.0 |
 | 2026-05-30 | Upload Cleanup   | Marking expired uploads `ORPHANED` without deleting the storage object or making it sweepable | Delete the storage object immediately when confirm expires a pending upload, or explicitly keep cleanup responsible for that status. | v1.0 |
 | 2026-05-30 | Filename Validation | Guessing vague filename sanitization rules or letting filenames affect storage paths | Require filenames to match `/^[\w\-. ]+$/`, max 255 chars; use `{organizationId}/{context}/{fileId}` as the bucket key and store filename only as metadata. | v1.0 |
+| 2026-05-31 | Frontend Types | Re-exporting shared API contract types from local feature `types.ts` files as aliases | Import shared contract types directly from `@moduflow/types` whenever possible; keep local `types.ts` files only for frontend-specific shapes and UI-only constants. | v1.0 |
+| 2026-05-31 | Frontend Filters | Hand-writing query-string builders without locking them to the actual available route filters | Keep list query serialization narrowly aligned to the validated route search schema, sanitize optional filter values, and cover the mapping with tests so filter drift fails early. | v1.0 |
+| 2026-05-31 | Nest Query DTOs | Using Strapi-style bracket query keys like `sort[field]` as DTO property names | Use explicit validated DTO fields or proper nested DTOs for API query params; keep sortable fields whitelisted in the DTO/service layer. | v1.0 |
+| 2026-05-31 | Service Boundaries | Exposing service dependencies to controllers through getters like `getStorageService()` | The service should own mapping and dependency usage internally; controllers should call service methods, not reach through to internal collaborators. | v1.0 |
+| 2026-05-31 | Update Semantics | Letting optional array updates silently delete existing records when the caller passes an empty array | Define array-update behavior explicitly; `undefined` means untouched, and empty arrays must not clear data unless the contract explicitly supports clearing. | v1.0 |
 
 ---
 
@@ -79,3 +84,5 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 - **Log Entry #1 (System Genesis):** Established `AGENTS.md` with basic self-correcting memory loop.
 - **Log Entry #2 (Multi-Agent PR Workflow):** Implemented the "Stateless Blind Reviewer" protocol and the "No Assumptions" gate to ensure code quality and communication clarity.
 - **Log Entry #3 (Upload Storage Rules):** Added upload-specific storage ownership, expiry, cleanup, and filename validation rules.
+- **Log Entry #4 (Frontend Type + Filter Discipline):** Added rules to avoid local aliases for shared contracts and to test query serialization against the real route filter surface.
+- **Log Entry #5 (DTO + Service Semantics):** Added rules for clean Nest query DTOs, service/controller boundaries, and explicit semantics for optional array updates.

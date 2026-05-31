@@ -28,7 +28,7 @@ export const useCreateSupplierOrderFromQuote = (): UseMutationResult<
 		onSuccess: async (_data, variables): Promise<void> => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: orderKeys.lists() }),
-				queryClient.invalidateQueries({ queryKey: quoteKeys.lists() }),
+				queryClient.invalidateQueries({ queryKey: quoteKeys.all }),
 				queryClient.invalidateQueries({
 					queryKey: quoteKeys.detail(variables.quoteDocumentId),
 				}),

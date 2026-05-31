@@ -9,6 +9,7 @@ describe('UploadsController', () => {
   const uploadsService = {
     presign: jest.fn(),
     confirm: jest.fn(),
+    remove: jest.fn(),
     getSignedUrl: jest.fn(),
   };
   const actor = {
@@ -77,6 +78,9 @@ describe('UploadsController', () => {
     ).resolves.toMatchObject({
       url: 'https://uploads.example.com/read',
     });
+    await expect(
+      controller.remove(actor, { fileId: 'file_123' }),
+    ).resolves.toBe(undefined);
 
     expect(uploadsService.presign).toHaveBeenCalledWith(
       {
@@ -87,6 +91,7 @@ describe('UploadsController', () => {
       actor,
     );
     expect(uploadsService.confirm).toHaveBeenCalledWith('file_123', actor);
+    expect(uploadsService.remove).toHaveBeenCalledWith('file_123', actor);
     expect(uploadsService.getSignedUrl).toHaveBeenCalledWith('file_123', actor);
   });
 });

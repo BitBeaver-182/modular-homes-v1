@@ -9,9 +9,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-
-const trimString = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim() : value;
+import { trimString } from '../../common/transforms/string.transforms';
 
 export class PresignUploadBodyDto implements PresignUploadRequest {
   @ApiProperty({ example: 'floor-plan.pdf', maxLength: 255 })

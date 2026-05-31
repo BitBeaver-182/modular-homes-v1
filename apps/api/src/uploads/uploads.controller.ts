@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -77,6 +78,20 @@ export class UploadsController {
       await this.uploadsService.confirm(params.fileId, actor),
       { excludeExtraneousValues: true },
     );
+  }
+
+  @Delete(':fileId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete upload',
+    description:
+      'Delete an upload in the active organization when it is no longer linked.',
+  })
+  async remove(
+    @Actor() actor: AuthenticatedActor,
+    @Param() params: FileUploadParamsDto,
+  ): Promise<void> {
+    await this.uploadsService.remove(params.fileId, actor);
   }
 
   @Get(':fileId/url')
