@@ -1,4 +1,4 @@
-CREATE TYPE "SupplierQuoteStatus" AS ENUM ('received', 'accepted', 'rejected', 'expired');
+CREATE TYPE "SupplierQuoteStatus" AS ENUM ('received', 'accepted', 'rejected');
 
 CREATE TABLE "SupplierQuote" (
     "id" BIGSERIAL NOT NULL,
@@ -14,14 +14,10 @@ CREATE TABLE "SupplierQuote" (
     "shippingAmount" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "taxAmount" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "totalAmount" DECIMAL(12,2) NOT NULL DEFAULT 0,
-    "incoterm" TEXT,
     "paymentTerms" TEXT,
-    "loadingPort" TEXT,
-    "destinationPort" TEXT,
     "notes" TEXT,
-    "acceptedAt" TIMESTAMP(3),
-    "rejectedAt" TIMESTAMP(3),
-    "acceptedByUserId" BIGINT,
+    "statusUpdatedAt" TIMESTAMP(3),
+    "statusUpdatedByUserId" BIGINT,
     "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -75,8 +71,8 @@ FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE RESTRICT ON UPD
 ALTER TABLE "SupplierQuote" ADD CONSTRAINT "SupplierQuote_attachmentId_fkey"
 FOREIGN KEY ("attachmentId") REFERENCES "FileUpload"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE "SupplierQuote" ADD CONSTRAINT "SupplierQuote_acceptedByUserId_fkey"
-FOREIGN KEY ("acceptedByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "SupplierQuote" ADD CONSTRAINT "SupplierQuote_statusUpdatedByUserId_fkey"
+FOREIGN KEY ("statusUpdatedByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "SupplierQuoteLine" ADD CONSTRAINT "SupplierQuoteLine_supplierQuoteId_fkey"
 FOREIGN KEY ("supplierQuoteId") REFERENCES "SupplierQuote"("id") ON DELETE CASCADE ON UPDATE CASCADE;

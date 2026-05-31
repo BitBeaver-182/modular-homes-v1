@@ -1,7 +1,6 @@
 import type {
   FileUploadResponse as FileUploadContract,
   SupplierQuoteLineResponse as SupplierQuoteLineContract,
-  SupplierQuoteListMetaResponse as SupplierQuoteListMetaContract,
   SupplierQuoteListResponse as SupplierQuoteListContract,
   SupplierQuoteResponse as SupplierQuoteContract,
   SupplierQuoteStatus,
@@ -9,11 +8,9 @@ import type {
 import { SUPPLIER_QUOTE_STATUSES } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
+import { createPaginatedResponseDto } from '../../../common/dto/paginated-response.dto';
 import { FileUploadPresenter } from '../../../uploads/presenters/file-upload.presenter';
-import {
-  SupplierPaginationResponse,
-  SupplierResponse,
-} from '../../suppliers/dto/supplier-response.dto';
+import { SupplierResponse } from '../../suppliers/dto/supplier-response.dto';
 
 export class SupplierQuoteLineResponse implements SupplierQuoteLineContract {
   constructor(partial: SupplierQuoteLineContract) {
@@ -120,21 +117,9 @@ export class SupplierQuoteResponse implements SupplierQuoteContract {
   @Expose()
   totalAmount!: number;
 
-  @ApiPropertyOptional({ example: 'FOB', nullable: true })
-  @Expose()
-  incoterm!: string | null;
-
   @ApiPropertyOptional({ example: '50% deposit, net 30', nullable: true })
   @Expose()
   paymentTerms!: string | null;
-
-  @ApiPropertyOptional({ example: 'Shanghai', nullable: true })
-  @Expose()
-  loadingPort!: string | null;
-
-  @ApiPropertyOptional({ example: 'Rotterdam', nullable: true })
-  @Expose()
-  destinationPort!: string | null;
 
   @ApiPropertyOptional({ example: 'Supplier confirmed production slot.' })
   @Expose()
@@ -142,15 +127,11 @@ export class SupplierQuoteResponse implements SupplierQuoteContract {
 
   @ApiPropertyOptional({ nullable: true })
   @Expose()
-  acceptedAt!: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  @Expose()
-  rejectedAt!: string | null;
+  statusUpdatedAt!: string | null;
 
   @ApiPropertyOptional({ example: '1', nullable: true })
   @Expose()
-  acceptedByUserId!: string | null;
+  statusUpdatedByUserId!: string | null;
 
   @ApiProperty({ type: SupplierQuoteLineResponse, isArray: true })
   @Expose()
@@ -166,29 +147,6 @@ export class SupplierQuoteResponse implements SupplierQuoteContract {
   updatedAt!: string;
 }
 
-export class SupplierQuoteListMetaResponse implements SupplierQuoteListMetaContract {
-  constructor(partial: SupplierQuoteListMetaContract) {
-    Object.assign(this, partial);
-  }
-
-  @Expose()
-  @Type(() => SupplierPaginationResponse)
-  @ApiProperty({ type: SupplierPaginationResponse })
-  pagination!: SupplierPaginationResponse;
-}
-
-export class SupplierQuoteListResponse implements SupplierQuoteListContract {
-  constructor(partial: SupplierQuoteListContract) {
-    Object.assign(this, partial);
-  }
-
-  @Expose()
-  @Type(() => SupplierQuoteResponse)
-  @ApiProperty({ type: SupplierQuoteResponse, isArray: true })
-  data!: SupplierQuoteResponse[];
-
-  @Expose()
-  @Type(() => SupplierQuoteListMetaResponse)
-  @ApiProperty({ type: SupplierQuoteListMetaResponse })
-  meta!: SupplierQuoteListMetaResponse;
-}
+export class SupplierQuoteListResponse
+  extends createPaginatedResponseDto(SupplierQuoteResponse)
+  implements SupplierQuoteListContract {}

@@ -23,7 +23,7 @@ export const quoteToWriteInput = (quote: Quote): QuoteWriteInput => ({
 	amount: String(quote.totalAmount ?? ""),
 	currencyCode: quote.currencyCode ?? DEFAULT_CURRENCY,
 	notes: quote.notes ?? "",
-	status: quote.status,
+	status: quote.status === "expired" ? "received" : quote.status,
 	pdfFile: null,
 	removeExistingPdf: false,
 });

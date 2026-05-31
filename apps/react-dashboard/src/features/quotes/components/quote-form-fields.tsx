@@ -255,9 +255,6 @@ export const QuoteFormFields = ({
 								<SelectItem value="rejected">
 									{t("quotes.statusRejected")}
 								</SelectItem>
-								<SelectItem value="expired">
-									{t("quotes.statusExpired")}
-								</SelectItem>
 							</SelectContent>
 						</Select>
 					)}

@@ -1761,6 +1761,156 @@
               "default": "{{organizationId}}",
               "example": "{{organizationId}}"
             }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "SQ-2026",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "received",
+                  "accepted",
+                  "rejected",
+                  "expired"
+                ]
+              }
+            }
+          },
+          {
+            "name": "supplierIds",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "quoteDateFrom",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-05-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "quoteDateTo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-05-31",
+              "type": "string"
+            }
+          },
+          {
+            "name": "validUntilFrom",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-06-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "validUntilTo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-06-30",
+              "type": "string"
+            }
+          },
+          {
+            "name": "totalAmountMin",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 1000,
+              "type": "number"
+            }
+          },
+          {
+            "name": "totalAmountMax",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 5000,
+              "type": "number"
+            }
+          },
+          {
+            "name": "currencyCode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "USD",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort[field]",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "createdAt",
+                "quoteDate",
+                "validUntil",
+                "totalAmount",
+                "status",
+                "supplier.name",
+                "quoteNumber"
+              ]
+            }
+          },
+          {
+            "name": "sort[criteria]",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
           }
         ],
         "responses": {
@@ -3079,7 +3229,7 @@
           "updatedAt"
         ]
       },
-      "SupplierPaginationResponse": {
+      "PaginationMetaResponseDto": {
         "type": "object",
         "properties": {
           "page": {
@@ -3106,11 +3256,11 @@
           "total"
         ]
       },
-      "SupplierListMetaResponse": {
+      "PaginatedListMetaResponseDto": {
         "type": "object",
         "properties": {
           "pagination": {
-            "$ref": "#/components/schemas/SupplierPaginationResponse"
+            "$ref": "#/components/schemas/PaginationMetaResponseDto"
           }
         },
         "required": [
@@ -3127,7 +3277,7 @@
             }
           },
           "meta": {
-            "$ref": "#/components/schemas/SupplierListMetaResponse"
+            "$ref": "#/components/schemas/PaginatedListMetaResponseDto"
           }
         },
         "required": [
@@ -3248,8 +3398,7 @@
             "enum": [
               "received",
               "accepted",
-              "rejected",
-              "expired"
+              "rejected"
             ],
             "default": "received"
           },
@@ -3268,24 +3417,9 @@
             "example": "USD",
             "default": "USD"
           },
-          "incoterm": {
-            "type": "object",
-            "example": "FOB",
-            "nullable": true
-          },
           "paymentTerms": {
             "type": "object",
             "example": "50% deposit, net 30",
-            "nullable": true
-          },
-          "loadingPort": {
-            "type": "object",
-            "example": "Shanghai",
-            "nullable": true
-          },
-          "destinationPort": {
-            "type": "object",
-            "example": "Rotterdam",
             "nullable": true
           },
           "notes": {
@@ -3475,39 +3609,20 @@
             "type": "number",
             "example": 51650
           },
-          "incoterm": {
-            "type": "object",
-            "example": "FOB",
-            "nullable": true
-          },
           "paymentTerms": {
             "type": "object",
             "example": "50% deposit, net 30",
-            "nullable": true
-          },
-          "loadingPort": {
-            "type": "object",
-            "example": "Shanghai",
-            "nullable": true
-          },
-          "destinationPort": {
-            "type": "object",
-            "example": "Rotterdam",
             "nullable": true
           },
           "notes": {
             "type": "object",
             "example": "Supplier confirmed production slot."
           },
-          "acceptedAt": {
+          "statusUpdatedAt": {
             "type": "object",
             "nullable": true
           },
-          "rejectedAt": {
-            "type": "object",
-            "nullable": true
-          },
-          "acceptedByUserId": {
+          "statusUpdatedByUserId": {
             "type": "object",
             "example": "1",
             "nullable": true
@@ -3539,17 +3654,6 @@
           "updatedAt"
         ]
       },
-      "SupplierQuoteListMetaResponse": {
-        "type": "object",
-        "properties": {
-          "pagination": {
-            "$ref": "#/components/schemas/SupplierPaginationResponse"
-          }
-        },
-        "required": [
-          "pagination"
-        ]
-      },
       "SupplierQuoteListResponse": {
         "type": "object",
         "properties": {
@@ -3560,7 +3664,7 @@
             }
           },
           "meta": {
-            "$ref": "#/components/schemas/SupplierQuoteListMetaResponse"
+            "$ref": "#/components/schemas/PaginatedListMetaResponseDto"
           }
         },
         "required": [
@@ -3590,8 +3694,7 @@
             "enum": [
               "received",
               "accepted",
-              "rejected",
-              "expired"
+              "rejected"
             ],
             "default": "received"
           },
@@ -3610,24 +3713,9 @@
             "example": "USD",
             "default": "USD"
           },
-          "incoterm": {
-            "type": "object",
-            "example": "FOB",
-            "nullable": true
-          },
           "paymentTerms": {
             "type": "object",
             "example": "50% deposit, net 30",
-            "nullable": true
-          },
-          "loadingPort": {
-            "type": "object",
-            "example": "Shanghai",
-            "nullable": true
-          },
-          "destinationPort": {
-            "type": "object",
-            "example": "Rotterdam",
             "nullable": true
           },
           "notes": {

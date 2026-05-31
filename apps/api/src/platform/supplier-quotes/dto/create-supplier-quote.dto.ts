@@ -1,8 +1,8 @@
 import type {
   CreateSupplierQuoteRequest,
-  SupplierQuoteStatus,
+  SupplierQuoteWritableStatus,
 } from '@moduflow/types';
-import { SUPPLIER_QUOTE_STATUSES } from '@moduflow/types';
+import { SUPPLIER_QUOTE_WRITABLE_STATUSES } from '@moduflow/types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
@@ -17,16 +17,12 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import {
+  emptyStringToUndefined,
+  trimString,
+  trimUppercaseString,
+} from '../../../common/transforms/string.transforms';
 import { SupplierQuoteLineDto } from './supplier-quote-line.dto';
-
-const emptyToUndefined = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' && value.trim() === '' ? undefined : value;
-
-const trimString = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim() : value;
-
-const trimUppercaseString = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim().toUpperCase() : value;
 
 export class CreateSupplierQuoteDto implements CreateSupplierQuoteRequest {
   @ApiProperty({ example: '1' })
@@ -36,7 +32,7 @@ export class CreateSupplierQuoteDto implements CreateSupplierQuoteRequest {
   supplierId!: string;
 
   @ApiPropertyOptional({ example: 'ckvxo0n1a000001l46me8xz6u', nullable: true })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -44,26 +40,29 @@ export class CreateSupplierQuoteDto implements CreateSupplierQuoteRequest {
   attachmentId?: string | null;
 
   @ApiPropertyOptional({ example: 'SQ-2026-001', nullable: true })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
   @MaxLength(500)
   quoteNumber?: string | null;
 
-  @ApiPropertyOptional({ enum: SUPPLIER_QUOTE_STATUSES, default: 'received' })
+  @ApiPropertyOptional({
+    enum: SUPPLIER_QUOTE_WRITABLE_STATUSES,
+    default: 'received',
+  })
   @IsOptional()
-  @IsIn(SUPPLIER_QUOTE_STATUSES)
-  status?: SupplierQuoteStatus;
+  @IsIn(SUPPLIER_QUOTE_WRITABLE_STATUSES)
+  status?: SupplierQuoteWritableStatus;
 
   @ApiPropertyOptional({ example: '2026-05-30', nullable: true })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @IsOptional()
   @IsDateString()
   quoteDate?: string | null;
 
   @ApiPropertyOptional({ example: '2026-06-30', nullable: true })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @IsOptional()
   @IsDateString()
   validUntil?: string | null;
@@ -99,40 +98,16 @@ export class CreateSupplierQuoteDto implements CreateSupplierQuoteRequest {
   @Min(0)
   totalAmount?: number;
 
-  @ApiPropertyOptional({ example: 'FOB', nullable: true })
-  @Transform(emptyToUndefined)
-  @Transform(trimString)
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  incoterm?: string | null;
-
   @ApiPropertyOptional({ example: '50% deposit, net 30', nullable: true })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
   @MaxLength(500)
   paymentTerms?: string | null;
 
-  @ApiPropertyOptional({ example: 'Shanghai', nullable: true })
-  @Transform(emptyToUndefined)
-  @Transform(trimString)
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  loadingPort?: string | null;
-
-  @ApiPropertyOptional({ example: 'Rotterdam', nullable: true })
-  @Transform(emptyToUndefined)
-  @Transform(trimString)
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  destinationPort?: string | null;
-
   @ApiPropertyOptional({ example: 'Supplier confirmed production slot.' })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()

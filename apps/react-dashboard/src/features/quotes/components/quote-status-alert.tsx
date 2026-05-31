@@ -13,15 +13,15 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import type { Quote, QuoteStatus } from "../types";
+import type { Quote, QuoteWritableStatus } from "../types";
 
 export interface QuoteStatusAlertProps {
 	open: boolean;
 	quote: Quote | null;
-	nextStatus: QuoteStatus | null;
+	nextStatus: QuoteWritableStatus | null;
 	loading: boolean;
 	onOpenChange: (open: boolean) => void;
-	onConfirm: (quote: Quote, status: QuoteStatus) => Promise<void>;
+	onConfirm: (quote: Quote, status: QuoteWritableStatus) => Promise<void>;
 }
 
 export const QuoteStatusAlert = ({

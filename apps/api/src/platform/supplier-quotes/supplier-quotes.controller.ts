@@ -31,6 +31,7 @@ import {
   ApiOrganizationHeader,
 } from '../platform-swagger.decorator';
 import { CreateSupplierQuoteDto } from './dto/create-supplier-quote.dto';
+import { SupplierQuoteFilterDto } from './dto/supplier-quote-filter.dto';
 import {
   SupplierQuoteListResponse,
   SupplierQuoteResponse,
@@ -77,7 +78,7 @@ export class SupplierQuotesController {
   @ApiOkResponse({ type: SupplierQuoteListResponse })
   async findAll(
     @OrganizationId() organizationId: bigint,
-    @Query() query: Record<string, unknown>,
+    @Query() query: SupplierQuoteFilterDto,
   ): Promise<SupplierQuoteListResponse> {
     const result = await this.supplierQuotesService.findAll(
       organizationId,

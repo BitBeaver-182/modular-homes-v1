@@ -1,5 +1,6 @@
 import {
 	SUPPLIER_QUOTE_STATUSES,
+	type SupplierQuoteWritableStatus,
 	type FileUploadResponse,
 	type SupplierQuoteListResponse,
 	type SupplierQuoteResponse,
@@ -8,6 +9,7 @@ import {
 
 export const QUOTE_STATUSES = SUPPLIER_QUOTE_STATUSES;
 export type QuoteStatus = SupplierQuoteStatus;
+export type QuoteWritableStatus = SupplierQuoteWritableStatus;
 
 export const QUOTE_SORT_FIELDS = [
 	"createdAt",
@@ -37,7 +39,7 @@ export interface QuoteWriteInput {
 	amount: string;
 	currencyCode: string;
 	notes: string;
-	status: QuoteStatus;
+	status: QuoteWritableStatus;
 	pdfFile: File | null;
 	removeExistingPdf: boolean;
 }

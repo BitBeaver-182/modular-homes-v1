@@ -47,7 +47,12 @@ import { quoteToWriteInput } from "./lib/quote-form";
 import { usePaginationHandler } from "../../hooks/use-pagination-handler";
 import { useSortingHandler } from "../../hooks/use-sorting-handler";
 
-import type { Quote, QuoteStatus, QuoteWriteInput } from "./types";
+import type {
+	Quote,
+	QuoteStatus,
+	QuoteWritableStatus,
+	QuoteWriteInput,
+} from "./types";
 
 interface StatusAction {
 	quote: Quote;
@@ -258,7 +263,7 @@ const QuotesPage = (): JSX.Element => {
 
 	const handleStatusConfirm = async (
 		quote: Quote,
-		status: QuoteStatus
+		status: QuoteWritableStatus
 	): Promise<void> => {
 		await updateQuote({
 			id: quote.id,

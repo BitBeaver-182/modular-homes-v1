@@ -2,9 +2,15 @@ import type {
   SupplierQuoteLineResponse,
   SupplierQuoteListResponse,
   SupplierQuoteResponse,
+  SupplierQuoteStatus,
 } from '@moduflow/types';
 import type { Prisma } from '@prisma/client';
-import { toApiId, toIsoDateString } from '../../../common/mappers/transport';
+import {
+  decimalToNumber,
+  toApiId,
+  toDateOnlyString,
+  toOptionalIsoDateString,
+} from '../../../common/mappers/transport';
 import { FileUploadMapper } from '../../../uploads/mappers/file-upload.mapper';
 import type { IStorageService } from '../../../storage/storage.service.interface';
 import { toSupplierResponse } from '../../suppliers/mappers/supplier.mapper';
@@ -17,12 +23,18 @@ export type SupplierQuoteWithRelations = Prisma.SupplierQuoteGetPayload<{
   };
 }>;
 
-function toDateOnlyString(value: Date | null): string | null {
-  return value ? value.toISOString().slice(0, 10) : null;
-}
+function toSupplierQuoteStatus(
+  quote: Pick<SupplierQuoteWithRelations, 'status' | 'validUntil'>,
+): SupplierQuoteStatus {
+  if (
+    quote.status === 'received' &&
+    quote.validUntil &&
+    quote.validUntil < startOfUtcToday()
+  ) {
+    return 'expired';
+  }
 
-function numberFromDecimal(value: Prisma.Decimal | number): number {
-  return Number(value);
+  return quote.status;
 }
 
 function toSupplierQuoteLineResponse(
@@ -36,12 +48,12 @@ function toSupplierQuoteLineResponse(
       : null,
     description: line.description,
     quantity: line.quantity,
-    unitCost: numberFromDecimal(line.unitCost),
-    lineTotal: numberFromDecimal(line.lineTotal),
+    unitCost: decimalToNumber(line.unitCost),
+    lineTotal: decimalToNumber(line.lineTotal),
     estimatedProductionDays: line.estimatedProductionDays,
     notes: line.notes,
-    createdAt: toIsoDateString(line.createdAt),
-    updatedAt: toIsoDateString(line.updatedAt),
+    createdAt: line.createdAt.toISOString(),
+    updatedAt: line.updatedAt.toISOString(),
   };
 }
 
@@ -56,27 +68,23 @@ export async function toSupplierQuoteResponse(
       ? await FileUploadMapper.toResponse(quote.attachment, storageService)
       : null,
     quoteNumber: quote.quoteNumber,
-    status: quote.status,
+    status: toSupplierQuoteStatus(quote),
     quoteDate: toDateOnlyString(quote.quoteDate),
     validUntil: toDateOnlyString(quote.validUntil),
     currencyCode: quote.currencyCode,
-    subtotalAmount: numberFromDecimal(quote.subtotalAmount),
-    shippingAmount: numberFromDecimal(quote.shippingAmount),
-    taxAmount: numberFromDecimal(quote.taxAmount),
-    totalAmount: numberFromDecimal(quote.totalAmount),
-    incoterm: quote.incoterm,
+    subtotalAmount: decimalToNumber(quote.subtotalAmount),
+    shippingAmount: decimalToNumber(quote.shippingAmount),
+    taxAmount: decimalToNumber(quote.taxAmount),
+    totalAmount: decimalToNumber(quote.totalAmount),
     paymentTerms: quote.paymentTerms,
-    loadingPort: quote.loadingPort,
-    destinationPort: quote.destinationPort,
     notes: quote.notes,
-    acceptedAt: quote.acceptedAt ? toIsoDateString(quote.acceptedAt) : null,
-    rejectedAt: quote.rejectedAt ? toIsoDateString(quote.rejectedAt) : null,
-    acceptedByUserId: quote.acceptedByUserId
-      ? toApiId(quote.acceptedByUserId)
+    statusUpdatedAt: toOptionalIsoDateString(quote.statusUpdatedAt) ?? null,
+    statusUpdatedByUserId: quote.statusUpdatedByUserId
+      ? toApiId(quote.statusUpdatedByUserId)
       : null,
     lines: quote.lines.map(toSupplierQuoteLineResponse),
-    createdAt: toIsoDateString(quote.createdAt),
-    updatedAt: toIsoDateString(quote.updatedAt),
+    createdAt: quote.createdAt.toISOString(),
+    updatedAt: quote.updatedAt.toISOString(),
   };
 }
 
@@ -91,4 +99,11 @@ export async function toSupplierQuoteListResponse(
     ),
     meta,
   };
+}
+
+function startOfUtcToday(): Date {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
 }

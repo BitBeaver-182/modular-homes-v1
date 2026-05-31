@@ -3,42 +3,24 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, type SupplierQuoteStatus } from '@prisma/client';
-import { QuerybuilderService } from 'nestjs-prisma-querybuilder';
+import {
+  Prisma,
+  type SupplierQuoteStatus as PersistedSupplierQuoteStatus,
+} from '@prisma/client';
 import type {
   CreateSupplierQuoteRequest,
   SupplierQuoteLineRequest,
   SupplierQuoteListResponse,
+  SupplierQuoteStatus,
   UpdateSupplierQuoteRequest,
 } from '@moduflow/types';
+import type { AuthenticatedActor } from '../../auth/auth.types';
 import { parseBigIntId } from '../../common/ids/parse-bigint-id';
 import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../../storage/storage.service';
-import type { AuthenticatedActor } from '../../auth/auth.types';
+import { SupplierQuoteFilterDto } from './dto/supplier-quote-filter.dto';
 import type { SupplierQuoteWithRelations } from './mappers/supplier-quote.mapper';
 
-const SORT_FIELDS = [
-  'createdAt',
-  'quoteDate',
-  'validUntil',
-  'totalAmount',
-  'status',
-  'supplier.name',
-  'quoteNumber',
-] as const;
-const BLOCKED_QUERY_KEYS = [
-  'deletedAt',
-  'distinct',
-  'filter',
-  'include',
-  'organizationId',
-  'populate',
-  'raw',
-  'select',
-] as const;
-
-type SupplierQuoteSortField = (typeof SORT_FIELDS)[number];
-type SupplierQuoteQuery = Record<string, unknown>;
 type SupplierQuoteListMeta = SupplierQuoteListResponse['meta'];
 type SupplierQuoteWrite =
   | CreateSupplierQuoteRequest
@@ -54,7 +36,6 @@ const INCLUDE_RELATIONS = {
 export class SupplierQuotesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly querybuilder: QuerybuilderService<PrismaService>,
     private readonly storageService: StorageService,
   ) {}
 
@@ -75,16 +56,13 @@ export class SupplierQuotesService {
       actor.organizationId,
       normalizeOptionalString(dto.quoteNumber),
     );
-    await this.assertAttachmentAvailable(
-      actor.organizationId,
-      dto.attachmentId,
-    );
+    await this.assertAttachmentAvailable(actor.organizationId, dto.attachmentId);
 
     const amounts = calculateAmounts(dto);
     const statusData = getStatusAuditData(dto.status ?? 'received', actor);
 
     try {
-      const quote = await this.prisma.supplierQuote.create({
+      return await this.prisma.supplierQuote.create({
         data: {
           organizationId: actor.organizationId,
           supplierId,
@@ -98,10 +76,7 @@ export class SupplierQuotesService {
           shippingAmount: amounts.shippingAmount,
           taxAmount: amounts.taxAmount,
           totalAmount: amounts.totalAmount,
-          incoterm: normalizeOptionalString(dto.incoterm),
           paymentTerms: normalizeOptionalString(dto.paymentTerms),
-          loadingPort: normalizeOptionalString(dto.loadingPort),
-          destinationPort: normalizeOptionalString(dto.destinationPort),
           notes: normalizeOptionalString(dto.notes),
           ...statusData,
           lines: {
@@ -110,8 +85,6 @@ export class SupplierQuotesService {
         },
         include: INCLUDE_RELATIONS,
       });
-
-      return quote;
     } catch (error) {
       if (isUniqueConstraintError(error)) {
         throw new BadRequestException('Quote number must be unique');
@@ -122,24 +95,16 @@ export class SupplierQuotesService {
 
   async findAll(
     organizationId: bigint,
-    query: SupplierQuoteQuery,
+    query: SupplierQuoteFilterDto,
   ): Promise<{
     data: SupplierQuoteWithRelations[];
     meta: SupplierQuoteListMeta;
   }> {
-    assertSupportedQuery(query);
-
-    const builtQuery = await this.querybuilder.query({
-      model: 'supplierQuote',
-      paginationOnly: true,
-      setHeaders: false,
-    });
-
-    const take = toPositiveNumber(builtQuery.take, 10);
-    const skip = toNonNegativeNumber(builtQuery.skip, 0);
-    const page = Math.floor(skip / take) + 1;
+    const take = query.limit ?? 10;
+    const page = query.page ?? 1;
+    const skip = (page - 1) * take;
     const where = buildSupplierQuoteWhere(organizationId, query);
-    const orderBy = getSafeOrderBy(builtQuery.orderBy);
+    const orderBy = getSafeOrderBy(query);
 
     const [data, total] = await Promise.all([
       this.prisma.supplierQuote.findMany({
@@ -195,6 +160,7 @@ export class SupplierQuotesService {
       dto.supplierId !== undefined
         ? parseBigIntId(dto.supplierId, 'supplierId')
         : current.supplierId;
+
     if (dto.supplierId !== undefined) {
       await this.assertSupplierBelongsToOrganization(
         actor.organizationId,
@@ -211,6 +177,7 @@ export class SupplierQuotesService {
       nextQuoteNumber,
       id,
     );
+
     if (dto.attachmentId !== undefined) {
       await this.assertAttachmentAvailable(
         actor.organizationId,
@@ -259,19 +226,8 @@ export class SupplierQuotesService {
             shippingAmount: amounts.shippingAmount,
             taxAmount: amounts.taxAmount,
             totalAmount: amounts.totalAmount,
-            ...(dto.incoterm !== undefined
-              ? { incoterm: normalizeOptionalString(dto.incoterm) }
-              : {}),
             ...(dto.paymentTerms !== undefined
               ? { paymentTerms: normalizeOptionalString(dto.paymentTerms) }
-              : {}),
-            ...(dto.loadingPort !== undefined
-              ? { loadingPort: normalizeOptionalString(dto.loadingPort) }
-              : {}),
-            ...(dto.destinationPort !== undefined
-              ? {
-                  destinationPort: normalizeOptionalString(dto.destinationPort),
-                }
               : {}),
             ...(dto.notes !== undefined
               ? { notes: normalizeOptionalString(dto.notes) }
@@ -312,6 +268,7 @@ export class SupplierQuotesService {
       where: { id: supplierId, organizationId, deletedAt: null },
       select: { id: true },
     });
+
     if (!supplier) {
       throw new BadRequestException('Supplier does not belong to organization');
     }
@@ -335,6 +292,7 @@ export class SupplierQuotesService {
       },
       select: { id: true },
     });
+
     if (existing) {
       throw new BadRequestException('Quote number must be unique');
     }
@@ -359,6 +317,7 @@ export class SupplierQuotesService {
       },
       select: { id: true },
     });
+
     if (!upload) {
       throw new BadRequestException(
         'Attachment must be a confirmed supplier document',
@@ -374,6 +333,7 @@ export class SupplierQuotesService {
       },
       select: { id: true },
     });
+
     if (existingQuote) {
       throw new BadRequestException('Attachment is already linked to a quote');
     }
@@ -388,6 +348,7 @@ function sanitizeLines(
     const quantity = line.quantity;
     const unitCost = decimal(line.unitCost);
     const lineTotal = decimal(quantity * line.unitCost);
+
     return {
       organizationId,
       houseModelId: parseOptionalBigInt(line.houseModelId, 'houseModelId'),
@@ -453,10 +414,7 @@ function mergeQuoteInput(
     shippingAmount: input.shippingAmount ?? Number(current.shippingAmount),
     taxAmount: input.taxAmount ?? Number(current.taxAmount),
     totalAmount: input.totalAmount ?? Number(current.totalAmount),
-    incoterm: input.incoterm ?? current.incoterm,
     paymentTerms: input.paymentTerms ?? current.paymentTerms,
-    loadingPort: input.loadingPort ?? current.loadingPort,
-    destinationPort: input.destinationPort ?? current.destinationPort,
     notes: input.notes ?? current.notes,
     lines:
       input.lines ??
@@ -474,57 +432,48 @@ function mergeQuoteInput(
 }
 
 function getStatusAuditData(
-  status: SupplierQuoteStatus,
+  status: PersistedSupplierQuoteStatus,
   actor: AuthenticatedActor,
 ): Pick<
   Prisma.SupplierQuoteUncheckedCreateInput,
-  'acceptedAt' | 'rejectedAt' | 'acceptedByUserId'
+  'statusUpdatedAt' | 'statusUpdatedByUserId'
 > {
-  if (status === 'accepted') {
+  if (status === 'accepted' || status === 'rejected') {
     return {
-      acceptedAt: new Date(),
-      acceptedByUserId: actor.userId,
-      rejectedAt: null,
+      statusUpdatedAt: new Date(),
+      statusUpdatedByUserId: actor.userId,
     };
   }
-  if (status === 'rejected') {
-    return {
-      acceptedAt: null,
-      acceptedByUserId: null,
-      rejectedAt: new Date(),
-    };
-  }
+
   return {
-    acceptedAt: null,
-    acceptedByUserId: null,
-    rejectedAt: null,
+    statusUpdatedAt: null,
+    statusUpdatedByUserId: null,
   };
 }
 
 function buildSupplierQuoteWhere(
   organizationId: bigint,
-  query: SupplierQuoteQuery,
+  query: SupplierQuoteFilterDto,
 ): Prisma.SupplierQuoteWhereInput {
   const where: Prisma.SupplierQuoteWhereInput = {
     organizationId,
     deletedAt: null,
   };
-  const search = getStringValue(query.search)?.trim();
-  const statuses = getStringArray(query.status);
-  const supplierIds = getStringArray(query.supplierIds).map((id) =>
+  const andFilters: Prisma.SupplierQuoteWhereInput[] = [];
+  const search = normalizeOptionalString(query.search);
+  const supplierIds = (query.supplierIds ?? []).map((id) =>
     parseBigIntId(id, 'supplierId'),
   );
-  const currencyCode = getStringValue(query.currencyCode)?.trim().toUpperCase();
 
-  if (statuses.length > 0) {
-    where.status = { in: statuses as SupplierQuoteStatus[] };
-  }
+  addStatusFilter(andFilters, query.status ?? []);
+
   if (supplierIds.length > 0) {
     where.supplierId = { in: supplierIds };
   }
-  if (currencyCode) {
-    where.currencyCode = currencyCode;
+  if (query.currencyCode) {
+    where.currencyCode = query.currencyCode;
   }
+
   addDateRange(where, 'quoteDate', query.quoteDateFrom, query.quoteDateTo);
   addDateRange(where, 'validUntil', query.validUntilFrom, query.validUntilTo);
   addNumberRange(
@@ -535,37 +484,70 @@ function buildSupplierQuoteWhere(
   );
 
   if (search) {
-    where.OR = [
-      { quoteNumber: { contains: search, mode: 'insensitive' } },
-      { notes: { contains: search, mode: 'insensitive' } },
-      { incoterm: { contains: search, mode: 'insensitive' } },
-      { paymentTerms: { contains: search, mode: 'insensitive' } },
-      { loadingPort: { contains: search, mode: 'insensitive' } },
-      { destinationPort: { contains: search, mode: 'insensitive' } },
-      {
-        supplier: {
-          is: {
-            name: { contains: search, mode: 'insensitive' },
+    andFilters.push({
+      OR: [
+        { quoteNumber: { contains: search, mode: 'insensitive' } },
+        { notes: { contains: search, mode: 'insensitive' } },
+        { paymentTerms: { contains: search, mode: 'insensitive' } },
+        {
+          supplier: {
+            is: {
+              name: { contains: search, mode: 'insensitive' },
+            },
           },
         },
-      },
-    ];
+      ],
+    });
+  }
+
+  if (andFilters.length > 0) {
+    where.AND = andFilters;
   }
 
   return where;
 }
 
+function addStatusFilter(
+  andFilters: Prisma.SupplierQuoteWhereInput[],
+  statuses: SupplierQuoteStatus[],
+): void {
+  if (statuses.length === 0) {
+    return;
+  }
+
+  const persistedStatuses = statuses.filter(
+    (status): status is PersistedSupplierQuoteStatus => status !== 'expired',
+  );
+  const statusFilters: Prisma.SupplierQuoteWhereInput[] = [];
+
+  if (persistedStatuses.length > 0) {
+    statusFilters.push({ status: { in: persistedStatuses } });
+  }
+
+  if (statuses.includes('expired')) {
+    statusFilters.push({
+      status: 'received',
+      validUntil: { lt: startOfUtcToday() },
+    });
+  }
+
+  andFilters.push(
+    statusFilters.length === 1 ? statusFilters[0] : { OR: statusFilters },
+  );
+}
+
 function addDateRange(
   where: Prisma.SupplierQuoteWhereInput,
   field: 'quoteDate' | 'validUntil',
-  fromValue: unknown,
-  toValue: unknown,
+  fromValue: string | undefined,
+  toValue: string | undefined,
 ): void {
-  const from = parseOptionalDate(getStringValue(fromValue));
-  const to = parseOptionalDate(getStringValue(toValue));
+  const from = parseOptionalDate(fromValue);
+  const to = parseOptionalDate(toValue);
   if (!from && !to) {
     return;
   }
+
   where[field] = {
     ...(from ? { gte: from } : {}),
     ...(to ? { lte: to } : {}),
@@ -583,139 +565,28 @@ function addNumberRange(
   if (min === undefined && max === undefined) {
     return;
   }
+
   where[field] = {
     ...(min !== undefined ? { gte: decimal(min) } : {}),
     ...(max !== undefined ? { lte: decimal(max) } : {}),
   };
 }
 
-function assertSupportedQuery(query: SupplierQuoteQuery): void {
-  for (const key of Object.keys(query)) {
-    if (isBlockedQueryKey(key) || hasBlockedNestedQueryKey(key)) {
-      throw new BadRequestException(
-        `Unsupported supplier quote query parameter: ${key}`,
-      );
-    }
-    if (!isAllowedQueryKey(key)) {
-      throw new BadRequestException(
-        `Unsupported supplier quote query parameter: ${key}`,
-      );
-    }
-  }
-  assertSafeSort(query);
-}
-
-function isAllowedQueryKey(key: string): boolean {
-  return [
-    'page',
-    'limit',
-    'search',
-    'sort',
-    'sort[field]',
-    'sort[criteria]',
-    'status',
-    'status[]',
-    'supplierIds',
-    'supplierIds[]',
-    'quoteDateFrom',
-    'quoteDateTo',
-    'validUntilFrom',
-    'validUntilTo',
-    'totalAmountMin',
-    'totalAmountMax',
-    'currencyCode',
-  ].includes(key);
-}
-
-function isBlockedQueryKey(key: string): boolean {
-  return (BLOCKED_QUERY_KEYS as ReadonlyArray<string>).includes(key);
-}
-
-function hasBlockedNestedQueryKey(key: string): boolean {
-  return BLOCKED_QUERY_KEYS.some((blockedKey) =>
-    key.startsWith(`${blockedKey}[`),
-  );
-}
-
-function assertSafeSort(query: SupplierQuoteQuery): void {
-  const flatField = getStringValue(query['sort[field]']);
-  const flatCriteria = getStringValue(query['sort[criteria]']);
-  const nestedSort = query.sort;
-
-  if (Array.isArray(nestedSort)) {
-    throw new BadRequestException(
-      'Only one supplier quote sort field is supported',
-    );
-  }
-  if (nestedSort !== undefined && !isPlainObject(nestedSort)) {
-    throw new BadRequestException('Invalid supplier quote sort parameter');
-  }
-  if (isPlainObject(nestedSort)) {
-    for (const key of Object.keys(nestedSort)) {
-      if (key !== 'field' && key !== 'criteria') {
-        throw new BadRequestException(
-          `Unsupported supplier quote sort parameter: ${key}`,
-        );
-      }
-    }
-  }
-
-  const field = flatField ?? getStringValue(nestedSort?.field);
-  const criteria = flatCriteria ?? getStringValue(nestedSort?.criteria);
-  if (field && !isSupplierQuoteSortField(field)) {
-    throw new BadRequestException(
-      `Unsupported supplier quote sort field: ${field}`,
-    );
-  }
-  if (criteria && criteria !== 'asc' && criteria !== 'desc') {
-    throw new BadRequestException(
-      'Supplier quote sort criteria must be asc or desc',
-    );
-  }
-}
-
 function getSafeOrderBy(
-  rawOrderBy: unknown,
+  query: SupplierQuoteFilterDto,
 ): Prisma.SupplierQuoteOrderByWithRelationInput[] {
-  if (rawOrderBy == null) {
+  const field = query['sort[field]'];
+  const direction = query['sort[criteria]'];
+
+  if (!field || !direction) {
     return [{ createdAt: 'desc' }, { id: 'asc' }];
   }
-  const orderItems = Array.isArray(rawOrderBy) ? rawOrderBy : [rawOrderBy];
-  const safeOrderBy = orderItems.map((item) => {
-    if (!isPlainObject(item)) {
-      throw new BadRequestException('Invalid supplier quote sort parameter');
-    }
-    const entries = Object.entries(item);
-    if (entries.length !== 1) {
-      throw new BadRequestException(
-        'Only one field is allowed per supplier quote sort',
-      );
-    }
-    const [[field, direction]] = entries;
-    if (!isSupplierQuoteSortField(field)) {
-      throw new BadRequestException(
-        `Unsupported supplier quote sort field: ${field}`,
-      );
-    }
-    if (direction !== 'asc' && direction !== 'desc') {
-      throw new BadRequestException(
-        'Supplier quote sort criteria must be asc or desc',
-      );
-    }
-    const sortDirection: Prisma.SortOrder =
-      direction === 'asc' ? 'asc' : 'desc';
-    if (field === 'supplier.name') {
-      return { supplier: { name: sortDirection } };
-    }
-    return { [field]: sortDirection };
-  });
-  return [...safeOrderBy, { id: 'asc' }];
-}
 
-function isSupplierQuoteSortField(
-  field: string,
-): field is SupplierQuoteSortField {
-  return (SORT_FIELDS as ReadonlyArray<string>).includes(field);
+  if (field === 'supplier.name') {
+    return [{ supplier: { name: direction } }, { id: 'asc' }];
+  }
+
+  return [{ [field]: direction }, { id: 'asc' }];
 }
 
 function parseOptionalBigInt(
@@ -748,20 +619,6 @@ function decimal(value: number): Prisma.Decimal {
   return new Prisma.Decimal(value.toFixed(2));
 }
 
-function getStringValue(value: unknown): string | undefined {
-  return typeof value === 'string' ? value : undefined;
-}
-
-function getStringArray(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.map(String).filter(Boolean);
-  }
-  if (typeof value === 'string' && value !== '') {
-    return [value];
-  }
-  return [];
-}
-
 function toOptionalNumber(value: unknown): number | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
@@ -773,22 +630,11 @@ function toOptionalNumber(value: unknown): number | undefined {
   return undefined;
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function toPositiveNumber(value: unknown, fallback: number): number {
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) && numericValue > 0
-    ? numericValue
-    : fallback;
-}
-
-function toNonNegativeNumber(value: unknown, fallback: number): number {
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) && numericValue >= 0
-    ? numericValue
-    : fallback;
+function startOfUtcToday(): Date {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
 }
 
 function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {

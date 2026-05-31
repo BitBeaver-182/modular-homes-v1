@@ -9,16 +9,14 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-
-const emptyToUndefined = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' && value.trim() === '' ? undefined : value;
-
-const trimString = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim() : value;
+import {
+  emptyStringToUndefined,
+  trimString,
+} from '../../../common/transforms/string.transforms';
 
 export class SupplierQuoteLineDto implements SupplierQuoteLineRequest {
   @ApiPropertyOptional({ example: '1' })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -26,7 +24,7 @@ export class SupplierQuoteLineDto implements SupplierQuoteLineRequest {
   id?: string;
 
   @ApiPropertyOptional({ example: '12', nullable: true })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -34,7 +32,7 @@ export class SupplierQuoteLineDto implements SupplierQuoteLineRequest {
   houseModelId?: string | null;
 
   @ApiPropertyOptional({ example: '25', nullable: true })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -42,7 +40,7 @@ export class SupplierQuoteLineDto implements SupplierQuoteLineRequest {
   productConfigurationId?: string | null;
 
   @ApiPropertyOptional({ example: 'Two-bedroom modular home shell' })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -67,7 +65,7 @@ export class SupplierQuoteLineDto implements SupplierQuoteLineRequest {
   estimatedProductionDays?: number | null;
 
   @ApiPropertyOptional({ example: 'Includes standard fixture package' })
-  @Transform(emptyToUndefined)
+  @Transform(emptyStringToUndefined)
   @Transform(trimString)
   @IsOptional()
   @IsString()

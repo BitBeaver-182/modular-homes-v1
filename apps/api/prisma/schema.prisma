@@ -47,7 +47,6 @@ enum SupplierQuoteStatus {
   received
   accepted
   rejected
-  expired
 }
 
 model User {
@@ -61,9 +60,9 @@ model User {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  organizationUsers OrganizationUser[]
-  fileUploads       FileUpload[]
-  acceptedSupplierQuotes SupplierQuote[] @relation("AcceptedSupplierQuotes")
+  organizationUsers           OrganizationUser[]
+  fileUploads                 FileUpload[]
+  statusUpdatedSupplierQuotes SupplierQuote[] @relation("StatusUpdatedSupplierQuotes")
 
   @@index([deletedAt])
 }
@@ -103,8 +102,8 @@ model FileUpload {
   createdAt      DateTime         @default(now())
   confirmedAt    DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  uploadedBy    User          @relation(fields: [uploadedById], references: [id])
   supplierQuote SupplierQuote?
 
   @@index([organizationId])
@@ -149,8 +148,8 @@ model Supplier {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  address      Address?     @relation(fields: [addressId, organizationId], references: [id, organizationId])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  address        Address?       @relation(fields: [addressId, organizationId], references: [id, organizationId])
   supplierQuotes SupplierQuote[]
 
   @@index([organizationId])
@@ -178,23 +177,19 @@ model SupplierQuote {
   shippingAmount   Decimal             @default(0) @db.Decimal(12, 2)
   taxAmount        Decimal             @default(0) @db.Decimal(12, 2)
   totalAmount      Decimal             @default(0) @db.Decimal(12, 2)
-  incoterm         String?
-  paymentTerms     String?
-  loadingPort      String?
-  destinationPort  String?
-  notes            String?
-  acceptedAt       DateTime?
-  rejectedAt       DateTime?
-  acceptedByUserId BigInt?
-  deletedAt        DateTime?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  paymentTerms          String?
+  notes                 String?
+  statusUpdatedAt       DateTime?
+  statusUpdatedByUserId BigInt?
+  deletedAt             DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  organization   Organization        @relation(fields: [organizationId], references: [id])
-  supplier       Supplier            @relation(fields: [supplierId], references: [id])
-  attachment     FileUpload?         @relation(fields: [attachmentId], references: [id])
-  acceptedByUser User?               @relation("AcceptedSupplierQuotes", fields: [acceptedByUserId], references: [id])
-  lines          SupplierQuoteLine[]
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  supplier            Supplier     @relation(fields: [supplierId], references: [id])
+  attachment          FileUpload?  @relation(fields: [attachmentId], references: [id])
+  statusUpdatedByUser User?        @relation("StatusUpdatedSupplierQuotes", fields: [statusUpdatedByUserId], references: [id])
+  lines               SupplierQuoteLine[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, quoteNumber])

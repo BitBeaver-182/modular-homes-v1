@@ -42,9 +42,6 @@ describe('SupplierQuotesService', () => {
       deleteMany: jest.fn(),
     },
   };
-  const querybuilder = {
-    query: jest.fn(),
-  };
   const storageService = {};
   const actor = {
     userId: 9n,
@@ -63,16 +60,7 @@ describe('SupplierQuotesService', () => {
     prisma.supplier.findFirst.mockResolvedValue({ id: 8n });
     prisma.fileUpload.findFirst.mockResolvedValue(null);
     prisma.supplierQuote.findFirst.mockResolvedValue(null);
-    querybuilder.query.mockResolvedValue({
-      orderBy: { createdAt: 'desc' },
-      skip: 0,
-      take: 10,
-    });
-    service = new SupplierQuotesService(
-      prisma as never,
-      querybuilder as never,
-      storageService as never,
-    );
+    service = new SupplierQuotesService(prisma as never, storageService as never);
   });
 
   it('creates quotes scoped to the actor organization and calculates line totals', async () => {
@@ -153,23 +141,19 @@ describe('SupplierQuotesService', () => {
   it('lists quotes with organization scope, filters, and safe sorting', async () => {
     prisma.supplierQuote.findMany.mockResolvedValue([{ id: 1n }]);
     prisma.supplierQuote.count.mockResolvedValue(1);
-    querybuilder.query.mockResolvedValue({
-      orderBy: { 'supplier.name': 'asc' },
-      skip: 0,
-      take: 25,
-    });
 
     await service.findAll(4n, {
-      page: '1',
-      limit: '25',
+      page: 1,
+      limit: 25,
       search: 'sq',
       status: ['received', 'accepted'],
       supplierIds: ['8'],
       quoteDateFrom: '2026-05-01',
       quoteDateTo: '2026-05-31',
-      totalAmountMin: '100',
-      totalAmountMax: '2000',
-      sort: { field: 'supplier.name', criteria: 'asc' },
+      totalAmountMin: 100,
+      totalAmountMax: 2000,
+      'sort[field]': 'supplier.name',
+      'sort[criteria]': 'asc',
     });
 
     expect(prisma.supplierQuote.findMany).toHaveBeenCalledWith({
@@ -178,7 +162,6 @@ describe('SupplierQuotesService', () => {
       where: expect.objectContaining({
         organizationId: 4n,
         deletedAt: null,
-        status: { in: ['received', 'accepted'] },
         supplierId: { in: [8n] },
         quoteDate: {
           gte: new Date('2026-05-01T00:00:00.000Z'),
@@ -188,6 +171,14 @@ describe('SupplierQuotesService', () => {
           gte: new Prisma.Decimal('100.00'),
           lte: new Prisma.Decimal('2000.00'),
         },
+        AND: [
+          { status: { in: ['received', 'accepted'] } },
+          expect.objectContaining({
+            OR: expect.arrayContaining([
+              { quoteNumber: { contains: 'sq', mode: 'insensitive' } },
+            ]),
+          }),
+        ],
       }),
       orderBy: [{ supplier: { name: 'asc' } }, { id: 'asc' }],
       skip: 0,
@@ -214,11 +205,10 @@ describe('SupplierQuotesService', () => {
         shippingAmount: new Prisma.Decimal('0'),
         taxAmount: new Prisma.Decimal('0'),
         totalAmount: new Prisma.Decimal('0'),
-        incoterm: null,
         paymentTerms: null,
-        loadingPort: null,
-        destinationPort: null,
         notes: null,
+        statusUpdatedAt: null,
+        statusUpdatedByUserId: null,
         lines: [],
       })
       .mockResolvedValueOnce(null);
@@ -234,9 +224,8 @@ describe('SupplierQuotesService', () => {
         status: 'accepted',
         // Jest asymmetric matchers are typed as any.
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        acceptedAt: expect.any(Date),
-        acceptedByUserId: 9n,
-        rejectedAt: null,
+        statusUpdatedAt: expect.any(Date),
+        statusUpdatedByUserId: 9n,
       }),
       // Jest asymmetric matchers are typed as any.
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
