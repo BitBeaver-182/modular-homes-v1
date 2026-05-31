@@ -1,3 +1,4 @@
+import type { SupplierQuoteResponse } from "@moduflow/types";
 import {
 	useMutation,
 	useQueryClient,
@@ -7,12 +8,12 @@ import {
 import { quoteKeys } from "./quote-keys";
 import { createQuote } from "../lib/quote-api";
 
-import type { Quote, QuoteWriteInput } from "../types";
+import type { QuoteWriteInput } from "../types";
 
 export const useCreateQuote = (
 	organizationId: string
 ): UseMutationResult<
-	Quote,
+	SupplierQuoteResponse,
 	Error,
 	QuoteWriteInput
 > => {

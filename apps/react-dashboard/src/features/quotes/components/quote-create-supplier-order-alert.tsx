@@ -1,4 +1,5 @@
  
+import type { SupplierQuoteResponse } from "@moduflow/types";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -13,14 +14,12 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import type { Quote } from "../types";
-
 export interface QuoteCreateSupplierOrderAlertProps {
 	open: boolean;
-	quote: Quote | null;
+	quote: SupplierQuoteResponse | null;
 	loading: boolean;
 	onOpenChange: (open: boolean) => void;
-	onConfirm: (quote: Quote) => Promise<void>;
+	onConfirm: (quote: SupplierQuoteResponse) => Promise<void>;
 }
 
 export const QuoteCreateSupplierOrderAlert = ({

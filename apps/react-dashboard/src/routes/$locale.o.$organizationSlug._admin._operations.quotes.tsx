@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SUPPLIER_QUOTE_STATUSES } from "@moduflow/types";
 import { z } from "zod";
 
 import {
@@ -7,9 +8,9 @@ import {
 	numberRangeSchema,
 } from "@/common/validation-schema";
 import QuotesPage from "@/features/quotes";
-import { QUOTE_SORT_FIELDS, QUOTE_STATUSES } from "@/features/quotes/types";
+import { QUOTE_SORT_FIELDS } from "@/features/quotes/types";
 
-const quoteStatusSchema = z.enum(QUOTE_STATUSES);
+const quoteStatusSchema = z.enum(SUPPLIER_QUOTE_STATUSES);
 const quoteSortSchema = createSortSchema(QUOTE_SORT_FIELDS);
 
 export const tableFiltersSchema = z.object({

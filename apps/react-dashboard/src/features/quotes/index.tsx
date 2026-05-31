@@ -1,4 +1,9 @@
 import { CalendarIcon, DollarSignIcon, ListChecks, Plus } from "lucide-react";
+import type {
+	SupplierQuoteResponse,
+	SupplierQuoteStatus,
+	SupplierQuoteWritableStatus,
+} from "@moduflow/types";
 import { type JSX, useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -47,16 +52,11 @@ import { quoteToWriteInput } from "./lib/quote-form";
 import { usePaginationHandler } from "../../hooks/use-pagination-handler";
 import { useSortingHandler } from "../../hooks/use-sorting-handler";
 
-import type {
-	Quote,
-	QuoteStatus,
-	QuoteWritableStatus,
-	QuoteWriteInput,
-} from "./types";
+import type { QuoteWriteInput } from "./types";
 
 interface StatusAction {
-	quote: Quote;
-	status: Extract<QuoteStatus, "accepted" | "rejected">;
+	quote: SupplierQuoteResponse;
+	status: Extract<SupplierQuoteStatus, "accepted" | "rejected">;
 }
 
 const QuotesPage = (): JSX.Element => {
@@ -66,8 +66,8 @@ const QuotesPage = (): JSX.Element => {
 	const { activeMembership } = Route.useRouteContext();
 	const organizationId = activeMembership.organization.id;
 	const [createOpen, setCreateOpen] = useState(false);
-	const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
-	const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
+	const [editingQuote, setEditingQuote] = useState<SupplierQuoteResponse | null>(null);
+	const [deletingQuote, setDeletingQuote] = useState<SupplierQuoteResponse | null>(null);
 	const [statusAction, setStatusAction] = useState<StatusAction | null>(null);
 
 	const { sorting, onSortingChange } = useSortingHandler({
@@ -122,7 +122,7 @@ const QuotesPage = (): JSX.Element => {
 	]);
 
 	const statusOptions = useMemo(
-		(): Array<{ value: QuoteStatus; label: string }> => [
+		(): Array<{ value: SupplierQuoteStatus; label: string }> => [
 			{ value: "received", label: t("quotes.statusReceived") },
 			{ value: "accepted", label: t("quotes.statusAccepted") },
 			{ value: "rejected", label: t("quotes.statusRejected") },
@@ -132,10 +132,10 @@ const QuotesPage = (): JSX.Element => {
 	);
 
 	const { columns } = useQuotesTable({
-		onEdit: (quote: Quote): void => {
+		onEdit: (quote: SupplierQuoteResponse): void => {
 			setEditingQuote(quote);
 		},
-		onDelete: (quote: Quote): void => {
+		onDelete: (quote: SupplierQuoteResponse): void => {
 			setDeletingQuote(quote);
 		},
 		onRequestStatus: (quote, status): void => {
@@ -189,12 +189,14 @@ const QuotesPage = (): JSX.Element => {
 		await updateQuote({ id: editingQuote.id, input: value });
 	};
 
-	const handleDelete = async (quote: Quote): Promise<void> => {
+	const handleDelete = async (
+		quote: SupplierQuoteResponse
+	): Promise<void> => {
 		await deleteQuote(quote.id);
 	};
 
 	const handleStatusChange = useCallback(
-		(next: Array<QuoteStatus>): void => {
+		(next: Array<SupplierQuoteStatus>): void => {
 			if (next.length === 0) {
 				updateSearchParams({ quote_status: undefined, page: 1 });
 				return;
@@ -262,8 +264,8 @@ const QuotesPage = (): JSX.Element => {
 	}, [updateSearchParams]);
 
 	const handleStatusConfirm = async (
-		quote: Quote,
-		status: QuoteWritableStatus
+		quote: SupplierQuoteResponse,
+		status: SupplierQuoteWritableStatus
 	): Promise<void> => {
 		await updateQuote({
 			id: quote.id,

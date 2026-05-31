@@ -1,3 +1,4 @@
+import type { SupplierQuoteResponse } from "@moduflow/types";
 import { type JSX, useEffect } from "react";
 import { FormProvider, type FieldPath } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -16,7 +17,7 @@ import { stripStrapiDataPrefix, useStrapiForm } from "@/lib/strapi";
 import { QuoteFormFields, type QuoteFormValues } from "./quote-form-fields";
 import { quoteToWriteInput } from "../lib/quote-form";
 
-import type { Quote, QuoteWriteInput } from "../types";
+import type { QuoteWriteInput } from "../types";
 
 const EMPTY_VALUES: QuoteFormValues = {
 	supplierId: "",
@@ -87,7 +88,7 @@ export interface QuoteFormDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	loading: boolean;
-	initialQuote?: Quote | null;
+	initialQuote?: SupplierQuoteResponse | null;
 	onSubmit: (value: QuoteWriteInput) => Promise<void>;
 }
 

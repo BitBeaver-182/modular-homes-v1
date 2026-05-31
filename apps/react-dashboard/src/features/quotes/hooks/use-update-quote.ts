@@ -1,3 +1,4 @@
+import type { SupplierQuoteResponse } from "@moduflow/types";
 import {
 	useMutation,
 	useQueryClient,
@@ -7,7 +8,7 @@ import {
 import { quoteKeys } from "./quote-keys";
 import { updateQuote } from "../lib/quote-api";
 
-import type { Quote, QuoteWriteInput } from "../types";
+import type { QuoteWriteInput } from "../types";
 
 export interface UpdateQuoteVariables {
 	id: string;
@@ -17,7 +18,7 @@ export interface UpdateQuoteVariables {
 export const useUpdateQuote = (
 	organizationId: string
 ): UseMutationResult<
-	Quote,
+	SupplierQuoteResponse,
 	Error,
 	UpdateQuoteVariables
 > => {

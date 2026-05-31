@@ -1,3 +1,7 @@
+import type {
+	SupplierQuoteResponse,
+	SupplierQuoteStatus,
+} from "@moduflow/types";
 import { t } from "i18next";
 import { Check, ExternalLink, Pencil, Trash2, X } from "lucide-react";
 import { useMemo, type JSX } from "react";
@@ -7,8 +11,6 @@ import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/hooks/use-currency";
 
 import { QuoteStatusBadge } from "../components/quote-status-badge";
-
-import type { Quote, QuoteStatus } from "../types";
 import type { ColumnDef } from "@tanstack/react-table";
 
 const DEFAULT_CURRENCY = "EUR";
@@ -16,16 +18,16 @@ const FIXED_SIZE = 140;
 const ACTIONS_SIZE = 176;
 
 interface UseQuotesTableProps {
-	onEdit?: (quote: Quote) => void;
-	onDelete?: (quote: Quote) => void;
+	onEdit?: (quote: SupplierQuoteResponse) => void;
+	onDelete?: (quote: SupplierQuoteResponse) => void;
 	onRequestStatus?: (
-		quote: Quote,
-		status: Extract<QuoteStatus, "accepted" | "rejected">,
+		quote: SupplierQuoteResponse,
+		status: Extract<SupplierQuoteStatus, "accepted" | "rejected">,
 	) => void;
 }
 
 interface UseQuotesTableReturn {
-	columns: Array<ColumnDef<Quote>>;
+	columns: Array<ColumnDef<SupplierQuoteResponse>>;
 }
 
 /**
@@ -40,8 +42,8 @@ export const useQuotesTable = ({
 	onRequestStatus,
 }: UseQuotesTableProps): UseQuotesTableReturn => {
 	const { formatAmount } = useCurrency();
-	const columns = useMemo<Array<ColumnDef<Quote>>>(
-		(): Array<ColumnDef<Quote>> => [
+	const columns = useMemo<Array<ColumnDef<SupplierQuoteResponse>>>(
+		(): Array<ColumnDef<SupplierQuoteResponse>> => [
 			{
 				id: "supplier.name",
 				accessorFn: (row): string => row.supplier?.name ?? "",

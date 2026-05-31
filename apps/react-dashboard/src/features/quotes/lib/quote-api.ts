@@ -3,12 +3,14 @@ import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._ad
 
 import { uploadSupplierDocument } from "./upload-api";
 
-import type { Quote, QuoteWriteInput } from "../types";
 import type {
 	CreateSupplierQuoteRequest,
+	SupplierQuoteResponse,
 	SupplierQuoteListResponse,
 	UpdateSupplierQuoteRequest,
 } from "@moduflow/types";
+
+import type { QuoteWriteInput } from "../types";
 
 export interface QuoteApiContext {
 	organizationId: string;
@@ -28,38 +30,72 @@ const appendArray = (
 	if (!values || values.length === 0) {
 		return;
 	}
-	for (const value of values) {
+	for (const value of values.map((item) => item.trim()).filter(Boolean)) {
 		query.append(key, value);
 	}
 };
 
-const toQuoteQueryString = (params: QuotesQueryParams): string => {
+const appendOptionalString = (
+	query: URLSearchParams,
+	key: string,
+	value: string | undefined
+): void => {
+	const normalized = value?.trim();
+	if (normalized) {
+		query.set(key, normalized);
+	}
+};
+
+const appendDateRange = (
+	query: URLSearchParams,
+	range: QuotesQueryParams["quoteDate"],
+	keys: { from: string; to: string }
+): void => {
+	if (!range) {
+		return;
+	}
+	appendOptionalString(query, keys.from, range.from);
+	appendOptionalString(query, keys.to, range.to);
+};
+
+const appendNumberRange = (
+	query: URLSearchParams,
+	range: QuotesQueryParams["amount"],
+	keys: { min: string; max: string }
+): void => {
+	if (!range) {
+		return;
+	}
+	if (range.min !== undefined) {
+		query.set(keys.min, String(range.min));
+	}
+	if (range.max !== undefined) {
+		query.set(keys.max, String(range.max));
+	}
+};
+
+export const toQuoteQueryString = (params: QuotesQueryParams): string => {
 	const query = new URLSearchParams();
 	query.set("page", String(params.page));
 	query.set("limit", String(params.pageSize));
 
-	if (params.search) {
-		query.set("search", params.search);
-	}
-	if (params.sortBy) {
+	appendOptionalString(query, "search", params.search);
+
+	if (params.sortBy && params.sortOrder) {
 		query.set("sort[field]", params.sortBy);
 		query.set("sort[criteria]", params.sortOrder === "asc" ? "asc" : "desc");
 	}
+
 	appendArray(query, "status", params.quote_status);
 	appendArray(query, "supplierIds", params.supplier_ids);
-
-	if (params.quoteDate?.from) {
-		query.set("quoteDateFrom", params.quoteDate.from);
-	}
-	if (params.quoteDate?.to) {
-		query.set("quoteDateTo", params.quoteDate.to);
-	}
-	if (params.amount?.min !== undefined) {
-		query.set("totalAmountMin", String(params.amount.min));
-	}
-	if (params.amount?.max !== undefined) {
-		query.set("totalAmountMax", String(params.amount.max));
-	}
+	appendDateRange(query, params.quoteDate, {
+		from: "quoteDateFrom",
+		to: "quoteDateTo",
+	});
+	appendNumberRange(query, params.amount, {
+		min: "totalAmountMin",
+		max: "totalAmountMax",
+	});
 
 	return query.toString();
 };
@@ -110,20 +146,23 @@ export const getQuotes = async (
 export const getQuote = async (
 	context: QuoteApiContext,
 	id: string
-): Promise<Quote> =>
-	moduflowRequest<Quote>(`/supplier-quotes/${encodeURIComponent(id)}`, {
+): Promise<SupplierQuoteResponse> =>
+	moduflowRequest<SupplierQuoteResponse>(
+		`/supplier-quotes/${encodeURIComponent(id)}`,
+		{
 		headers: organizationHeaders(context),
 		method: "GET",
-	});
+		}
+	);
 
 export const createQuote = async (
 	context: QuoteApiContext,
 	input: QuoteWriteInput
-): Promise<Quote> => {
+): Promise<SupplierQuoteResponse> => {
 	const attachment = input.pdfFile
 		? await uploadSupplierDocument(context, input.pdfFile)
 		: null;
-	return moduflowRequest<Quote>("/supplier-quotes", {
+	return moduflowRequest<SupplierQuoteResponse>("/supplier-quotes", {
 		body: buildWritePayload(input, attachment?.id),
 		headers: organizationHeaders(context),
 		method: "POST",
@@ -134,7 +173,7 @@ export const updateQuote = async (
 	context: QuoteApiContext,
 	id: string,
 	input: QuoteWriteInput
-): Promise<Quote> => {
+): Promise<SupplierQuoteResponse> => {
 	const attachment = input.pdfFile
 		? await uploadSupplierDocument(context, input.pdfFile)
 		: null;
@@ -144,11 +183,14 @@ export const updateQuote = async (
 			? null
 			: undefined;
 
-	return moduflowRequest<Quote>(`/supplier-quotes/${encodeURIComponent(id)}`, {
+	return moduflowRequest<SupplierQuoteResponse>(
+		`/supplier-quotes/${encodeURIComponent(id)}`,
+		{
 		body: buildWritePayload(input, attachmentId),
 		headers: organizationHeaders(context),
 		method: "PATCH",
-	});
+		}
+	);
 };
 
 export const deleteQuote = async (

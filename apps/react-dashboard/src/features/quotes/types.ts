@@ -1,15 +1,4 @@
-import {
-	SUPPLIER_QUOTE_STATUSES,
-	type SupplierQuoteWritableStatus,
-	type FileUploadResponse,
-	type SupplierQuoteListResponse,
-	type SupplierQuoteResponse,
-	type SupplierQuoteStatus,
-} from "@moduflow/types";
-
-export const QUOTE_STATUSES = SUPPLIER_QUOTE_STATUSES;
-export type QuoteStatus = SupplierQuoteStatus;
-export type QuoteWritableStatus = SupplierQuoteWritableStatus;
+import type { SupplierQuoteWritableStatus } from "@moduflow/types";
 
 export const QUOTE_SORT_FIELDS = [
 	"createdAt",
@@ -22,15 +11,6 @@ export const QUOTE_SORT_FIELDS = [
 ] as const;
 export type QuoteSortField = (typeof QUOTE_SORT_FIELDS)[number];
 
-export type Quote = SupplierQuoteResponse;
-export type QuoteAttachment = FileUploadResponse;
-export type PaginatedResult<T> = T extends Quote
-	? SupplierQuoteListResponse
-	: {
-			data: Array<T>;
-			meta: SupplierQuoteListResponse["meta"];
-		};
-
 export interface QuoteWriteInput {
 	supplierId: string;
 	quoteNumber: string;
@@ -39,7 +19,7 @@ export interface QuoteWriteInput {
 	amount: string;
 	currencyCode: string;
 	notes: string;
-	status: QuoteWritableStatus;
+	status: SupplierQuoteWritableStatus;
 	pdfFile: File | null;
 	removeExistingPdf: boolean;
 }

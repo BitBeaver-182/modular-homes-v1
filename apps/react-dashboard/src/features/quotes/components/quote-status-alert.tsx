@@ -1,4 +1,8 @@
  
+import type {
+	SupplierQuoteResponse,
+	SupplierQuoteWritableStatus,
+} from "@moduflow/types";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -13,15 +17,16 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import type { Quote, QuoteWritableStatus } from "../types";
-
 export interface QuoteStatusAlertProps {
 	open: boolean;
-	quote: Quote | null;
-	nextStatus: QuoteWritableStatus | null;
+	quote: SupplierQuoteResponse | null;
+	nextStatus: SupplierQuoteWritableStatus | null;
 	loading: boolean;
 	onOpenChange: (open: boolean) => void;
-	onConfirm: (quote: Quote, status: QuoteWritableStatus) => Promise<void>;
+	onConfirm: (
+		quote: SupplierQuoteResponse,
+		status: SupplierQuoteWritableStatus
+	) => Promise<void>;
 }
 
 export const QuoteStatusAlert = ({

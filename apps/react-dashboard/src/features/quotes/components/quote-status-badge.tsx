@@ -1,12 +1,11 @@
+import type { SupplierQuoteStatus } from "@moduflow/types";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/reui/badge";
-
-import type { QuoteStatus } from "../types";
 import type React from "react";
 
 interface QuoteStatusBadgeProps {
-	status: QuoteStatus | null;
+	status: SupplierQuoteStatus | null;
 }
 
 export const QuoteStatusBadge = ({

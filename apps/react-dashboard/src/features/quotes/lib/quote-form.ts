@@ -1,4 +1,6 @@
-import type { Quote, QuoteWriteInput } from "../types";
+import type { SupplierQuoteResponse } from "@moduflow/types";
+
+import type { QuoteWriteInput } from "../types";
 
 const DEFAULT_CURRENCY = "EUR";
 
@@ -15,7 +17,9 @@ export const toDateInputValue = (value: string | null): string => {
 	return parsedDate.toISOString().slice(0, 10);
 };
 
-export const quoteToWriteInput = (quote: Quote): QuoteWriteInput => ({
+export const quoteToWriteInput = (
+	quote: SupplierQuoteResponse
+): QuoteWriteInput => ({
 	supplierId: quote.supplier.id,
 	quoteNumber: quote.quoteNumber ?? "",
 	quotationDate: toDateInputValue(quote.quoteDate),
