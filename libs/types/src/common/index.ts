@@ -28,6 +28,15 @@ export interface PaginationMeta {
   total: number;
 }
 
+export interface PaginatedListMetaResponse {
+  pagination: PaginationMeta;
+}
+
+export interface PaginatedListResponse<T> {
+  data: T[];
+  meta: PaginatedListMetaResponse;
+}
+
 export interface HealthResponse {
   status: string;
   service: string;

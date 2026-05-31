@@ -2,17 +2,23 @@ import type {
   ApiId,
   FileUploadResponse,
   IsoDateString,
-  PaginationMeta,
+  PaginatedListResponse,
 } from '../common';
 import type { SupplierResponse } from '../suppliers';
 
-export const SUPPLIER_QUOTE_STATUSES = [
+export const SUPPLIER_QUOTE_WRITABLE_STATUSES = [
   'received',
   'accepted',
   'rejected',
+] as const;
+
+export const SUPPLIER_QUOTE_STATUSES = [
+  ...SUPPLIER_QUOTE_WRITABLE_STATUSES,
   'expired',
 ] as const;
 
+export type SupplierQuoteWritableStatus =
+  (typeof SUPPLIER_QUOTE_WRITABLE_STATUSES)[number];
 export type SupplierQuoteStatus = (typeof SUPPLIER_QUOTE_STATUSES)[number];
 
 export interface SupplierQuoteLineRequest {
@@ -44,7 +50,7 @@ export interface CreateSupplierQuoteRequest {
   supplierId: ApiId;
   attachmentId?: ApiId | null;
   quoteNumber?: string | null;
-  status?: SupplierQuoteStatus;
+  status?: SupplierQuoteWritableStatus;
   quoteDate?: string | null;
   validUntil?: string | null;
   currencyCode?: string;
@@ -52,10 +58,7 @@ export interface CreateSupplierQuoteRequest {
   shippingAmount?: number;
   taxAmount?: number;
   totalAmount?: number;
-  incoterm?: string | null;
   paymentTerms?: string | null;
-  loadingPort?: string | null;
-  destinationPort?: string | null;
   notes?: string | null;
   lines?: SupplierQuoteLineRequest[];
 }
@@ -64,7 +67,7 @@ export interface UpdateSupplierQuoteRequest {
   supplierId?: ApiId;
   attachmentId?: ApiId | null;
   quoteNumber?: string | null;
-  status?: SupplierQuoteStatus;
+  status?: SupplierQuoteWritableStatus;
   quoteDate?: string | null;
   validUntil?: string | null;
   currencyCode?: string;
@@ -72,10 +75,7 @@ export interface UpdateSupplierQuoteRequest {
   shippingAmount?: number;
   taxAmount?: number;
   totalAmount?: number;
-  incoterm?: string | null;
   paymentTerms?: string | null;
-  loadingPort?: string | null;
-  destinationPort?: string | null;
   notes?: string | null;
   lines?: SupplierQuoteLineRequest[];
 }
@@ -93,24 +93,14 @@ export interface SupplierQuoteResponse {
   shippingAmount: number;
   taxAmount: number;
   totalAmount: number;
-  incoterm: string | null;
   paymentTerms: string | null;
-  loadingPort: string | null;
-  destinationPort: string | null;
   notes: string | null;
-  acceptedAt: IsoDateString | null;
-  rejectedAt: IsoDateString | null;
-  acceptedByUserId: ApiId | null;
+  statusUpdatedAt: IsoDateString | null;
+  statusUpdatedByUserId: ApiId | null;
   lines: SupplierQuoteLineResponse[];
   createdAt: IsoDateString;
   updatedAt: IsoDateString;
 }
 
-export interface SupplierQuoteListMetaResponse {
-  pagination: PaginationMeta;
-}
-
-export interface SupplierQuoteListResponse {
-  data: SupplierQuoteResponse[];
-  meta: SupplierQuoteListMetaResponse;
-}
+export type SupplierQuoteListResponse =
+  PaginatedListResponse<SupplierQuoteResponse>;
