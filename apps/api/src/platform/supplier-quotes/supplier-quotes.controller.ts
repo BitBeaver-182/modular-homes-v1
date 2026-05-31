@@ -37,10 +37,6 @@ import {
   SupplierQuoteResponse,
 } from './dto/supplier-quote-response.dto';
 import { UpdateSupplierQuoteDto } from './dto/update-supplier-quote.dto';
-import {
-  toSupplierQuoteListResponse,
-  toSupplierQuoteResponse,
-} from './mappers/supplier-quote.mapper';
 import { SupplierQuotesService } from './supplier-quotes.service';
 
 @ApiTags('Supplier Quotes')
@@ -62,10 +58,7 @@ export class SupplierQuotesController {
   ): Promise<SupplierQuoteResponse> {
     return plainToInstance(
       SupplierQuoteResponse,
-      await toSupplierQuoteResponse(
-        await this.supplierQuotesService.create(actor, dto),
-        this.supplierQuotesService.getStorageService(),
-      ),
+      await this.supplierQuotesService.createResponse(actor, dto),
       { excludeExtraneousValues: true },
     );
   }
@@ -80,18 +73,9 @@ export class SupplierQuotesController {
     @OrganizationId() organizationId: bigint,
     @Query() query: SupplierQuoteFilterDto,
   ): Promise<SupplierQuoteListResponse> {
-    const result = await this.supplierQuotesService.findAll(
-      organizationId,
-      query,
-    );
-
     return plainToInstance(
       SupplierQuoteListResponse,
-      await toSupplierQuoteListResponse(
-        result.data,
-        result.meta,
-        this.supplierQuotesService.getStorageService(),
-      ),
+      await this.supplierQuotesService.findAllResponse(organizationId, query),
       { excludeExtraneousValues: true },
     );
   }
@@ -109,12 +93,9 @@ export class SupplierQuotesController {
   ): Promise<SupplierQuoteResponse> {
     return plainToInstance(
       SupplierQuoteResponse,
-      await toSupplierQuoteResponse(
-        await this.supplierQuotesService.findOne(
-          organizationId,
-          parseBigIntId(id, 'supplierQuoteId'),
-        ),
-        this.supplierQuotesService.getStorageService(),
+      await this.supplierQuotesService.findOneResponse(
+        organizationId,
+        parseBigIntId(id, 'supplierQuoteId'),
       ),
       { excludeExtraneousValues: true },
     );
@@ -134,13 +115,10 @@ export class SupplierQuotesController {
   ): Promise<SupplierQuoteResponse> {
     return plainToInstance(
       SupplierQuoteResponse,
-      await toSupplierQuoteResponse(
-        await this.supplierQuotesService.update(
-          actor,
-          parseBigIntId(id, 'supplierQuoteId'),
-          dto,
-        ),
-        this.supplierQuotesService.getStorageService(),
+      await this.supplierQuotesService.updateResponse(
+        actor,
+        parseBigIntId(id, 'supplierQuoteId'),
+        dto,
       ),
       { excludeExtraneousValues: true },
     );

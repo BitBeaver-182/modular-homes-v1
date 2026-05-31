@@ -1884,7 +1884,7 @@
             }
           },
           {
-            "name": "sort[field]",
+            "name": "sortField",
             "required": false,
             "in": "query",
             "schema": {
@@ -1901,7 +1901,7 @@
             }
           },
           {
-            "name": "sort[criteria]",
+            "name": "sortCriteria",
             "required": false,
             "in": "query",
             "schema": {

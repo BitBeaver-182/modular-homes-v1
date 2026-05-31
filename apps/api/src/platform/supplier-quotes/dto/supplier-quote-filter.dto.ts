@@ -30,10 +30,11 @@ export const SUPPLIER_QUOTE_SORT_FIELDS = [
   'quoteNumber',
 ] as const;
 
-const SORT_CRITERIA = ['asc', 'desc'] as const;
+export const SUPPLIER_QUOTE_SORT_CRITERIA = ['asc', 'desc'] as const;
 
 type SupplierQuoteSortField = (typeof SUPPLIER_QUOTE_SORT_FIELDS)[number];
-type SupplierQuoteSortCriteria = (typeof SORT_CRITERIA)[number];
+type SupplierQuoteSortCriteria =
+  (typeof SUPPLIER_QUOTE_SORT_CRITERIA)[number];
 
 const toStringArray = ({ value }: { value: unknown }): string[] | undefined => {
   if (Array.isArray(value)) {
@@ -133,20 +134,20 @@ export class SupplierQuoteFilterDto {
   currencyCode?: string;
 
   @ApiPropertyOptional({
-    name: 'sort[field]',
+    name: 'sortField',
     enum: SUPPLIER_QUOTE_SORT_FIELDS,
   })
   @Transform(emptyStringToUndefined)
   @IsOptional()
   @IsIn(SUPPLIER_QUOTE_SORT_FIELDS)
-  'sort[field]'?: SupplierQuoteSortField;
+  sortField?: SupplierQuoteSortField;
 
   @ApiPropertyOptional({
-    name: 'sort[criteria]',
-    enum: SORT_CRITERIA,
+    name: 'sortCriteria',
+    enum: SUPPLIER_QUOTE_SORT_CRITERIA,
   })
   @Transform(emptyStringToUndefined)
   @IsOptional()
-  @IsIn(SORT_CRITERIA)
-  'sort[criteria]'?: SupplierQuoteSortCriteria;
+  @IsIn(SUPPLIER_QUOTE_SORT_CRITERIA)
+  sortCriteria?: SupplierQuoteSortCriteria;
 }

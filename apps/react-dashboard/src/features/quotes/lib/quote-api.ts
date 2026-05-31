@@ -82,8 +82,8 @@ export const toQuoteQueryString = (params: QuotesQueryParams): string => {
 	appendOptionalString(query, "search", params.search);
 
 	if (params.sortBy && params.sortOrder) {
-		query.set("sort[field]", params.sortBy);
-		query.set("sort[criteria]", params.sortOrder === "asc" ? "asc" : "desc");
+		query.set("sortField", params.sortBy);
+		query.set("sortCriteria", params.sortOrder === "asc" ? "asc" : "desc");
 	}
 
 	appendArray(query, "status", params.quote_status);
@@ -150,8 +150,8 @@ export const getQuote = async (
 	moduflowRequest<SupplierQuoteResponse>(
 		`/supplier-quotes/${encodeURIComponent(id)}`,
 		{
-		headers: organizationHeaders(context),
-		method: "GET",
+			headers: organizationHeaders(context),
+			method: "GET",
 		}
 	);
 
@@ -186,9 +186,9 @@ export const updateQuote = async (
 	return moduflowRequest<SupplierQuoteResponse>(
 		`/supplier-quotes/${encodeURIComponent(id)}`,
 		{
-		body: buildWritePayload(input, attachmentId),
-		headers: organizationHeaders(context),
-		method: "PATCH",
+			body: buildWritePayload(input, attachmentId),
+			headers: organizationHeaders(context),
+			method: "PATCH",
 		}
 	);
 };

@@ -155,8 +155,8 @@ describe('SupplierQuotesService', () => {
       quoteDateTo: '2026-05-31',
       totalAmountMin: 100,
       totalAmountMax: 2000,
-      'sort[field]': 'supplier.name',
-      'sort[criteria]': 'asc',
+      sortField: 'supplier.name',
+      sortCriteria: 'asc',
     });
 
     expect(prisma.supplierQuote.findMany).toHaveBeenCalledWith({
@@ -232,6 +232,55 @@ describe('SupplierQuotesService', () => {
       }),
       // Jest asymmetric matchers are typed as any.
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      include: expect.any(Object),
+    });
+  });
+
+  it('does not delete existing lines when update receives an empty lines array', async () => {
+    prisma.supplierQuote.findFirst
+      .mockResolvedValueOnce({
+        id: 1n,
+        organizationId: 4n,
+        supplierId: 8n,
+        attachmentId: null,
+        quoteNumber: 'SQ-1',
+        status: 'received',
+        quoteDate: null,
+        validUntil: null,
+        currencyCode: 'USD',
+        subtotalAmount: new Prisma.Decimal('100'),
+        shippingAmount: new Prisma.Decimal('0'),
+        taxAmount: new Prisma.Decimal('0'),
+        totalAmount: new Prisma.Decimal('100'),
+        paymentTerms: null,
+        notes: null,
+        statusUpdatedAt: null,
+        statusUpdatedByUserId: null,
+        lines: [
+          {
+            id: 10n,
+            houseModelId: null,
+            productConfigurationId: null,
+            description: 'Existing line',
+            quantity: 1,
+            unitCost: new Prisma.Decimal('100'),
+            lineTotal: new Prisma.Decimal('100'),
+            estimatedProductionDays: null,
+            notes: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce(null);
+    prisma.supplierQuote.update.mockResolvedValue({ id: 1n });
+
+    await service.update(actor, 1n, { lines: [] });
+
+    expect(prisma.supplierQuoteLine.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.supplierQuote.update).toHaveBeenCalledWith({
+      where: { id: 1n },
+      data: expect.not.objectContaining({
+        lines: expect.anything(),
+      }),
       include: expect.any(Object),
     });
   });

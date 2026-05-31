@@ -39,7 +39,7 @@ describe("quote Moduflow API", () => {
 		await getQuotes(context, params);
 
 		expect(moduflowRequestMock).toHaveBeenCalledWith(
-			"/supplier-quotes?page=2&limit=25&search=sq-2026&sort%5Bfield%5D=supplier.name&sort%5Bcriteria%5D=desc&status=received&status=expired&supplierIds=7&supplierIds=8&quoteDateFrom=2026-05-01&quoteDateTo=2026-05-31&totalAmountMin=1000&totalAmountMax=5000",
+			"/supplier-quotes?page=2&limit=25&search=sq-2026&sortField=supplier.name&sortCriteria=desc&status=received&status=expired&supplierIds=7&supplierIds=8&quoteDateFrom=2026-05-01&quoteDateTo=2026-05-31&totalAmountMin=1000&totalAmountMax=5000",
 			{
 				headers: { "x-organization-id": "42" },
 				method: "GET",

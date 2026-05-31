@@ -11,6 +11,7 @@ import type {
   CreateSupplierQuoteRequest,
   SupplierQuoteLineRequest,
   SupplierQuoteListResponse,
+  SupplierQuoteResponse,
   SupplierQuoteStatus,
   UpdateSupplierQuoteRequest,
 } from '@moduflow/types';
@@ -19,7 +20,11 @@ import { parseBigIntId } from '../../common/ids/parse-bigint-id';
 import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../../storage/storage.service';
 import { SupplierQuoteFilterDto } from './dto/supplier-quote-filter.dto';
-import type { SupplierQuoteWithRelations } from './mappers/supplier-quote.mapper';
+import {
+  toSupplierQuoteListResponse,
+  toSupplierQuoteResponse,
+  type SupplierQuoteWithRelations,
+} from './mappers/supplier-quote.mapper';
 
 type SupplierQuoteListMeta = SupplierQuoteListResponse['meta'];
 type SupplierQuoteWrite =
@@ -39,8 +44,48 @@ export class SupplierQuotesService {
     private readonly storageService: StorageService,
   ) {}
 
-  getStorageService(): StorageService {
-    return this.storageService;
+  async createResponse(
+    actor: AuthenticatedActor,
+    dto: CreateSupplierQuoteRequest,
+  ): Promise<SupplierQuoteResponse> {
+    return toSupplierQuoteResponse(
+      await this.create(actor, dto),
+      this.storageService,
+    );
+  }
+
+  async findAllResponse(
+    organizationId: bigint,
+    query: SupplierQuoteFilterDto,
+  ): Promise<SupplierQuoteListResponse> {
+    const result = await this.findAll(organizationId, query);
+
+    return toSupplierQuoteListResponse(
+      result.data,
+      result.meta,
+      this.storageService,
+    );
+  }
+
+  async findOneResponse(
+    organizationId: bigint,
+    id: bigint,
+  ): Promise<SupplierQuoteResponse> {
+    return toSupplierQuoteResponse(
+      await this.findOne(organizationId, id),
+      this.storageService,
+    );
+  }
+
+  async updateResponse(
+    actor: AuthenticatedActor,
+    id: bigint,
+    dto: UpdateSupplierQuoteRequest,
+  ): Promise<SupplierQuoteResponse> {
+    return toSupplierQuoteResponse(
+      await this.update(actor, id, dto),
+      this.storageService,
+    );
   }
 
   async create(
@@ -196,7 +241,7 @@ export class SupplierQuotesService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-        if (dto.lines !== undefined) {
+        if (hasLineReplacements(dto.lines)) {
           await tx.supplierQuoteLine.deleteMany({
             where: {
               supplierQuoteId: id,
@@ -236,7 +281,7 @@ export class SupplierQuotesService {
               ? { notes: normalizeOptionalString(dto.notes) }
               : {}),
             ...statusData,
-            ...(dto.lines !== undefined
+            ...(hasLineReplacements(dto.lines)
               ? {
                   lines: {
                     create: sanitizeLines(actor.organizationId, dto.lines),
@@ -376,6 +421,8 @@ function calculateAmounts(input: SupplierQuoteWrite): {
   totalAmount: Prisma.Decimal;
 } {
   const hasLines = Array.isArray(input.lines) && input.lines.length > 0;
+  // When line items are provided, they become the source of truth for totals.
+  // Explicit subtotal/total inputs are only used when there is no line payload.
   const lineSubtotal = hasLines
     ? input.lines!.reduce((sum, line) => sum + line.quantity * line.unitCost, 0)
     : undefined;
@@ -578,8 +625,8 @@ function addNumberRange(
 function getSafeOrderBy(
   query: SupplierQuoteFilterDto,
 ): Prisma.SupplierQuoteOrderByWithRelationInput[] {
-  const field = query['sort[field]'];
-  const direction = query['sort[criteria]'];
+  const field = query.sortField;
+  const direction = query.sortCriteria;
 
   if (!field || !direction) {
     return [{ createdAt: 'desc' }, { id: 'asc' }];
@@ -590,6 +637,12 @@ function getSafeOrderBy(
   }
 
   return [{ [field]: direction }, { id: 'asc' }];
+}
+
+function hasLineReplacements(
+  lines: SupplierQuoteLineRequest[] | undefined,
+): lines is SupplierQuoteLineRequest[] {
+  return Array.isArray(lines) && lines.length > 0;
 }
 
 function parseOptionalBigInt(
