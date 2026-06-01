@@ -1,5 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Prisma } from '@prisma/client';
 import { SupplierOrdersService } from './supplier-orders.service';
@@ -440,6 +439,194 @@ describe('SupplierOrdersService', () => {
           {
             id: '999',
             description: 'Nope',
+            quantity: 1,
+            unitCost: 100,
+          },
+        ],
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects updates for supplier orders in terminal statuses', async () => {
+    prisma.supplierOrder.findFirst.mockResolvedValue({
+      id: 101n,
+      organizationId: 4n,
+      supplierId: 8n,
+      supplierQuoteId: null,
+      supplier: null,
+      supplierQuote: null,
+      lines: [],
+      invoices: [],
+      status: 'closed',
+      orderNumber: 'SO-000101',
+      supplierPoNumber: null,
+      orderDate: null,
+      confirmedAt: null,
+      expectedReadyDate: null,
+      expectedShipDate: null,
+      expectedArrivalDate: null,
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('0'),
+      shippingAmount: new Prisma.Decimal('0'),
+      taxAmount: new Prisma.Decimal('0'),
+      totalAmount: new Prisma.Decimal('0'),
+      incoterm: null,
+      paymentTerms: null,
+      loadingPort: null,
+      destinationPort: null,
+      notes: null,
+      createdByUserId: null,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+    });
+
+    await expect(
+      service.update(4n, '101', {
+        orderLines: [
+          {
+            description: 'Locked line',
+            quantity: 1,
+            unitCost: 100,
+          },
+        ],
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects attempts to change persisted line references', async () => {
+    prisma.supplierOrder.findFirst
+      .mockResolvedValueOnce({
+        id: 101n,
+        organizationId: 4n,
+        supplierId: 8n,
+        supplierQuoteId: null,
+        supplier: null,
+        supplierQuote: null,
+        lines: [
+          {
+            id: 91n,
+            organizationId: 4n,
+            supplierOrderId: 101n,
+            supplierQuoteLineId: 71n,
+            houseModelId: 15n,
+            productConfigurationId: 19n,
+            description: 'Existing line',
+            quantity: 2,
+            unitCost: new Prisma.Decimal('500.00'),
+            lineTotal: new Prisma.Decimal('1000.00'),
+            createdAt: new Date('2026-06-01T00:00:00.000Z'),
+          },
+        ],
+        invoices: [],
+        status: 'confirmed',
+        orderNumber: 'SO-000101',
+        supplierPoNumber: null,
+        orderDate: null,
+        confirmedAt: null,
+        expectedReadyDate: null,
+        expectedShipDate: null,
+        expectedArrivalDate: null,
+        currencyCode: 'EUR',
+        subtotalAmount: new Prisma.Decimal('1000'),
+        shippingAmount: new Prisma.Decimal('0'),
+        taxAmount: new Prisma.Decimal('0'),
+        totalAmount: new Prisma.Decimal('1000'),
+        incoterm: null,
+        paymentTerms: null,
+        loadingPort: null,
+        destinationPort: null,
+        notes: null,
+        createdByUserId: null,
+        createdAt: new Date('2026-06-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+      })
+      .mockResolvedValueOnce({
+        id: 101n,
+        organizationId: 4n,
+        shippingAmount: new Prisma.Decimal('0'),
+        taxAmount: new Prisma.Decimal('0'),
+        lines: [
+          {
+            id: 91n,
+            organizationId: 4n,
+            supplierOrderId: 101n,
+            supplierQuoteLineId: 71n,
+            houseModelId: 15n,
+            productConfigurationId: 19n,
+            description: 'Existing line',
+            quantity: 2,
+            unitCost: new Prisma.Decimal('500.00'),
+            lineTotal: new Prisma.Decimal('1000.00'),
+            createdAt: new Date('2026-06-01T00:00:00.000Z'),
+          },
+        ],
+      });
+
+    await expect(
+      service.update(4n, '101', {
+        orderLines: [
+          {
+            id: '91',
+            supplierQuoteLineId: '999',
+            houseModelId: '15',
+            productConfigurationId: '19',
+            description: 'Updated line',
+            quantity: 2,
+            unitCost: 500,
+          },
+        ],
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects new lines that try to set linked references', async () => {
+    prisma.supplierOrder.findFirst
+      .mockResolvedValueOnce({
+        id: 101n,
+        organizationId: 4n,
+        supplierId: 8n,
+        supplierQuoteId: null,
+        supplier: null,
+        supplierQuote: null,
+        lines: [],
+        invoices: [],
+        status: 'confirmed',
+        orderNumber: 'SO-000101',
+        supplierPoNumber: null,
+        orderDate: null,
+        confirmedAt: null,
+        expectedReadyDate: null,
+        expectedShipDate: null,
+        expectedArrivalDate: null,
+        currencyCode: 'EUR',
+        subtotalAmount: new Prisma.Decimal('0'),
+        shippingAmount: new Prisma.Decimal('0'),
+        taxAmount: new Prisma.Decimal('0'),
+        totalAmount: new Prisma.Decimal('0'),
+        incoterm: null,
+        paymentTerms: null,
+        loadingPort: null,
+        destinationPort: null,
+        notes: null,
+        createdByUserId: null,
+        createdAt: new Date('2026-06-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+      })
+      .mockResolvedValueOnce({
+        id: 101n,
+        organizationId: 4n,
+        shippingAmount: new Prisma.Decimal('0'),
+        taxAmount: new Prisma.Decimal('0'),
+        lines: [],
+      });
+
+    await expect(
+      service.update(4n, '101', {
+        orderLines: [
+          {
+            supplierQuoteLineId: '71',
+            description: 'Linked line',
             quantity: 1,
             unitCost: 100,
           },

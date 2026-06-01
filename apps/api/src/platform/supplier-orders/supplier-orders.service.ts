@@ -47,6 +47,13 @@ const STATUS_MAP = {
   cancelled: ['cancelled'],
 } satisfies Record<string, PersistedSupplierOrderStatus[]>;
 
+const TERMINAL_ORDER_STATUSES = new Set<PersistedSupplierOrderStatus>([
+  'shipped',
+  'arrived',
+  'closed',
+  'cancelled',
+]);
+
 @Injectable()
 export class SupplierOrdersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -206,6 +213,11 @@ export class SupplierOrdersService {
     if (dto.orderLines === undefined) {
       return order;
     }
+    if (TERMINAL_ORDER_STATUSES.has(order.status)) {
+      throw new BadRequestException(
+        `Supplier orders in status ${order.status} cannot be edited`,
+      );
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const currentOrder = await tx.supplierOrder.findFirst({
@@ -226,14 +238,27 @@ export class SupplierOrdersService {
 
       const nextLines = dto.orderLines ?? [];
       const existingLineIds = new Set(currentOrder.lines.map((line) => line.id));
+      const existingLinesById = new Map(
+        currentOrder.lines.map((line) => [line.id, line] as const),
+      );
       const providedExistingLineIds = new Set<bigint>();
 
       for (const line of nextLines) {
         if (!line.id) {
+          assertNoNewLineReferences(line);
           continue;
         }
 
         const parsedLineId = parseBigIntId(line.id, 'orderLineId');
+        const existingLine = existingLinesById.get(parsedLineId);
+
+        if (!existingLine) {
+          throw new BadRequestException(
+            `Supplier order line ${line.id} does not belong to this order`,
+          );
+        }
+        assertExistingLineReferencesMatch(existingLine, line);
+
         if (providedExistingLineIds.has(parsedLineId)) {
           throw new BadRequestException(
             `Duplicate supplier order line id ${line.id}`,
@@ -251,18 +276,15 @@ export class SupplierOrdersService {
       const lineData = nextLines.map((line) => {
         const quantity = line.quantity;
         const unitCost = new Prisma.Decimal(line.unitCost);
+        const existingLine = line.id
+          ? existingLinesById.get(parseBigIntId(line.id, 'orderLineId'))
+          : null;
 
         return {
-          id: line.id ? parseBigIntId(line.id, 'orderLineId') : null,
-          supplierQuoteLineId: line.supplierQuoteLineId
-            ? parseBigIntId(line.supplierQuoteLineId, 'supplierQuoteLineId')
-            : null,
-          houseModelId: line.houseModelId
-            ? parseBigIntId(line.houseModelId, 'houseModelId')
-            : null,
-          productConfigurationId: line.productConfigurationId
-            ? parseBigIntId(line.productConfigurationId, 'productConfigurationId')
-            : null,
+          id: existingLine?.id ?? null,
+          supplierQuoteLineId: existingLine?.supplierQuoteLineId ?? null,
+          houseModelId: existingLine?.houseModelId ?? null,
+          productConfigurationId: existingLine?.productConfigurationId ?? null,
           description: line.description ?? null,
           quantity,
           unitCost,
@@ -322,6 +344,72 @@ export class SupplierOrdersService {
         include: INCLUDE_RELATIONS,
       });
     });
+  }
+}
+
+function assertNoNewLineReferences(
+  line: NonNullable<UpdateSupplierOrderDto['orderLines']>[number],
+): void {
+  if (line.supplierQuoteLineId !== undefined && line.supplierQuoteLineId !== null) {
+    throw new BadRequestException(
+      'New supplier order lines cannot set supplierQuoteLineId',
+    );
+  }
+  if (line.houseModelId !== undefined && line.houseModelId !== null) {
+    throw new BadRequestException(
+      'New supplier order lines cannot set houseModelId',
+    );
+  }
+  if (
+    line.productConfigurationId !== undefined &&
+    line.productConfigurationId !== null
+  ) {
+    throw new BadRequestException(
+      'New supplier order lines cannot set productConfigurationId',
+    );
+  }
+}
+
+function assertExistingLineReferencesMatch(
+  existingLine: {
+    supplierQuoteLineId: bigint | null;
+    houseModelId: bigint | null;
+    productConfigurationId: bigint | null;
+  },
+  line: NonNullable<UpdateSupplierOrderDto['orderLines']>[number],
+): void {
+  assertReferenceMatches(
+    line.supplierQuoteLineId,
+    existingLine.supplierQuoteLineId,
+    'supplierQuoteLineId',
+  );
+  assertReferenceMatches(
+    line.houseModelId,
+    existingLine.houseModelId,
+    'houseModelId',
+  );
+  assertReferenceMatches(
+    line.productConfigurationId,
+    existingLine.productConfigurationId,
+    'productConfigurationId',
+  );
+}
+
+function assertReferenceMatches(
+  providedValue: string | null | undefined,
+  existingValue: bigint | null,
+  fieldName: 'supplierQuoteLineId' | 'houseModelId' | 'productConfigurationId',
+): void {
+  if (providedValue === undefined) {
+    return;
+  }
+
+  const parsedProvidedValue =
+    providedValue === null ? null : parseBigIntId(providedValue, fieldName);
+  if (parsedProvidedValue !== existingValue) {
+    throw new BadRequestException(
+      `${fieldName} cannot be changed through supplier order line updates`,
+    );
   }
 }
 
