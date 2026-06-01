@@ -143,39 +143,93 @@ describe('supplier-order mapper', () => {
   it('maps supplier-order detail records with line and invoice summaries', () => {
     const response = toSupplierOrderDetailResponse(supplierOrderRecord);
 
-    expect(response).toEqual(
-      expect.objectContaining({
-        id: '101',
-        status: 'confirmed',
+    expect(response.id).toBe('101');
+    expect(response.status).toBe('confirmed');
+    expect(response.currencyCode).toBe('EUR');
+    expect(response.supplier).toEqual({
+      id: '8',
+      name: 'Acme Supply',
+      phoneNumber: null,
+      email: 'ops@acme.test',
+      address: null,
+      website: null,
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z',
+    });
+    expect(response.quote).toEqual({
+      id: '12',
+      supplier: {
+        id: '8',
+        name: 'Acme Supply',
+        phoneNumber: null,
+        email: 'ops@acme.test',
+        address: null,
+        website: null,
+        createdAt: '2026-06-01T00:00:00.000Z',
+        updatedAt: '2026-06-01T00:00:00.000Z',
+      },
+      total: {
+        amount: 1150,
         currencyCode: 'EUR',
-        supplier: expect.objectContaining({
-          id: '8',
-          name: 'Acme Supply',
-        }),
-        quote: expect.objectContaining({
-          id: '12',
-          quoteNumber: 'Q-2026-001',
-        }),
-        orderLines: [
-          expect.objectContaining({
-            id: '91',
-            houseModelId: '15',
-            productConfigurationId: '19',
-            quantity: 2,
-          }),
-        ],
-        invoices: [
-          expect.objectContaining({
-            id: '77',
-            invoiceNumber: 'INV-2026-001',
-            status: 'issued',
-            totalAmount: {
-              amount: 1150,
-              currencyCode: 'EUR',
-            },
-          }),
-        ],
-      }),
-    );
+      },
+      quoteNumber: 'Q-2026-001',
+      quoteDate: '2026-05-20T00:00:00.000Z',
+      validUntil: '2026-06-20T00:00:00.000Z',
+      paymentTerms: 'Net 30',
+    });
+    expect(response.orderLines).toEqual([
+      {
+        id: '91',
+        supplierQuoteLineId: '71',
+        houseModelId: '15',
+        productConfigurationId: '19',
+        description: 'Model A',
+        quantity: 2,
+        unitCost: {
+          amount: 500,
+          currencyCode: 'EUR',
+        },
+        lineTotal: {
+          amount: 1000,
+          currencyCode: 'EUR',
+        },
+        createdAt: '2026-06-01T00:00:00.000Z',
+      },
+    ]);
+    expect(response.invoices).toEqual([
+      {
+        id: '77',
+        invoiceNumber: 'INV-2026-001',
+        direction: 'payable',
+        invoiceType: 'supplier_goods',
+        status: 'issued',
+        issueDate: '2026-06-03T00:00:00.000Z',
+        dueDate: '2026-06-30T00:00:00.000Z',
+        currencyCode: 'EUR',
+        subtotalAmount: {
+          amount: 1000,
+          currencyCode: 'EUR',
+        },
+        taxAmount: {
+          amount: 150,
+          currencyCode: 'EUR',
+        },
+        totalAmount: {
+          amount: 1150,
+          currencyCode: 'EUR',
+        },
+        amountPaid: {
+          amount: 300,
+          currencyCode: 'EUR',
+        },
+        balanceDue: {
+          amount: 850,
+          currencyCode: 'EUR',
+        },
+        notes: 'Awaiting remainder',
+        createdAt: '2026-06-03T00:00:00.000Z',
+        updatedAt: '2026-06-04T00:00:00.000Z',
+      },
+    ]);
   });
 });

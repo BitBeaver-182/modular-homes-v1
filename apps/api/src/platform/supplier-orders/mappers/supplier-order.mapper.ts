@@ -61,7 +61,9 @@ function toRequiredMoney(
   };
 }
 
-function toNullableIsoDateString(value: Date | null | undefined): string | null {
+function toNullableIsoDateString(
+  value: Date | null | undefined,
+): string | null {
   return toOptionalIsoDateString(value) ?? null;
 }
 
@@ -164,7 +166,10 @@ function toSupplierOrderDetailInvoiceResponse(
     issueDate: toNullableIsoDateString(invoice.issueDate),
     dueDate: toNullableIsoDateString(invoice.dueDate),
     currencyCode: invoice.currencyCode,
-    subtotalAmount: toRequiredMoney(invoice.subtotalAmount, invoice.currencyCode),
+    subtotalAmount: toRequiredMoney(
+      invoice.subtotalAmount,
+      invoice.currencyCode,
+    ),
     taxAmount: toRequiredMoney(invoice.taxAmount, invoice.currencyCode),
     totalAmount: toRequiredMoney(invoice.totalAmount, invoice.currencyCode),
     amountPaid: toRequiredMoney(invoice.amountPaid, invoice.currencyCode),

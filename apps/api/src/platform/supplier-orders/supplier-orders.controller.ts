@@ -88,7 +88,8 @@ export class SupplierOrdersController {
   @Get(':id')
   @ApiOperation({
     summary: 'Get Supplier Order',
-    description: 'Return a supplier order detail view in the active organization.',
+    description:
+      'Return a supplier order detail view in the active organization.',
   })
   @ApiOkResponse({ type: SupplierOrderDetailResponse })
   async findOne(

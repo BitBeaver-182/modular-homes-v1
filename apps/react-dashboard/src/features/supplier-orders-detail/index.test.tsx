@@ -1,11 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { ReactNode } from "react";
+
 
 import SupplierOrderDetailPage from "./index";
 
-import type * as TanstackRouter from "@tanstack/react-router";
 import type { SupplierOrderDetailResponse } from "@moduflow/types";
+import type * as TanstackRouter from "@tanstack/react-router";
+import type { ReactNode } from "react";
 
 const orderFixture: SupplierOrderDetailResponse = {
 	id: "101",

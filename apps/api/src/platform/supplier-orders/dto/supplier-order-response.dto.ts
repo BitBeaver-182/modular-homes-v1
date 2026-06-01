@@ -142,9 +142,7 @@ export class SupplierOrderListResponse
   extends createPaginatedResponseDto(SupplierOrderListItemResponse)
   implements SupplierOrderListContract {}
 
-export class SupplierOrderDetailQuoteResponse
-  implements SupplierOrderDetailQuoteContract
-{
+export class SupplierOrderDetailQuoteResponse implements SupplierOrderDetailQuoteContract {
   constructor(partial: SupplierOrderDetailQuoteContract) {
     Object.assign(this, partial);
   }
@@ -183,9 +181,7 @@ export class SupplierOrderDetailQuoteResponse
   paymentTerms!: string | null;
 }
 
-export class SupplierOrderDetailLineResponse
-  implements SupplierOrderDetailLineContract
-{
+export class SupplierOrderDetailLineResponse implements SupplierOrderDetailLineContract {
   constructor(partial: SupplierOrderDetailLineContract) {
     Object.assign(this, partial);
   }
@@ -229,9 +225,7 @@ export class SupplierOrderDetailLineResponse
   createdAt!: string;
 }
 
-export class SupplierOrderDetailInvoiceResponse
-  implements SupplierOrderDetailInvoiceContract
-{
+export class SupplierOrderDetailInvoiceResponse implements SupplierOrderDetailInvoiceContract {
   constructor(partial: SupplierOrderDetailInvoiceContract) {
     Object.assign(this, partial);
   }
@@ -293,7 +287,10 @@ export class SupplierOrderDetailInvoiceResponse
   @Type(() => SupplierOrderListMoneyResponse)
   balanceDue!: SupplierOrderListMoneyResponse;
 
-  @ApiPropertyOptional({ example: 'Awaiting customs clearance', nullable: true })
+  @ApiPropertyOptional({
+    example: 'Awaiting customs clearance',
+    nullable: true,
+  })
   @Expose()
   notes!: string | null;
 
@@ -306,9 +303,7 @@ export class SupplierOrderDetailInvoiceResponse
   updatedAt!: string;
 }
 
-export class SupplierOrderDetailResponse
-  implements SupplierOrderDetailContract
-{
+export class SupplierOrderDetailResponse implements SupplierOrderDetailContract {
   constructor(partial: SupplierOrderDetailContract) {
     Object.assign(this, partial);
   }
@@ -406,7 +401,10 @@ export class SupplierOrderDetailResponse
   @Type(() => SupplierResponse)
   supplier!: SupplierResponse | null;
 
-  @ApiPropertyOptional({ type: SupplierOrderDetailQuoteResponse, nullable: true })
+  @ApiPropertyOptional({
+    type: SupplierOrderDetailQuoteResponse,
+    nullable: true,
+  })
   @Expose()
   @Type(() => SupplierOrderDetailQuoteResponse)
   quote!: SupplierOrderDetailQuoteResponse | null;
