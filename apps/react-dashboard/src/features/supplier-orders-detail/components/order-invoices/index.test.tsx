@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { OrderInvoicesCard } from "./index";
+import { ModuflowRequestError } from "@/lib/moduflow/client";
 
 import type { SupplierOrderDetailInvoiceResponse } from "@moduflow/types";
 
@@ -107,6 +108,7 @@ vi.mock("react-i18next", () => ({
 				"orders.save": "Save",
 				"orders.create": "Create",
 				"common.cancel": "Cancel",
+				"errors.validation.required": "This field is required.",
 			};
 			return translations[key] ?? options?.defaultValue ?? key;
 		},
@@ -204,5 +206,41 @@ describe("OrderInvoicesCard", () => {
 		);
 
 		expect(screen.getByText("No invoices for this order")).not.toBeNull();
+	});
+
+	it("marks invoice fields invalid when the API returns validation errors", async () => {
+		const user = userEvent.setup();
+		createInvoiceMutateAsync.mockRejectedValueOnce(
+			new ModuflowRequestError("Validation failed", 400, [
+				{
+					name: "isNotEmpty",
+					message: "This field is required.",
+					path: ["invoiceNumber"],
+					key: "validation.required",
+				},
+			]),
+		);
+
+		render(
+			<OrderInvoicesCard
+				currency="EUR"
+				invoices={[]}
+				orderId="101"
+			/>,
+		);
+
+		await user.click(screen.getByRole("button", { name: "Create invoice" }));
+		await user.type(
+			screen.getByPlaceholderText("Subtotal amount (EUR)"),
+			"1000",
+		);
+		await user.clear(screen.getByPlaceholderText("Tax amount (EUR)"));
+		await user.type(screen.getByPlaceholderText("Tax amount (EUR)"), "150");
+		await user.click(screen.getByRole("button", { name: "Create" }));
+
+		const invoiceNumberInput = screen.getByLabelText("Invoice number");
+		await waitFor(() => {
+			expect(invoiceNumberInput.getAttribute("aria-invalid")).toBe("true");
+		});
 	});
 });

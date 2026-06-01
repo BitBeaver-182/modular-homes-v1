@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { OrderProductsCard } from "./order-products-card";
+import { ModuflowRequestError } from "@/lib/moduflow/client";
 
 import type { SupplierOrderDetailLineResponse } from "@moduflow/types";
 
@@ -66,6 +67,7 @@ vi.mock("react-i18next", () => ({
 				"orders.notApplicable": "—",
 				"orders.save": "Save",
 				"common.cancel": "Cancel",
+				"errors.validation.min": "Must be greater than {{min}}.",
 			};
 			return translations[key] ?? options?.defaultValue ?? key;
 		},
@@ -172,6 +174,41 @@ describe("OrderProductsCard", () => {
 					unitCost: 250,
 				}),
 			]);
+		});
+	});
+
+	it("marks the unit cost field invalid when the API rejects the submitted line", async () => {
+		const user = userEvent.setup();
+		const onSaveOrderLines = vi.fn().mockRejectedValue(
+			new ModuflowRequestError("Validation failed", 400, [
+				{
+					name: "min",
+					message: "Must be greater than 0.",
+					path: ["orderLines", "0", "unitCost"],
+					key: "validation.min",
+					params: { min: 0 },
+				},
+			]),
+		);
+
+		render(
+			<OrderProductsCard
+				currency="EUR"
+				editable
+				mutating={false}
+				orderLines={[]}
+				onSaveOrderLines={onSaveOrderLines}
+			/>,
+		);
+
+		await user.click(screen.getByText("Add product"));
+		await user.type(screen.getByPlaceholderText("Product"), "New line");
+		await user.type(screen.getByPlaceholderText("Quantity"), "3");
+		await user.click(screen.getByText("Save"));
+
+		const unitCostInput = screen.getByLabelText("Unit price (EUR)");
+		await waitFor(() => {
+			expect(unitCostInput.getAttribute("aria-invalid")).toBe("true");
 		});
 	});
 
