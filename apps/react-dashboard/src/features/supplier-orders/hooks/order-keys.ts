@@ -6,5 +6,8 @@ export const orderKeys = {
 	list: (parameters: SupplierOrdersSearchParameters) =>
 		[...orderKeys.lists(), parameters] as const,
 	details: () => [...orderKeys.all, "detail"] as const,
-	detail: (documentId: string) => [...orderKeys.details(), documentId] as const,
+	detail: (orderId: string, organizationId?: string) =>
+		organizationId
+			? [...orderKeys.details(), orderId, { organizationId }] as const
+			: [...orderKeys.details(), orderId] as const,
 };

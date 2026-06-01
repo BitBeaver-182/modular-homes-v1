@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type {
   Prisma,
   SupplierOrderStatus as PersistedSupplierOrderStatus,
@@ -25,6 +29,9 @@ const INCLUDE_RELATIONS = {
     include: {
       supplier: { include: { address: true } },
     },
+  },
+  lines: {
+    orderBy: { id: 'asc' },
   },
   invoices: {
     orderBy: { id: 'asc' },
@@ -166,6 +173,26 @@ export class SupplierOrdersService {
         },
       },
     };
+  }
+
+  async findOne(
+    organizationId: bigint,
+    id: string,
+  ): Promise<SupplierOrderWithRelations> {
+    const parsedId = parseBigIntId(id, 'id');
+    const order = await this.prisma.supplierOrder.findFirst({
+      where: {
+        id: parsedId,
+        organizationId,
+      },
+      include: INCLUDE_RELATIONS,
+    });
+
+    if (!order) {
+      throw new NotFoundException('Supplier order not found');
+    }
+
+    return order;
   }
 }
 

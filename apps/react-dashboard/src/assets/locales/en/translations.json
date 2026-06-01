@@ -208,6 +208,7 @@
 		"columnOrderTotal": "Order total",
 		"columnPaid": "Paid",
 		"columnCreated": "Created",
+		"statusDraft": "Draft",
 		"statusPending": "Pending",
 		"statusProcessing": "Processing",
 		"statusShipped": "Shipped",
@@ -315,7 +316,17 @@
 		"sidebarHistoryTitle": "Order history",
 		"sidebarNoHistory": "No history yet",
 		"sidebarEditTitle": "Edit order information",
-		"sidebarOrderStatus": "Order status"
+		"sidebarOrderStatus": "Order status",
+		"detailSummaryTitle": "Order summary",
+		"detailIncoterm": "Incoterm",
+		"detailPaymentTerms": "Payment terms",
+		"detailLoadingPort": "Loading port",
+		"detailDestinationPort": "Destination port",
+		"detailExpectedArrival": "Expected arrival",
+		"detailNotes": "Notes",
+		"detailInvoiceDates": "Issued {{issueDate}} • Due {{dueDate}}",
+		"productsColumnModel": "Model ID",
+		"productsColumnConfiguration": "Configuration ID"
 	},
 	"errors": {
 		"http": {
