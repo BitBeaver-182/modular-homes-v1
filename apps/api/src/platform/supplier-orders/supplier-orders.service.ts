@@ -3,14 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type {
+import {
   Prisma,
-  SupplierOrderStatus as PersistedSupplierOrderStatus,
+  type SupplierOrderStatus as PersistedSupplierOrderStatus,
 } from '@prisma/client';
 import type { AuthenticatedActor } from '../../auth/auth.types';
 import { PrismaService } from '../../database/prisma.service';
 import { parseBigIntId } from '../../common/ids/parse-bigint-id';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
+import { UpdateSupplierOrderDto } from './dto/update-supplier-order.dto';
 import type { SupplierOrderWithRelations } from './mappers/supplier-order.mapper';
 import type { CreateSupplierOrderRequest } from '@moduflow/types';
 
@@ -45,6 +46,13 @@ const STATUS_MAP = {
   delivered: ['arrived', 'closed'],
   cancelled: ['cancelled'],
 } satisfies Record<string, PersistedSupplierOrderStatus[]>;
+
+const TERMINAL_ORDER_STATUSES = new Set<PersistedSupplierOrderStatus>([
+  'shipped',
+  'arrived',
+  'closed',
+  'cancelled',
+]);
 
 @Injectable()
 export class SupplierOrdersService {
@@ -193,6 +201,220 @@ export class SupplierOrdersService {
     }
 
     return order;
+  }
+
+  async update(
+    organizationId: bigint,
+    id: string,
+    dto: UpdateSupplierOrderDto,
+  ): Promise<SupplierOrderWithRelations> {
+    const order = await this.findOne(organizationId, id);
+
+    if (dto.orderLines === undefined) {
+      return order;
+    }
+    if (TERMINAL_ORDER_STATUSES.has(order.status)) {
+      throw new BadRequestException(
+        `Supplier orders in status ${order.status} cannot be edited`,
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const currentOrder = await tx.supplierOrder.findFirst({
+        where: {
+          id: order.id,
+          organizationId,
+        },
+        include: {
+          lines: {
+            orderBy: { id: 'asc' },
+          },
+        },
+      });
+
+      if (!currentOrder) {
+        throw new NotFoundException('Supplier order not found');
+      }
+
+      const nextLines = dto.orderLines ?? [];
+      const existingLineIds = new Set(
+        currentOrder.lines.map((line) => line.id),
+      );
+      const existingLinesById = new Map(
+        currentOrder.lines.map((line) => [line.id, line] as const),
+      );
+      const providedExistingLineIds = new Set<bigint>();
+
+      for (const line of nextLines) {
+        if (!line.id) {
+          assertNoNewLineReferences(line);
+          continue;
+        }
+
+        const parsedLineId = parseBigIntId(line.id, 'orderLineId');
+        const existingLine = existingLinesById.get(parsedLineId);
+
+        if (!existingLine) {
+          throw new BadRequestException(
+            `Supplier order line ${line.id} does not belong to this order`,
+          );
+        }
+        assertExistingLineReferencesMatch(existingLine, line);
+
+        if (providedExistingLineIds.has(parsedLineId)) {
+          throw new BadRequestException(
+            `Duplicate supplier order line id ${line.id}`,
+          );
+        }
+        if (!existingLineIds.has(parsedLineId)) {
+          throw new BadRequestException(
+            `Supplier order line ${line.id} does not belong to this order`,
+          );
+        }
+
+        providedExistingLineIds.add(parsedLineId);
+      }
+
+      const lineData = nextLines.map((line) => {
+        const quantity = line.quantity;
+        const unitCost = new Prisma.Decimal(line.unitCost);
+        const existingLine = line.id
+          ? existingLinesById.get(parseBigIntId(line.id, 'orderLineId'))
+          : null;
+
+        return {
+          id: existingLine?.id ?? null,
+          supplierQuoteLineId: existingLine?.supplierQuoteLineId ?? null,
+          houseModelId: existingLine?.houseModelId ?? null,
+          productConfigurationId: existingLine?.productConfigurationId ?? null,
+          description: line.description ?? null,
+          quantity,
+          unitCost,
+          lineTotal: unitCost.mul(quantity),
+        };
+      });
+
+      const idsToKeep = lineData
+        .map((line) => line.id)
+        .filter((lineId): lineId is bigint => lineId !== null);
+
+      await tx.supplierOrderLine.deleteMany({
+        where: {
+          supplierOrderId: order.id,
+          ...(idsToKeep.length > 0 ? { id: { notIn: idsToKeep } } : {}),
+        },
+      });
+
+      for (const line of lineData) {
+        const writeData = {
+          organizationId,
+          supplierOrderId: order.id,
+          supplierQuoteLineId: line.supplierQuoteLineId,
+          houseModelId: line.houseModelId,
+          productConfigurationId: line.productConfigurationId,
+          description: line.description,
+          quantity: line.quantity,
+          unitCost: line.unitCost,
+          lineTotal: line.lineTotal,
+        };
+
+        if (line.id) {
+          await tx.supplierOrderLine.update({
+            where: { id: line.id },
+            data: writeData,
+          });
+        } else {
+          await tx.supplierOrderLine.create({
+            data: writeData,
+          });
+        }
+      }
+
+      const subtotalAmount = lineData.reduce(
+        (sum, line) => sum.add(line.lineTotal),
+        new Prisma.Decimal(0),
+      );
+
+      return tx.supplierOrder.update({
+        where: { id: order.id },
+        data: {
+          subtotalAmount,
+          totalAmount: subtotalAmount
+            .add(currentOrder.shippingAmount)
+            .add(currentOrder.taxAmount),
+        },
+        include: INCLUDE_RELATIONS,
+      });
+    });
+  }
+}
+
+function assertNoNewLineReferences(
+  line: NonNullable<UpdateSupplierOrderDto['orderLines']>[number],
+): void {
+  if (
+    line.supplierQuoteLineId !== undefined &&
+    line.supplierQuoteLineId !== null
+  ) {
+    throw new BadRequestException(
+      'New supplier order lines cannot set supplierQuoteLineId',
+    );
+  }
+  if (line.houseModelId !== undefined && line.houseModelId !== null) {
+    throw new BadRequestException(
+      'New supplier order lines cannot set houseModelId',
+    );
+  }
+  if (
+    line.productConfigurationId !== undefined &&
+    line.productConfigurationId !== null
+  ) {
+    throw new BadRequestException(
+      'New supplier order lines cannot set productConfigurationId',
+    );
+  }
+}
+
+function assertExistingLineReferencesMatch(
+  existingLine: {
+    supplierQuoteLineId: bigint | null;
+    houseModelId: bigint | null;
+    productConfigurationId: bigint | null;
+  },
+  line: NonNullable<UpdateSupplierOrderDto['orderLines']>[number],
+): void {
+  assertReferenceMatches(
+    line.supplierQuoteLineId,
+    existingLine.supplierQuoteLineId,
+    'supplierQuoteLineId',
+  );
+  assertReferenceMatches(
+    line.houseModelId,
+    existingLine.houseModelId,
+    'houseModelId',
+  );
+  assertReferenceMatches(
+    line.productConfigurationId,
+    existingLine.productConfigurationId,
+    'productConfigurationId',
+  );
+}
+
+function assertReferenceMatches(
+  providedValue: string | null | undefined,
+  existingValue: bigint | null,
+  fieldName: 'supplierQuoteLineId' | 'houseModelId' | 'productConfigurationId',
+): void {
+  if (providedValue === undefined) {
+    return;
+  }
+
+  const parsedProvidedValue =
+    providedValue === null ? null : parseBigIntId(providedValue, fieldName);
+  if (parsedProvidedValue !== existingValue) {
+    throw new BadRequestException(
+      `${fieldName} cannot be changed through supplier order line updates`,
+    );
   }
 }
 

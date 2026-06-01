@@ -1,8 +1,30 @@
 import { type ColumnDef, flexRender } from "@tanstack/react-table";
-import { type JSX, useMemo } from "react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useState, type JSX } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
 	Table,
 	TableBody,
@@ -14,103 +36,336 @@ import {
 import { useCurrency } from "@/hooks/use-currency";
 import { getCoreRowModel, useReactTable } from "@/lib/tanstack-react-table";
 
-import type { SupplierOrderDetailLineResponse } from "@moduflow/types";
+import type {
+	SupplierOrderDetailLineResponse,
+	SupplierOrderLineWriteInput,
+} from "@moduflow/types";
+
+interface ProductFormState {
+	description: string;
+	unitCost: string;
+	quantity: string;
+}
+
+interface EditableOrderLine extends SupplierOrderDetailLineResponse {
+	__tempId?: string;
+}
 
 interface OrderProductsCardProps {
 	currency: string;
+	editable: boolean;
+	mutating: boolean;
 	orderLines: Array<SupplierOrderDetailLineResponse>;
+	onSaveOrderLines: (lines: Array<SupplierOrderLineWriteInput>) => Promise<void>;
 }
+
+const EMPTY_FORM: ProductFormState = {
+	description: "",
+	unitCost: "",
+	quantity: "",
+};
 
 const renderReference = (value: string | null): string => value ?? "—";
 
+const normalizeLine = (
+	line: SupplierOrderDetailLineResponse,
+	currency: string,
+): EditableOrderLine => {
+	const quantity = Number.isFinite(line.quantity) ? line.quantity : 0;
+	const unitCost = Number.isFinite(line.unitCost.amount) ? line.unitCost.amount : 0;
+	const lineTotal = quantity * unitCost;
+
+	return {
+		...line,
+		quantity,
+		unitCost: {
+			amount: unitCost,
+			currencyCode: line.unitCost.currencyCode || currency,
+		},
+		lineTotal: {
+			amount: lineTotal,
+			currencyCode: line.lineTotal.currencyCode || currency,
+		},
+	};
+};
+
+const toFormState = (line: EditableOrderLine): ProductFormState => ({
+	description: line.description ?? "",
+	unitCost: String(line.unitCost.amount),
+	quantity: String(line.quantity),
+});
+
+const toWriteInput = (line: EditableOrderLine): SupplierOrderLineWriteInput => ({
+	...(line.id ? { id: line.id } : {}),
+	supplierQuoteLineId: line.supplierQuoteLineId,
+	houseModelId: line.houseModelId,
+	productConfigurationId: line.productConfigurationId,
+	description: line.description,
+	quantity: line.quantity,
+	unitCost: line.unitCost.amount,
+});
+
 export const OrderProductsCard = ({
 	currency,
+	editable,
+	mutating,
 	orderLines,
+	onSaveOrderLines,
 }: OrderProductsCardProps): JSX.Element => {
 	const { t } = useTranslation();
 	const { formatAmount } = useCurrency();
 
-	const totalAmount = useMemo(
-		(): number =>
-			orderLines.reduce((sum, line) => sum + line.lineTotal.amount, 0),
-		[orderLines],
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [editingIndex, setEditingIndex] = useState<number | null>(null);
+	const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+	const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
+
+	const normalizedLines = useMemo(
+		(): Array<EditableOrderLine> =>
+			orderLines.map((line) => normalizeLine(line, currency)),
+		[currency, orderLines],
 	);
 
-	const columns = useMemo<Array<ColumnDef<SupplierOrderDetailLineResponse>>>(
-		(): Array<ColumnDef<SupplierOrderDetailLineResponse>> => [
-			{
-				accessorKey: "description",
-				header: t("orders.productsColumnProduct"),
-				cell: ({ row }): string =>
-					row.original.description?.trim() || t("orders.notApplicable"),
-			},
-			{
-				accessorKey: "houseModelId",
-				header: t("orders.productsColumnModel", { defaultValue: "Model ID" }),
-				cell: ({ row }): string => renderReference(row.original.houseModelId),
-			},
-			{
-				accessorKey: "productConfigurationId",
-				header: t("orders.productsColumnConfiguration", {
-					defaultValue: "Configuration ID",
+	const totalAmount = useMemo(
+		(): number =>
+			normalizedLines.reduce((sum, line) => sum + line.lineTotal.amount, 0),
+		[normalizedLines],
+	);
+
+	const resetDialog = (): void => {
+		setEditingIndex(null);
+		setForm(EMPTY_FORM);
+	};
+
+	const openAddDialog = (): void => {
+		resetDialog();
+		setIsDialogOpen(true);
+	};
+
+	const openEditDialog = useCallback(
+		(index: number): void => {
+			setEditingIndex(index);
+			setForm(toFormState(normalizedLines[index]!));
+			setIsDialogOpen(true);
+		},
+		[normalizedLines],
+	);
+
+	const persistLines = async (
+		nextLines: Array<EditableOrderLine>,
+		successMessage: string,
+	): Promise<void> => {
+		await onSaveOrderLines(nextLines.map(toWriteInput));
+		toast.success(successMessage);
+	};
+
+	const upsertLine = async (): Promise<void> => {
+		const description = form.description.trim();
+		const normalizedQuantity = form.quantity.trim();
+		const unitCost = Number.parseFloat(form.unitCost);
+		const quantity = Number.parseInt(normalizedQuantity, 10);
+
+		if (!description || !Number.isFinite(unitCost) || !normalizedQuantity) {
+			toast.error(t("orders.productsToastCompleteFields"));
+			return;
+		}
+		if (!/^\d+$/.test(normalizedQuantity) || !Number.isFinite(quantity)) {
+			toast.error(
+				t("orders.productsToastQuantityWholeNumber", {
+					defaultValue: "Quantity must be a whole number.",
 				}),
-				cell: ({ row }): string =>
-					renderReference(row.original.productConfigurationId),
+			);
+			return;
+		}
+		if (unitCost <= 0 || quantity <= 0) {
+			toast.error(t("orders.productsToastPriceQtyPositive"));
+			return;
+		}
+
+		const baseLine =
+			editingIndex !== null ? normalizedLines[editingIndex] : undefined;
+		const nextLine: EditableOrderLine = {
+			id: baseLine?.id ?? "",
+			__tempId: baseLine?.__tempId ?? crypto.randomUUID(),
+			supplierQuoteLineId: baseLine?.supplierQuoteLineId ?? null,
+			houseModelId: baseLine?.houseModelId ?? null,
+			productConfigurationId: baseLine?.productConfigurationId ?? null,
+			description,
+			quantity,
+			unitCost: {
+				amount: unitCost,
+				currencyCode: currency,
 			},
-			{
-				id: "quantity",
-				header: () => (
-					<span className="block text-right">{t("orders.productsColumnQuantity")}</span>
-				),
-				cell: ({ row }): JSX.Element => (
-					<span className="block text-right">{row.original.quantity}</span>
-				),
+			lineTotal: {
+				amount: unitCost * quantity,
+				currencyCode: currency,
 			},
-			{
-				id: "unitCost",
-				header: () => (
-					<span className="block text-right">
-						{t("orders.productsColumnUnitPrice", { defaultValue: "Unit cost" })}
-					</span>
-				),
-				cell: ({ row }): JSX.Element => (
-					<span className="block text-right">
-						{formatAmount(row.original.unitCost.amount, row.original.unitCost.currencyCode)}
-					</span>
-				),
-			},
-			{
-				id: "lineTotal",
-				header: () => (
-					<span className="block text-right">{t("orders.productsColumnTotal")}</span>
-				),
-				cell: ({ row }): JSX.Element => (
-					<span className="block text-right font-medium">
-						{formatAmount(
-							row.original.lineTotal.amount,
-							row.original.lineTotal.currencyCode,
-						)}
-					</span>
-				),
-			},
-		],
-		[formatAmount, t],
+			createdAt: baseLine?.createdAt ?? new Date().toISOString(),
+		};
+
+		const nextLines = [...normalizedLines];
+		if (editingIndex !== null) {
+			nextLines[editingIndex] = nextLine;
+			await persistLines(nextLines, t("orders.productsToastUpdated"));
+		} else {
+			nextLines.push(nextLine);
+			await persistLines(nextLines, t("orders.productsToastAdded"));
+		}
+
+		setIsDialogOpen(false);
+		resetDialog();
+	};
+
+	const deleteLine = async (): Promise<void> => {
+		if (deletingIndex === null) {
+			return;
+		}
+
+		const nextLines = normalizedLines.filter((_, index) => index !== deletingIndex);
+		await persistLines(nextLines, t("orders.productsToastRemoved"));
+		setDeletingIndex(null);
+	};
+
+	const columns = useMemo<Array<ColumnDef<EditableOrderLine>>>(
+		(): Array<ColumnDef<EditableOrderLine>> => {
+			const baseColumns: Array<ColumnDef<EditableOrderLine>> = [
+				{
+					accessorKey: "description",
+					header: t("orders.productsColumnProduct"),
+					cell: ({ row }): string =>
+						row.original.description?.trim() || t("orders.notApplicable"),
+				},
+				{
+					accessorKey: "houseModelId",
+					header: t("orders.productsColumnModel", { defaultValue: "Model ID" }),
+					cell: ({ row }): string => renderReference(row.original.houseModelId),
+				},
+				{
+					accessorKey: "productConfigurationId",
+					header: t("orders.productsColumnConfiguration", {
+						defaultValue: "Configuration ID",
+					}),
+					cell: ({ row }): string =>
+						renderReference(row.original.productConfigurationId),
+				},
+				{
+					id: "quantity",
+					header: () => (
+						<span className="block text-right">{t("orders.productsColumnQuantity")}</span>
+					),
+					cell: ({ row }): JSX.Element => (
+						<span className="block text-right">{row.original.quantity}</span>
+					),
+				},
+				{
+					id: "unitCost",
+					header: () => (
+						<span className="block text-right">
+							{t("orders.productsColumnUnitPrice", { defaultValue: "Unit cost" })}
+						</span>
+					),
+					cell: ({ row }): JSX.Element => (
+						<span className="block text-right">
+							{formatAmount(row.original.unitCost.amount, row.original.unitCost.currencyCode)}
+						</span>
+					),
+				},
+				{
+					id: "lineTotal",
+					header: () => (
+						<span className="block text-right">{t("orders.productsColumnTotal")}</span>
+					),
+					cell: ({ row }): JSX.Element => (
+						<span className="block text-right font-medium">
+							{formatAmount(
+								row.original.lineTotal.amount,
+								row.original.lineTotal.currencyCode,
+							)}
+						</span>
+					),
+				},
+			];
+
+			if (!editable) {
+				return baseColumns;
+			}
+
+			return [
+				...baseColumns,
+				{
+					id: "actions",
+					header: t("orders.productsColumnActions"),
+					cell: ({ row }): JSX.Element => (
+						<div className="flex justify-end gap-1">
+							<Button
+								aria-label={t("orders.productsEditAction", {
+									defaultValue: "Edit line",
+								})}
+								disabled={mutating}
+								size="icon-sm"
+								type="button"
+								variant="ghost"
+								onClick={() => {
+									openEditDialog(row.index);
+								}}
+							>
+								<Pencil className="size-4" />
+							</Button>
+							<Button
+								aria-label={t("orders.productsDeleteAction", {
+									defaultValue: "Remove line",
+								})}
+								disabled={mutating}
+								size="icon-sm"
+								type="button"
+								variant="ghost"
+								onClick={() => {
+									setDeletingIndex(row.index);
+								}}
+							>
+								<Trash2 className="size-4" />
+							</Button>
+						</div>
+					),
+				},
+			];
+		},
+		[editable, formatAmount, mutating, openEditDialog, t],
 	);
 
 	const table = useReactTable({
-		data: orderLines,
+		data: normalizedLines,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
-		getRowId: (row): string => row.id,
+		getRowId: (row, index): string => row.id || row.__tempId || String(index),
 	});
 
 	return (
 		<Card>
 			<CardHeader className="flex flex-row items-center justify-between">
 				<CardTitle>{t("orders.productsTitle")}</CardTitle>
+				{editable ? (
+					<Button
+						disabled={mutating}
+						size="sm"
+						type="button"
+						onClick={openAddDialog}
+					>
+						<Plus className="mr-2 size-4" />
+						{t("orders.productsAddAction")}
+					</Button>
+				) : null}
 			</CardHeader>
 			<CardContent className="space-y-6">
-				{orderLines.length === 0 ? (
+				{!editable ? (
+					<p className="text-sm text-muted-foreground">
+						{t("orders.productsLockedDescription", {
+							defaultValue:
+								"Order lines are read-only after the order reaches a terminal status.",
+						})}
+					</p>
+				) : null}
+				{normalizedLines.length === 0 ? (
 					<p className="text-sm text-muted-foreground">{t("orders.productsEmpty")}</p>
 				) : (
 					<Table>
@@ -153,6 +408,113 @@ export const OrderProductsCard = ({
 					</span>
 				</div>
 			</CardContent>
+
+			<Dialog
+				open={isDialogOpen}
+				onOpenChange={(open) => {
+					setIsDialogOpen(open);
+					if (!open) {
+						resetDialog();
+					}
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							{editingIndex !== null
+								? t("orders.productsEditLineTitle")
+								: t("orders.productsAddToOrderTitle")}
+						</DialogTitle>
+						<DialogDescription>
+							{t("orders.productsDialogDescription", {
+								defaultValue: "Update the operational order line details.",
+							})}
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<Input
+							disabled={mutating}
+							placeholder={t("orders.productsFieldProduct")}
+							value={form.description}
+							onChange={(event) => {
+								setForm((previous) => ({
+									...previous,
+									description: event.target.value,
+								}));
+							}}
+						/>
+						<Input
+							disabled={mutating}
+							inputMode="numeric"
+							placeholder={t("orders.productsFieldQuantity")}
+							value={form.quantity}
+							onChange={(event) => {
+								setForm((previous) => ({
+									...previous,
+									quantity: event.target.value,
+								}));
+							}}
+						/>
+						<Input
+							disabled={mutating}
+							inputMode="decimal"
+							placeholder={t("orders.productsFieldUnitPrice", { currency })}
+							value={form.unitCost}
+							onChange={(event) => {
+								setForm((previous) => ({
+									...previous,
+									unitCost: event.target.value,
+								}));
+							}}
+						/>
+					</div>
+					<DialogFooter>
+						<Button
+							disabled={mutating}
+							type="button"
+							variant="outline"
+							onClick={() => {
+								setIsDialogOpen(false);
+								resetDialog();
+							}}
+						>
+							{t("common.cancel")}
+						</Button>
+						<Button disabled={mutating} type="button" onClick={() => void upsertLine()}>
+							{t("orders.save")}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<AlertDialog
+				open={deletingIndex !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeletingIndex(null);
+					}
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>{t("orders.productsRemoveTitle")}</AlertDialogTitle>
+						<AlertDialogDescription>
+							{t("orders.productsRemoveDescription")}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={mutating}>
+							{t("common.cancel")}
+						</AlertDialogCancel>
+						<AlertDialogAction
+							disabled={mutating}
+							onClick={() => void deleteLine()}
+						>
+							{t("orders.productsRemoveAction")}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</Card>
 	);
 };

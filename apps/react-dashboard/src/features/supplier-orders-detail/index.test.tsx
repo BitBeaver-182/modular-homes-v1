@@ -103,6 +103,13 @@ vi.mock("@/features/supplier-orders-detail/hooks/use-get-order", () => ({
 	}),
 }));
 
+vi.mock("@/features/supplier-orders-detail/hooks/use-update-order", () => ({
+	useUpdateOrder: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
 vi.mock("@tanstack/react-router", async () => {
 	const actual = await vi.importActual<typeof TanstackRouter>(
 		"@tanstack/react-router"
@@ -135,6 +142,7 @@ vi.mock("react-i18next", () => ({
 				"orders.title": "Supplier Orders",
 				"orders.unknownSupplier": "Unknown supplier",
 				"orders.productsTitle": "Products",
+				"orders.productsAddAction": "Add product",
 				"orders.productsColumnProduct": "Product",
 				"orders.productsColumnQuantity": "Quantity",
 				"orders.productsColumnUnitPrice": "Unit price",
@@ -175,7 +183,27 @@ describe("SupplierOrderDetailPage", () => {
 		expect(screen.getByText("INV-2026-001")).not.toBeNull();
 		expect(screen.getByText("Model A")).not.toBeNull();
 		expect(screen.queryByText("Create invoice")).toBeNull();
-		expect(screen.queryByText("Add product")).toBeNull();
+		expect(
+			screen.getByRole("button", { name: /Add product/i }),
+		).not.toBeNull();
+	});
+
+	it("hides order-line editing controls for terminal order statuses", () => {
+		currentOrder = {
+			...orderFixture,
+			status: "closed",
+		};
+
+		render(<SupplierOrderDetailPage />);
+
+		expect(
+			screen.queryByRole("button", { name: /Add product/i }),
+		).toBeNull();
+		expect(
+			screen.getByText(
+				"Order lines are read-only after the order reaches a terminal status.",
+			),
+		).not.toBeNull();
 	});
 
 	it("falls back to the quote supplier when the direct supplier is missing", () => {

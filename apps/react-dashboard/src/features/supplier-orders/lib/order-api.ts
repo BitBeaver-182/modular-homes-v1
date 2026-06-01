@@ -4,8 +4,10 @@ import { moduflowRequest } from "@/lib/moduflow/client";
 import type {
 	CreateSupplierOrderRequest,
 	SupplierOrderDetailResponse,
+	SupplierOrderLineWriteInput,
 	SupplierOrderListItemResponse,
 	SupplierOrderListResponse,
+	UpdateSupplierOrderRequest,
 } from "@moduflow/types";
 
 export interface SupplierOrderApiContext {
@@ -96,6 +98,22 @@ export const getSupplierOrderDetail = async (
 			method: "GET",
 		}
 	);
+
+export const updateSupplierOrder = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	input: UpdateSupplierOrderRequest,
+): Promise<SupplierOrderDetailResponse> =>
+	moduflowRequest<SupplierOrderDetailResponse>(
+		`/supplier-orders/${encodeURIComponent(orderId)}`,
+		{
+			body: input,
+			headers: organizationHeaders(context),
+			method: "PATCH",
+		}
+	);
+
+export type { SupplierOrderLineWriteInput, UpdateSupplierOrderRequest };
 
 export const createSupplierOrderFromQuote = async (args: {
 	organizationId: string;

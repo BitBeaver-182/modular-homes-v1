@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -29,6 +30,7 @@ import {
   SupplierOrderListItemResponse,
   SupplierOrderListResponse,
 } from './dto/supplier-order-response.dto';
+import { UpdateSupplierOrderDto } from './dto/update-supplier-order.dto';
 import {
   toSupplierOrderDetailResponse,
   toSupplierOrderListItemResponse,
@@ -100,6 +102,27 @@ export class SupplierOrdersController {
       SupplierOrderDetailResponse,
       toSupplierOrderDetailResponse(
         await this.supplierOrdersService.findOne(organizationId, id),
+      ),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Update Supplier Order',
+    description:
+      'Update editable supplier-order fields in the active organization.',
+  })
+  @ApiOkResponse({ type: SupplierOrderDetailResponse })
+  async update(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Body() dto: UpdateSupplierOrderDto,
+  ): Promise<SupplierOrderDetailResponse> {
+    return plainToInstance(
+      SupplierOrderDetailResponse,
+      toSupplierOrderDetailResponse(
+        await this.supplierOrdersService.update(organizationId, id, dto),
       ),
       { excludeExtraneousValues: true },
     );

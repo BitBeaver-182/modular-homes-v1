@@ -4,8 +4,9 @@ import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/
 
 import {
 	getSupplierOrderDetail,
-	getSupplierOrders,
+		getSupplierOrders,
 	toSupplierOrderQueryString,
+	updateSupplierOrder,
 } from "./order-api";
 
 const { moduflowRequestMock } = vi.hoisted(() => ({
@@ -72,6 +73,37 @@ describe("supplier order Moduflow API", () => {
 			{
 				headers: { "x-organization-id": "42" },
 				method: "GET",
+			}
+		);
+	});
+
+	it("patches supplier-order lines through the platform API", async () => {
+		await updateSupplierOrder(context, "101", {
+			orderLines: [
+				{
+					id: "91",
+					description: "Updated line",
+					quantity: 2,
+					unitCost: 500,
+				},
+			],
+		});
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101",
+			{
+				body: {
+					orderLines: [
+						{
+							id: "91",
+							description: "Updated line",
+							quantity: 2,
+							unitCost: 500,
+						},
+					],
+				},
+				headers: { "x-organization-id": "42" },
+				method: "PATCH",
 			}
 		);
 	});

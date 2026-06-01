@@ -100,6 +100,25 @@ export interface CreateSupplierOrderRequest {
   quoteId: string;
 }
 
+export interface SupplierOrderLineWriteInput {
+  id?: string;
+  supplierQuoteLineId?: string | null;
+  houseModelId?: string | null;
+  productConfigurationId?: string | null;
+  description?: string | null;
+  quantity: number;
+  unitCost: number;
+}
+
+export interface UpdateSupplierOrderRequest {
+  /**
+   * Full replacement semantics for order lines.
+   * - `undefined`: leave existing lines untouched
+   * - `[]`: clear all existing lines
+   */
+  orderLines?: SupplierOrderLineWriteInput[];
+}
+
 export type SupplierOrderListResponse =
   PaginatedListResponse<SupplierOrderListItemResponse>;
 

@@ -13,11 +13,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useGetOrder } from "@/features/supplier-orders-detail/hooks/use-get-order";
+import { useUpdateOrder } from "@/features/supplier-orders-detail/hooks/use-update-order";
 import { Route } from "@/routes/$locale.o.$organizationSlug._admin._operations.supplier-orders_.$orderId";
 
 import { OrderInvoicesCard } from "./components/order-invoices";
 import { OrderProductsCard } from "./components/order-products/order-products-card";
 import { OrderSidebar } from "./components/order-sidebar";
+
+const TERMINAL_ORDER_STATUSES = new Set([
+	"shipped",
+	"arrived",
+	"closed",
+	"cancelled",
+]);
 
 const getDisplaySupplierName = (order: {
 	supplier: { name: string } | null;
@@ -36,6 +44,7 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 		error,
 		refetch,
 	} = useGetOrder(orderId);
+	const updateOrder = useUpdateOrder();
 
 	const goToOrders = (): void => {
 		void navigate({
@@ -82,6 +91,7 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 	}
 
 	const supplierName = getDisplaySupplierName(order) ?? t("orders.unknownSupplier");
+	const canEditOrderLines = !TERMINAL_ORDER_STATUSES.has(order.status);
 
 	return (
 		<div className="space-y-6">
@@ -133,7 +143,15 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 				<div className="space-y-6 lg:col-span-2">
 					<OrderProductsCard
 						currency={order.currencyCode}
+						editable={canEditOrderLines}
+						mutating={updateOrder.isPending}
 						orderLines={order.orderLines}
+						onSaveOrderLines={async (orderLines) => {
+							await updateOrder.mutateAsync({
+								orderId: order.id,
+								input: { orderLines },
+							});
+						}}
 					/>
 					<OrderInvoicesCard invoices={order.invoices} />
 				</div>
