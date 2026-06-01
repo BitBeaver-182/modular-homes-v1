@@ -3671,6 +3671,11 @@
             "type": "string",
             "example": "101"
           },
+          "orderNumber": {
+            "type": "object",
+            "example": "SO-000101",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string"
           },
@@ -3831,6 +3836,23 @@
           "supplierId"
         ]
       },
+      "SupplierQuoteOrderRefResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "101"
+          },
+          "orderNumber": {
+            "type": "object",
+            "example": "SO-000101",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
       "FileUploadPresenter": {
         "type": "object",
         "properties": {
@@ -3949,6 +3971,15 @@
           },
           "supplier": {
             "$ref": "#/components/schemas/SupplierResponse"
+          },
+          "supplierOrder": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupplierQuoteOrderRefResponse"
+              }
+            ]
           },
           "attachment": {
             "nullable": true,

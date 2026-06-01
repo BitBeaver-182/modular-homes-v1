@@ -78,6 +78,7 @@ export function toSupplierOrderListItemResponse(
 ): SupplierOrderListItemResponse {
   return {
     id: toApiId(order.id),
+    orderNumber: order.orderNumber,
     createdAt: toIsoDateString(order.createdAt),
     updatedAt: toIsoDateString(order.updatedAt),
     orderStatus: toOrderStatus(order.status),

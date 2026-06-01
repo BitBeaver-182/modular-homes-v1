@@ -35,6 +35,10 @@ const INCLUDE_RELATIONS = {
   supplier: { include: { address: true } },
   attachment: true,
   lines: { orderBy: { id: 'asc' } },
+  supplierOrders: {
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  },
 } satisfies Prisma.SupplierQuoteInclude;
 
 @Injectable()
@@ -750,7 +754,21 @@ function addStatusFilter(
     return;
   }
 
-  andFilters.push({ status: { in: statuses } });
+  const statusFilters = statuses.map((status) =>
+    status === 'received'
+      ? {
+          status: 'received' as const,
+          OR: [
+            { validUntil: null },
+            { validUntil: { gte: startOfUtcToday() } },
+          ],
+        }
+      : { status },
+  );
+
+  andFilters.push({
+    OR: statusFilters,
+  });
 }
 
 function addDateRange(
@@ -859,5 +877,12 @@ function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {
     error !== null &&
     'code' in error &&
     error.code === 'P2002'
+  );
+}
+
+function startOfUtcToday(): Date {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
   );
 }

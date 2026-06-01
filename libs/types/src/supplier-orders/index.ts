@@ -32,6 +32,7 @@ export interface SupplierOrderListInvoiceResponse {
 
 export interface SupplierOrderListItemResponse {
   id: string;
+  orderNumber: string | null;
   createdAt: string;
   updatedAt: string;
   orderStatus: SupplierOrderListStatus;

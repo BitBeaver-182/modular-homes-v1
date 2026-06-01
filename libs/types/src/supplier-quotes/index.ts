@@ -43,6 +43,11 @@ export interface SupplierQuoteLineResponse {
   updatedAt: IsoDateString;
 }
 
+export interface SupplierQuoteOrderRef {
+  id: ApiId;
+  orderNumber: string | null;
+}
+
 export interface CreateSupplierQuoteRequest {
   supplierId: ApiId;
   attachmentId?: ApiId | null;
@@ -80,6 +85,7 @@ export interface UpdateSupplierQuoteRequest {
 export interface SupplierQuoteResponse {
   id: ApiId;
   supplier: SupplierResponse;
+  supplierOrder: SupplierQuoteOrderRef | null;
   attachment: FileUploadResponse | null;
   quoteNumber: string | null;
   status: SupplierQuoteStatus;

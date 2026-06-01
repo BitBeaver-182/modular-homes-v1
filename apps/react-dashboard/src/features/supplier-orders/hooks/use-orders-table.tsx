@@ -27,7 +27,7 @@ const toOrderCurrency = (order: SupplierOrderListItemResponse): string =>
 	order.quote?.total?.currencyCode?.toUpperCase() ?? "EUR";
 
 const toOrderNumber = (order: SupplierOrderListItemResponse): string =>
-	`SO-${order.id.padStart(6, "0")}`;
+	order.orderNumber ?? order.id;
 
 const sumInvoiceField = (
 	order: SupplierOrderListItemResponse,

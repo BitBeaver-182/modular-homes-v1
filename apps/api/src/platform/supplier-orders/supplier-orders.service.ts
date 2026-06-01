@@ -56,6 +56,9 @@ export class SupplierOrdersService {
       },
       include: {
         supplier: { include: { address: true } },
+        lines: {
+          orderBy: { id: 'asc' },
+        },
       },
     });
 
@@ -87,22 +90,44 @@ export class SupplierOrdersService {
       );
     }
 
-    return this.prisma.supplierOrder.create({
-      data: {
-        organizationId: actor.organizationId,
-        supplierId: quote.supplierId,
-        supplierQuoteId: quote.id,
-        status: 'draft',
-        currencyCode: quote.currencyCode,
-        subtotalAmount: quote.subtotalAmount,
-        shippingAmount: quote.shippingAmount,
-        taxAmount: quote.taxAmount,
-        totalAmount: quote.totalAmount,
-        paymentTerms: quote.paymentTerms,
-        notes: quote.notes,
-        createdByUserId: actor.userId,
-      },
-      include: INCLUDE_RELATIONS,
+    return this.prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.supplierOrder.create({
+        data: {
+          organizationId: actor.organizationId,
+          supplierId: quote.supplierId,
+          supplierQuoteId: quote.id,
+          status: 'draft',
+          currencyCode: quote.currencyCode,
+          subtotalAmount: quote.subtotalAmount,
+          shippingAmount: quote.shippingAmount,
+          taxAmount: quote.taxAmount,
+          totalAmount: quote.totalAmount,
+          paymentTerms: quote.paymentTerms,
+          notes: quote.notes,
+          createdByUserId: actor.userId,
+          lines: {
+            create: quote.lines.map((line) => ({
+              organizationId: actor.organizationId,
+              supplierQuoteLineId: line.id,
+              houseModelId: line.houseModelId,
+              productConfigurationId: line.productConfigurationId,
+              description: line.description,
+              quantity: line.quantity,
+              unitCost: line.unitCost,
+              lineTotal: line.lineTotal,
+            })),
+          },
+        },
+        select: { id: true },
+      });
+
+      return tx.supplierOrder.update({
+        where: { id: createdOrder.id },
+        data: {
+          orderNumber: formatOrderNumber(createdOrder.id),
+        },
+        include: INCLUDE_RELATIONS,
+      });
     });
   }
 
@@ -220,6 +245,10 @@ function startOfUtcDay(value: string): Date {
 
 function endOfUtcDay(value: string): Date {
   return new Date(`${value}T23:59:59.999Z`);
+}
+
+function formatOrderNumber(value: bigint): string {
+  return `SO-${value.toString().padStart(6, '0')}`;
 }
 
 function isExpiredQuote(value: Date | null): boolean {

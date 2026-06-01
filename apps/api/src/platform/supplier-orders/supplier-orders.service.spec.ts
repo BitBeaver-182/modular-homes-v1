@@ -4,6 +4,7 @@ import { SupplierOrdersService } from './supplier-orders.service';
 
 describe('SupplierOrdersService', () => {
   const prisma = {
+    $transaction: jest.fn(),
     supplierQuote: {
       findFirst: jest.fn(),
     },
@@ -12,6 +13,7 @@ describe('SupplierOrdersService', () => {
       count: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -19,6 +21,9 @@ describe('SupplierOrdersService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    prisma.$transaction.mockImplementation(
+      (callback: (tx: typeof prisma) => unknown) => callback(prisma),
+    );
     prisma.supplierQuote.findFirst.mockResolvedValue(null);
     prisma.supplierOrder.findFirst.mockResolvedValue(null);
     prisma.supplierOrder.findMany.mockResolvedValue([{ id: 1n }]);
@@ -41,8 +46,26 @@ describe('SupplierOrdersService', () => {
       paymentTerms: 'Net 30',
       notes: 'Ready to order',
       supplier: null,
+      lines: [
+        {
+          id: 91n,
+          organizationId: 4n,
+          supplierQuoteId: 12n,
+          houseModelId: 15n,
+          productConfigurationId: 19n,
+          description: 'Model A',
+          quantity: 2,
+          unitCost: new Prisma.Decimal('500.00'),
+          lineTotal: new Prisma.Decimal('1000.00'),
+          estimatedProductionDays: null,
+          notes: null,
+          createdAt: new Date('2026-06-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-06-01T00:00:00.000Z'),
+        },
+      ],
     });
     prisma.supplierOrder.create.mockResolvedValue({ id: 101n });
+    prisma.supplierOrder.update.mockResolvedValue({ id: 101n });
 
     await service.create(
       {
@@ -62,7 +85,24 @@ describe('SupplierOrdersService', () => {
         status: 'draft',
         createdByUserId: 9n,
         currencyCode: 'EUR',
+        lines: {
+          create: [
+            expect.objectContaining({
+              organizationId: 4n,
+              supplierQuoteLineId: 91n,
+              houseModelId: 15n,
+              productConfigurationId: 19n,
+              description: 'Model A',
+              quantity: 2,
+            }),
+          ],
+        },
       }),
+      select: { id: true },
+    });
+    expect(prisma.supplierOrder.update).toHaveBeenCalledWith({
+      where: { id: 101n },
+      data: { orderNumber: 'SO-000101' },
       include: expect.any(Object),
     });
   });

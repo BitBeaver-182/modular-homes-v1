@@ -19,6 +19,10 @@ export type SupplierQuoteWithRelations = Prisma.SupplierQuoteGetPayload<{
     supplier: { include: { address: true } };
     attachment: true;
     lines: { orderBy: { id: 'asc' } };
+    supplierOrders: {
+      orderBy: { createdAt: 'desc' };
+      take: 1;
+    };
   };
 }>;
 
@@ -59,6 +63,12 @@ export async function toSupplierQuoteResponse(
   return {
     id: toApiId(quote.id),
     supplier: toSupplierResponse(quote.supplier),
+    supplierOrder: quote.supplierOrders[0]
+      ? {
+          id: toApiId(quote.supplierOrders[0].id),
+          orderNumber: quote.supplierOrders[0].orderNumber,
+        }
+      : null,
     attachment: quote.attachment
       ? await FileUploadMapper.toResponse(quote.attachment, storageService)
       : null,

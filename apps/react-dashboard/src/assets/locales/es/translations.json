@@ -187,6 +187,7 @@
 		"pdfHint": "Solo 1 PDF, hasta 10MB",
 		"emptyStateTitle": "Aun no hay cotizaciones",
 		"emptyStateDescription": "Crea tu primera cotizacion con el boton de abajo.",
+		"columnSupplierOrder": "Pedido a proveedor",
 		"titleAcceptQuote": "Aceptar cotizacion",
 		"titleRejectQuote": "Rechazar cotizacion",
 		"titleCreateSupplierOrder": "Crear pedido a proveedor",

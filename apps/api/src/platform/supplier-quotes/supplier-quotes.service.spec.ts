@@ -204,7 +204,16 @@ describe('SupplierQuotesService', () => {
         },
         AND: [
           {
-            status: { in: ['received', 'accepted'] },
+            OR: [
+              {
+                status: 'received',
+                OR: [
+                  { validUntil: null },
+                  { validUntil: { gte: startOfUtcToday() } },
+                ],
+              },
+              { status: 'accepted' },
+            ],
           },
           expect.objectContaining({
             OR: expect.arrayContaining([
@@ -222,7 +231,7 @@ describe('SupplierQuotesService', () => {
     });
   });
 
-  it('filters by persisted quote status only', async () => {
+  it('treats received as a non-expired derived state filter', async () => {
     prisma.supplierQuote.findMany.mockResolvedValue([{ id: 1n }]);
     prisma.supplierQuote.count.mockResolvedValue(1);
 
@@ -234,7 +243,19 @@ describe('SupplierQuotesService', () => {
       where: expect.objectContaining({
         organizationId: 4n,
         deletedAt: null,
-        AND: [{ status: { in: ['received'] } }],
+        AND: [
+          {
+            OR: [
+              {
+                status: 'received',
+                OR: [
+                  { validUntil: null },
+                  { validUntil: { gte: startOfUtcToday() } },
+                ],
+              },
+            ],
+          },
+        ],
       }),
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       skip: 0,
@@ -426,3 +447,10 @@ describe('SupplierQuotesService', () => {
     );
   });
 });
+
+function startOfUtcToday(): Date {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+}

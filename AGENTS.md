@@ -78,6 +78,7 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 | 2026-05-31 | Update Semantics | Letting optional array updates silently delete existing records when the caller passes an empty array | Define array-update behavior explicitly; `undefined` means untouched, and empty arrays must not clear data unless the contract explicitly supports clearing. | v1.0 |
 | 2026-05-31 | API Debugging | Starting unrelated frontend processes or asking for more reproduction when the user has already provided an API curl | Run the provided API curl against the running backend, capture the actual HTTP response and server/runtime stack, and avoid touching unrelated services unless needed. | v1.0 |
 | 2026-05-31 | Derived State | Reintroducing removed lifecycle values like supplier quote `expired` as persisted or response `status` values | Keep persisted/contract status enums limited to real writable states; expose derived lifecycle state through explicit booleans like `isExpired`. | v1.0 |
+| 2026-06-01 | Frontend Conflict UX | Showing create actions that are expected to fail because a related record already exists | Hide the create action when the related supplier order already exists and show a direct link to the existing order in the list/table instead. | v1.0 |
 
 ---
 
@@ -90,3 +91,4 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 - **Log Entry #5 (DTO + Service Semantics):** Added rules for clean Nest query DTOs, service/controller boundaries, and explicit semantics for optional array updates.
 - **Log Entry #6 (API Debugging Discipline):** Added a rule to use provided API curls directly and avoid unrelated frontend work during backend incident debugging.
 - **Log Entry #7 (Derived State Discipline):** Added a rule to keep derived lifecycle state out of persisted/response status enums.
+- **Log Entry #8 (Frontend Conflict UX):** Added a rule to remove create actions that are known to fail and replace them with links to the existing related record.

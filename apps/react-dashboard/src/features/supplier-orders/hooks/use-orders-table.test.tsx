@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { useOrdersTable } from "./use-orders-table";
 
 import type * as TanstackRouter from "@tanstack/react-router";
+import type { JSX } from "react";
 
 vi.mock("@/hooks/use-currency", () => ({
 	useCurrency: () => ({
@@ -48,6 +49,7 @@ describe("useOrdersTable", () => {
 		const row = {
 			original: {
 				id: "101",
+				orderNumber: "SO-000101",
 				createdAt: "2026-06-15T08:00:00.000Z",
 				updatedAt: "2026-06-16T08:00:00.000Z",
 				orderStatus: "processing",
@@ -71,9 +73,12 @@ describe("useOrdersTable", () => {
 		const supplierCell = supplierColumn?.cell as ((context: unknown) => string) | undefined;
 		const totalCell = totalColumn?.cell as ((context: unknown) => string) | undefined;
 		const createdAtCell = createdAtColumn?.cell as ((context: unknown) => string) | undefined;
+		const idColumn = result.current.columns.find((column) => column.id === "id");
+		const idCell = idColumn?.cell as ((context: unknown) => string | JSX.Element) | undefined;
 
 		expect(supplierCell?.({ row })).toBe("Quote Supplier");
 		expect(totalCell?.({ row })).toBe("EUR 1250.00");
 		expect(createdAtCell?.({ row })).toBe("Jun 15, 2026");
+		expect(idCell).toBeDefined();
 	});
 });

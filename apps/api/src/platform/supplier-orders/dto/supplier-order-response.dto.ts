@@ -92,6 +92,10 @@ export class SupplierOrderListItemResponse implements SupplierOrderListItemContr
   @Expose()
   id!: string;
 
+  @ApiPropertyOptional({ example: 'SO-000101', nullable: true })
+  @Expose()
+  orderNumber!: string | null;
+
   @ApiProperty()
   @Expose()
   createdAt!: string;

@@ -1,3 +1,4 @@
+import { Link, useParams } from "@tanstack/react-router";
 import { t } from "i18next";
 import { Check, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMemo, type JSX } from "react";
@@ -45,6 +46,10 @@ export const useQuotesTable = ({
 	onCreateSupplierOrder,
 }: UseQuotesTableProps): UseQuotesTableReturn => {
 	const { formatAmount } = useCurrency();
+	const params = useParams({ strict: false });
+	const locale = typeof params.locale === "string" ? params.locale : "en";
+	const organizationSlug =
+		typeof params.organizationSlug === "string" ? params.organizationSlug : "";
 	const columns = useMemo<Array<ColumnDef<SupplierQuoteResponse>>>(
 		(): Array<ColumnDef<SupplierQuoteResponse>> => [
 			{
@@ -82,6 +87,37 @@ export const useQuotesTable = ({
 						status={row.original.status}
 					/>
 				),
+			},
+			{
+				id: "supplierOrder",
+				enableSorting: false,
+				size: FIXED_SIZE,
+				header: ({ column }): JSX.Element => (
+					<DataGridColumnHeader
+						column={column}
+						title={t("quotes.columnSupplierOrder")}
+					/>
+				),
+				cell: ({ row }): JSX.Element | string => {
+					const supplierOrder = row.original.supplierOrder;
+					if (!supplierOrder) {
+						return t("orders.notApplicable");
+					}
+
+					return (
+						<Link
+							className="cursor-pointer font-medium text-primary underline-offset-2 hover:underline"
+							params={{
+								locale,
+								organizationSlug,
+								orderId: supplierOrder.id,
+							}}
+							to="/$locale/o/$organizationSlug/supplier-orders/$orderId"
+						>
+							{supplierOrder.orderNumber ?? supplierOrder.id}
+						</Link>
+					);
+				},
 			},
 			{
 				accessorKey: "quoteDate",
@@ -140,6 +176,7 @@ export const useQuotesTable = ({
 					const canCreateSupplierOrder =
 						quote.status === "accepted" &&
 						!quote.isExpired &&
+						!quote.supplierOrder &&
 						!!onCreateSupplierOrder;
 
 					return (
@@ -214,7 +251,15 @@ export const useQuotesTable = ({
 				},
 			},
 		],
-		[formatAmount, onCreateSupplierOrder, onDelete, onEdit, onRequestStatus],
+		[
+			formatAmount,
+			locale,
+			onCreateSupplierOrder,
+			onDelete,
+			onEdit,
+			onRequestStatus,
+			organizationSlug,
+		],
 	);
 
 	return useMemo(() => ({ columns }), [columns]);

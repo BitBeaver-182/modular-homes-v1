@@ -187,6 +187,7 @@
 		"pdfHint": "Iba 1 PDF, maximalne 10MB",
 		"emptyStateTitle": "Zatial ziadne ponuky",
 		"emptyStateDescription": "Vytvorte prvu ponuku tlacidlom nizsie.",
+		"columnSupplierOrder": "Objednavka dodavatelovi",
 		"titleAcceptQuote": "Prijat ponuku",
 		"titleRejectQuote": "Zamietnut ponuku",
 		"titleCreateSupplierOrder": "Vytvorit objednavku dodavatelovi",
