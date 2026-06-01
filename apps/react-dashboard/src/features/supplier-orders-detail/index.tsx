@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useGetOrder } from "@/features/supplier-orders-detail/hooks/use-get-order";
+import { useUpdateOrder } from "@/features/supplier-orders-detail/hooks/use-update-order";
 import { Route } from "@/routes/$locale.o.$organizationSlug._admin._operations.supplier-orders_.$orderId";
 
 import { OrderInvoicesCard } from "./components/order-invoices";
@@ -36,6 +37,7 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 		error,
 		refetch,
 	} = useGetOrder(orderId);
+	const updateOrder = useUpdateOrder();
 
 	const goToOrders = (): void => {
 		void navigate({
@@ -133,7 +135,14 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 				<div className="space-y-6 lg:col-span-2">
 					<OrderProductsCard
 						currency={order.currencyCode}
+						mutating={updateOrder.isPending}
 						orderLines={order.orderLines}
+						onSaveOrderLines={async (orderLines) => {
+							await updateOrder.mutateAsync({
+								orderId: order.id,
+								input: { orderLines },
+							});
+						}}
 					/>
 					<OrderInvoicesCard invoices={order.invoices} />
 				</div>
