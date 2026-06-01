@@ -1925,6 +1925,57 @@
         "tags": [
           "Supplier Orders"
         ]
+      },
+      "patch": {
+        "description": "Update editable supplier-order fields in the active organization.",
+        "operationId": "SupplierOrdersController_update",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSupplierOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierOrderDetailResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update Supplier Order",
+        "tags": [
+          "Supplier Orders"
+        ]
       }
     },
     "/api/supplier-quotes": {
@@ -4149,6 +4200,58 @@
           "orderLines",
           "invoices"
         ]
+      },
+      "SupplierOrderLineWriteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "91"
+          },
+          "supplierQuoteLineId": {
+            "type": "object",
+            "example": "71",
+            "nullable": true
+          },
+          "houseModelId": {
+            "type": "object",
+            "example": "15",
+            "nullable": true
+          },
+          "productConfigurationId": {
+            "type": "object",
+            "example": "19",
+            "nullable": true
+          },
+          "description": {
+            "type": "object",
+            "example": "Two-bedroom modular shell"
+          },
+          "quantity": {
+            "type": "number",
+            "example": 2
+          },
+          "unitCost": {
+            "type": "number",
+            "example": 500
+          }
+        },
+        "required": [
+          "quantity",
+          "unitCost"
+        ]
+      },
+      "UpdateSupplierOrderDto": {
+        "type": "object",
+        "properties": {
+          "orderLines": {
+            "description": "Full replacement for order lines. Omit to keep existing lines untouched; send an empty array to clear all lines.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierOrderLineWriteDto"
+            }
+          }
+        }
       },
       "SupplierQuoteLineDto": {
         "type": "object",

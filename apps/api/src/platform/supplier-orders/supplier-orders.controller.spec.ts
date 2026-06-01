@@ -6,6 +6,7 @@ describe('SupplierOrdersController', () => {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
   };
 
   let controller: SupplierOrdersController;
@@ -144,6 +145,68 @@ describe('SupplierOrdersController', () => {
         id: '101',
         status: 'confirmed',
         orderNumber: 'SO-000101',
+      }),
+    );
+  });
+
+  it('updates supplier-order lines through the scoped service', async () => {
+    supplierOrdersService.update.mockResolvedValue({
+      id: 101n,
+      supplierId: 8n,
+      supplierQuoteId: null,
+      supplier: null,
+      supplierQuote: null,
+      lines: [],
+      invoices: [],
+      status: 'confirmed',
+      orderNumber: 'SO-000101',
+      supplierPoNumber: null,
+      orderDate: null,
+      confirmedAt: null,
+      expectedReadyDate: null,
+      expectedShipDate: null,
+      expectedArrivalDate: null,
+      currencyCode: 'EUR',
+      subtotalAmount: 1000,
+      shippingAmount: 100,
+      taxAmount: 50,
+      totalAmount: 1150,
+      incoterm: null,
+      paymentTerms: null,
+      loadingPort: null,
+      destinationPort: null,
+      notes: null,
+      createdByUserId: null,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+    });
+
+    const response = await controller.update(2n, '101', {
+      orderLines: [
+        {
+          description: 'Updated line',
+          quantity: 2,
+          unitCost: 500,
+        },
+      ],
+    });
+
+    expect(supplierOrdersService.update).toHaveBeenCalledWith(2n, '101', {
+      orderLines: [
+        {
+          description: 'Updated line',
+          quantity: 2,
+          unitCost: 500,
+        },
+      ],
+    });
+    expect(response).toEqual(
+      expect.objectContaining({
+        id: '101',
+        totalAmount: {
+          amount: 1150,
+          currencyCode: 'EUR',
+        },
       }),
     );
   });

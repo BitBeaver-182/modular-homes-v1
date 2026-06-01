@@ -3,14 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type {
+import {
   Prisma,
-  SupplierOrderStatus as PersistedSupplierOrderStatus,
+  type SupplierOrderStatus as PersistedSupplierOrderStatus,
 } from '@prisma/client';
 import type { AuthenticatedActor } from '../../auth/auth.types';
 import { PrismaService } from '../../database/prisma.service';
 import { parseBigIntId } from '../../common/ids/parse-bigint-id';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
+import { UpdateSupplierOrderDto } from './dto/update-supplier-order.dto';
 import type { SupplierOrderWithRelations } from './mappers/supplier-order.mapper';
 import type { CreateSupplierOrderRequest } from '@moduflow/types';
 
@@ -193,6 +194,134 @@ export class SupplierOrdersService {
     }
 
     return order;
+  }
+
+  async update(
+    organizationId: bigint,
+    id: string,
+    dto: UpdateSupplierOrderDto,
+  ): Promise<SupplierOrderWithRelations> {
+    const order = await this.findOne(organizationId, id);
+
+    if (dto.orderLines === undefined) {
+      return order;
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const currentOrder = await tx.supplierOrder.findFirst({
+        where: {
+          id: order.id,
+          organizationId,
+        },
+        include: {
+          lines: {
+            orderBy: { id: 'asc' },
+          },
+        },
+      });
+
+      if (!currentOrder) {
+        throw new NotFoundException('Supplier order not found');
+      }
+
+      const nextLines = dto.orderLines ?? [];
+      const existingLineIds = new Set(currentOrder.lines.map((line) => line.id));
+      const providedExistingLineIds = new Set<bigint>();
+
+      for (const line of nextLines) {
+        if (!line.id) {
+          continue;
+        }
+
+        const parsedLineId = parseBigIntId(line.id, 'orderLineId');
+        if (providedExistingLineIds.has(parsedLineId)) {
+          throw new BadRequestException(
+            `Duplicate supplier order line id ${line.id}`,
+          );
+        }
+        if (!existingLineIds.has(parsedLineId)) {
+          throw new BadRequestException(
+            `Supplier order line ${line.id} does not belong to this order`,
+          );
+        }
+
+        providedExistingLineIds.add(parsedLineId);
+      }
+
+      const lineData = nextLines.map((line) => {
+        const quantity = line.quantity;
+        const unitCost = new Prisma.Decimal(line.unitCost);
+
+        return {
+          id: line.id ? parseBigIntId(line.id, 'orderLineId') : null,
+          supplierQuoteLineId: line.supplierQuoteLineId
+            ? parseBigIntId(line.supplierQuoteLineId, 'supplierQuoteLineId')
+            : null,
+          houseModelId: line.houseModelId
+            ? parseBigIntId(line.houseModelId, 'houseModelId')
+            : null,
+          productConfigurationId: line.productConfigurationId
+            ? parseBigIntId(line.productConfigurationId, 'productConfigurationId')
+            : null,
+          description: line.description ?? null,
+          quantity,
+          unitCost,
+          lineTotal: unitCost.mul(quantity),
+        };
+      });
+
+      const idsToKeep = lineData
+        .map((line) => line.id)
+        .filter((lineId): lineId is bigint => lineId !== null);
+
+      await tx.supplierOrderLine.deleteMany({
+        where: {
+          supplierOrderId: order.id,
+          ...(idsToKeep.length > 0 ? { id: { notIn: idsToKeep } } : {}),
+        },
+      });
+
+      for (const line of lineData) {
+        const writeData = {
+          organizationId,
+          supplierOrderId: order.id,
+          supplierQuoteLineId: line.supplierQuoteLineId,
+          houseModelId: line.houseModelId,
+          productConfigurationId: line.productConfigurationId,
+          description: line.description,
+          quantity: line.quantity,
+          unitCost: line.unitCost,
+          lineTotal: line.lineTotal,
+        };
+
+        if (line.id) {
+          await tx.supplierOrderLine.update({
+            where: { id: line.id },
+            data: writeData,
+          });
+        } else {
+          await tx.supplierOrderLine.create({
+            data: writeData,
+          });
+        }
+      }
+
+      const subtotalAmount = lineData.reduce(
+        (sum, line) => sum.add(line.lineTotal),
+        new Prisma.Decimal(0),
+      );
+
+      return tx.supplierOrder.update({
+        where: { id: order.id },
+        data: {
+          subtotalAmount,
+          totalAmount: subtotalAmount
+            .add(currentOrder.shippingAmount)
+            .add(currentOrder.taxAmount),
+        },
+        include: INCLUDE_RELATIONS,
+      });
+    });
   }
 }
 
