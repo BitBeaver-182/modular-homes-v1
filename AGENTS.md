@@ -81,6 +81,7 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 | 2026-06-01 | Frontend Conflict UX | Showing create actions that are expected to fail because a related record already exists | Hide the create action when the related supplier order already exists and show a direct link to the existing order in the list/table instead. | v1.0 |
 | 2026-06-01 | PR Sequencing | Planning or implementing multiple PR slices in one pass for a large feature rollout | Complete exactly one PR slice at a time, stop for user review, and only then plan or implement the next PR. | v1.0 |
 | 2026-06-01 | Planning Workflow | Starting implementation for a new PR slice before aligning with `PLAN.md` and the user | For each new PR slice in a staged rollout, pause first, align the implementation plan with `PLAN.md`, confirm that plan with the user, and only then write code. | v1.0 |
+| 2026-06-01 | Persistence Design | Accepting user-entered values for fields that can be derived reliably from other stored fields | Prefer deriving values instead of storing redundant client-supplied values; for invoices in this codebase, compute `totalAmount` from `subtotalAmount` and `taxAmount` server-side. | v1.0 |
 
 ---
 
@@ -96,3 +97,4 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 - **Log Entry #8 (Frontend Conflict UX):** Added a rule to remove create actions that are known to fail and replace them with links to the existing related record.
 - **Log Entry #9 (PR Sequencing Discipline):** Added a rule to deliver large feature rollouts one PR at a time and stop for user review between PRs.
 - **Log Entry #10 (Plan Alignment Discipline):** Added a rule to align each new staged PR with `PLAN.md` and the user before implementation starts.
+- **Log Entry #11 (Derived Persistence Discipline):** Added a rule to derive calculable fields server-side instead of storing redundant client-entered values.
