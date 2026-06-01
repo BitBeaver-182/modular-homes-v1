@@ -35,6 +35,10 @@ const INCLUDE_RELATIONS = {
   supplier: { include: { address: true } },
   attachment: true,
   lines: { orderBy: { id: 'asc' } },
+  supplierOrders: {
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  },
 } satisfies Prisma.SupplierQuoteInclude;
 
 @Injectable()
@@ -686,7 +690,7 @@ function buildSupplierQuoteWhere(
     parseBigIntId(id, 'supplierId'),
   );
 
-  addStatusFilter(andFilters, query.status ?? []);
+  addStatusFilter(andFilters, query.status ?? [], query.isExpired === true);
 
   if (supplierIds.length > 0) {
     where.supplierId = { in: supplierIds };
@@ -745,38 +749,37 @@ function buildSupplierQuoteWhere(
 function addStatusFilter(
   andFilters: Prisma.SupplierQuoteWhereInput[],
   statuses: SupplierQuoteStatus[],
+  includeExpired: boolean,
 ): void {
-  if (statuses.length === 0) {
+  if (statuses.length === 0 && !includeExpired) {
     return;
   }
 
-  const statusFilters: Prisma.SupplierQuoteWhereInput[] = [];
+  const statusFilters = [
+    ...statuses.map((status) =>
+      status === 'received'
+        ? {
+            status: 'received' as const,
+            OR: [
+              { validUntil: null },
+              { validUntil: { gte: startOfUtcToday() } },
+            ],
+          }
+        : { status },
+    ),
+    ...(includeExpired
+      ? [
+          {
+            status: 'received' as const,
+            validUntil: { lt: startOfUtcToday() },
+          },
+        ]
+      : []),
+  ];
 
-  if (statuses.includes('received')) {
-    statusFilters.push({
-      status: 'received',
-      OR: [{ validUntil: null }, { validUntil: { gte: startOfUtcToday() } }],
-    });
-  }
-
-  if (statuses.includes('accepted')) {
-    statusFilters.push({ status: 'accepted' });
-  }
-
-  if (statuses.includes('rejected')) {
-    statusFilters.push({ status: 'rejected' });
-  }
-
-  if (statuses.includes('expired')) {
-    statusFilters.push({
-      status: 'received',
-      validUntil: { lt: startOfUtcToday() },
-    });
-  }
-
-  andFilters.push(
-    statusFilters.length === 1 ? statusFilters[0] : { OR: statusFilters },
-  );
+  andFilters.push({
+    OR: statusFilters,
+  });
 }
 
 function addDateRange(
@@ -879,18 +882,18 @@ function toOptionalNumber(value: unknown): number | undefined {
   return undefined;
 }
 
-function startOfUtcToday(): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
-}
-
 function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {
   return (
     typeof error === 'object' &&
     error !== null &&
     'code' in error &&
     error.code === 'P2002'
+  );
+}
+
+function startOfUtcToday(): Date {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
   );
 }

@@ -12,10 +12,7 @@ export const SUPPLIER_QUOTE_WRITABLE_STATUSES = [
   'rejected',
 ] as const;
 
-export const SUPPLIER_QUOTE_STATUSES = [
-  ...SUPPLIER_QUOTE_WRITABLE_STATUSES,
-  'expired',
-] as const;
+export const SUPPLIER_QUOTE_STATUSES = SUPPLIER_QUOTE_WRITABLE_STATUSES;
 
 export type SupplierQuoteWritableStatus =
   (typeof SUPPLIER_QUOTE_WRITABLE_STATUSES)[number];
@@ -44,6 +41,11 @@ export interface SupplierQuoteLineResponse {
   notes: string | null;
   createdAt: IsoDateString;
   updatedAt: IsoDateString;
+}
+
+export interface SupplierQuoteOrderRef {
+  id: ApiId;
+  orderNumber: string | null;
 }
 
 export interface CreateSupplierQuoteRequest {
@@ -83,9 +85,11 @@ export interface UpdateSupplierQuoteRequest {
 export interface SupplierQuoteResponse {
   id: ApiId;
   supplier: SupplierResponse;
+  supplierOrder: SupplierQuoteOrderRef | null;
   attachment: FileUploadResponse | null;
   quoteNumber: string | null;
   status: SupplierQuoteStatus;
+  isExpired: boolean;
   quoteDate: string | null;
   validUntil: string | null;
   currencyCode: string;

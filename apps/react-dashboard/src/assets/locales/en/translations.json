@@ -187,6 +187,7 @@
 		"pdfHint": "1 PDF only, up to 10MB",
 		"emptyStateTitle": "No quotes yet",
 		"emptyStateDescription": "Create your first quote using the button below.",
+		"columnSupplierOrder": "Supplier order",
 		"titleAcceptQuote": "Accept quote",
 		"titleRejectQuote": "Reject quote",
 		"titleCreateSupplierOrder": "Create supplier order",

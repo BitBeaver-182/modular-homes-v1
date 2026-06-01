@@ -209,7 +209,7 @@ describe('SupplierQuotesService', () => {
                 status: 'received',
                 OR: [
                   { validUntil: null },
-                  { validUntil: { gte: expect.any(Date) } },
+                  { validUntil: { gte: startOfUtcToday() } },
                 ],
               },
               { status: 'accepted' },
@@ -231,7 +231,7 @@ describe('SupplierQuotesService', () => {
     });
   });
 
-  it('excludes expired quotes when filtering for received only', async () => {
+  it('treats received as a non-expired derived state filter', async () => {
     prisma.supplierQuote.findMany.mockResolvedValue([{ id: 1n }]);
     prisma.supplierQuote.count.mockResolvedValue(1);
 
@@ -245,10 +245,46 @@ describe('SupplierQuotesService', () => {
         deletedAt: null,
         AND: [
           {
-            status: 'received',
             OR: [
-              { validUntil: null },
-              { validUntil: { gte: expect.any(Date) } },
+              {
+                status: 'received',
+                OR: [
+                  { validUntil: null },
+                  { validUntil: { gte: startOfUtcToday() } },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      skip: 0,
+      take: 10,
+      include: expect.any(Object),
+    });
+  });
+
+  it('treats isExpired as an additional derived filter bucket', async () => {
+    prisma.supplierQuote.findMany.mockResolvedValue([{ id: 1n }]);
+    prisma.supplierQuote.count.mockResolvedValue(1);
+
+    await service.findAll(4n, {
+      status: ['accepted'],
+      isExpired: true,
+    });
+
+    expect(prisma.supplierQuote.findMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        organizationId: 4n,
+        deletedAt: null,
+        AND: [
+          {
+            OR: [
+              { status: 'accepted' },
+              {
+                status: 'received',
+                validUntil: { lt: startOfUtcToday() },
+              },
             ],
           },
         ],
@@ -443,3 +479,10 @@ describe('SupplierQuotesService', () => {
     );
   });
 });
+
+function startOfUtcToday(): Date {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+}

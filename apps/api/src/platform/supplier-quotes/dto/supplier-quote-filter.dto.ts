@@ -3,6 +3,7 @@ import { SUPPLIER_QUOTE_STATUSES } from '@moduflow/types';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsArray,
   IsDateString,
   IsIn,
@@ -45,6 +46,28 @@ const toStringArray = ({ value }: { value: unknown }): string[] | undefined => {
   return undefined;
 };
 
+const toOptionalBoolean = ({
+  value,
+}: {
+  value: unknown;
+}): boolean | undefined => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    if (value === 'true') {
+      return true;
+    }
+    if (value === 'false') {
+      return false;
+    }
+  }
+  return value as boolean;
+};
+
 export class SupplierQuoteFilterDto {
   @ApiPropertyOptional({ example: 1, default: 1 })
   @Type(() => Number)
@@ -78,6 +101,12 @@ export class SupplierQuoteFilterDto {
   @IsArray()
   @IsIn(SUPPLIER_QUOTE_STATUSES, { each: true })
   status?: SupplierQuoteStatus[];
+
+  @ApiPropertyOptional({ example: true })
+  @Transform(toOptionalBoolean)
+  @IsOptional()
+  @IsBoolean()
+  isExpired?: boolean;
 
   @ApiPropertyOptional({ name: 'supplierIds', type: String, isArray: true })
   @Transform(toStringArray)

@@ -1,5 +1,6 @@
+import { Link, useParams } from "@tanstack/react-router";
 import { t } from "i18next";
-import { Check, ExternalLink, Pencil, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMemo, type JSX } from "react";
 
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
@@ -25,6 +26,7 @@ interface UseQuotesTableProps {
 		quote: SupplierQuoteResponse,
 		status: Extract<SupplierQuoteStatus, "accepted" | "rejected">,
 	) => void;
+	onCreateSupplierOrder?: (quote: SupplierQuoteResponse) => void;
 }
 
 interface UseQuotesTableReturn {
@@ -41,8 +43,13 @@ export const useQuotesTable = ({
 	onEdit,
 	onDelete,
 	onRequestStatus,
+	onCreateSupplierOrder,
 }: UseQuotesTableProps): UseQuotesTableReturn => {
 	const { formatAmount } = useCurrency();
+	const params = useParams({ strict: false });
+	const locale = typeof params.locale === "string" ? params.locale : "en";
+	const organizationSlug =
+		typeof params.organizationSlug === "string" ? params.organizationSlug : "";
 	const columns = useMemo<Array<ColumnDef<SupplierQuoteResponse>>>(
 		(): Array<ColumnDef<SupplierQuoteResponse>> => [
 			{
@@ -75,8 +82,42 @@ export const useQuotesTable = ({
 					<DataGridColumnHeader column={column} title={t("quotes.columnStatus")} />
 				),
 				cell: ({ row }): JSX.Element => (
-					<QuoteStatusBadge status={row.original.status} />
+					<QuoteStatusBadge
+						isExpired={row.original.isExpired}
+						status={row.original.status}
+					/>
 				),
+			},
+			{
+				id: "supplierOrder",
+				enableSorting: false,
+				size: FIXED_SIZE,
+				header: ({ column }): JSX.Element => (
+					<DataGridColumnHeader
+						column={column}
+						title={t("quotes.columnSupplierOrder")}
+					/>
+				),
+				cell: ({ row }): JSX.Element | string => {
+					const supplierOrder = row.original.supplierOrder;
+					if (!supplierOrder) {
+						return t("orders.notApplicable");
+					}
+
+					return (
+						<Link
+							className="cursor-pointer font-medium text-primary underline-offset-2 hover:underline"
+							params={{
+								locale,
+								organizationSlug,
+								orderId: supplierOrder.id,
+							}}
+							to="/$locale/o/$organizationSlug/supplier-orders/$orderId"
+						>
+							{supplierOrder.orderNumber ?? supplierOrder.id}
+						</Link>
+					);
+				},
 			},
 			{
 				accessorKey: "quoteDate",
@@ -131,7 +172,12 @@ export const useQuotesTable = ({
 				header: (): null => null,
 				cell: ({ row }): JSX.Element => {
 					const quote = row.original;
-					const isReceived = quote.status === "received";
+					const isReceived = quote.status === "received" && !quote.isExpired;
+					const canCreateSupplierOrder =
+						quote.status === "accepted" &&
+						!quote.isExpired &&
+						!quote.supplierOrder &&
+						!!onCreateSupplierOrder;
 
 					return (
 						<div className="flex justify-end gap-1">
@@ -160,6 +206,19 @@ export const useQuotesTable = ({
 										<X className="size-4 text-red-600" />
 									</Button>
 								</>
+							) : null}
+							{canCreateSupplierOrder ? (
+								<Button
+									size="icon-sm"
+									title={t("quotes.titleCreateSupplierOrder")}
+									type="button"
+									variant="ghost"
+									onClick={(): void => {
+										onCreateSupplierOrder?.(quote);
+									}}
+								>
+									<Plus className="size-4" />
+								</Button>
 							) : null}
 							{onEdit ? (
 								<Button
@@ -192,7 +251,15 @@ export const useQuotesTable = ({
 				},
 			},
 		],
-		[formatAmount, onEdit, onDelete, onRequestStatus],
+		[
+			formatAmount,
+			locale,
+			onCreateSupplierOrder,
+			onDelete,
+			onEdit,
+			onRequestStatus,
+			organizationSlug,
+		],
 	);
 
 	return useMemo(() => ({ columns }), [columns]);

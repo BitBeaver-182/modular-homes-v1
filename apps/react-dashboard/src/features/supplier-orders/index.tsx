@@ -35,9 +35,12 @@ import { useGetOrders } from "./hooks/use-get-orders";
 import { useOrdersTable } from "./hooks/use-orders-table";
 import {
 	SUPPLIER_ORDER_STATUSES,
-	type SupplierOrder,
-	type SupplierOrderStatus,
-} from "./types";
+} from "./list-types";
+
+import type {
+	SupplierOrderListItemResponse,
+	SupplierOrderListStatus,
+} from "@moduflow/types";
 
 const OrdersPage = (): JSX.Element => {
 	const { t } = useTranslation();
@@ -87,7 +90,7 @@ const OrdersPage = (): JSX.Element => {
 	);
 
 	const statusOptions = useMemo(
-		(): Array<{ value: SupplierOrderStatus; label: string }> => [
+		(): Array<{ value: SupplierOrderListStatus; label: string }> => [
 			{
 				value: SUPPLIER_ORDER_STATUSES[0],
 				label: t("orders.statusDraft", { defaultValue: "Draft" }),
@@ -104,13 +107,13 @@ const OrdersPage = (): JSX.Element => {
 	);
 
 	const handleOpenOrder = useCallback(
-		(order: SupplierOrder): void => {
+		(order: SupplierOrderListItemResponse): void => {
 			void navigate({
 				to: "/$locale/o/$organizationSlug/supplier-orders/$orderId",
 				params: {
 					locale,
 					organizationSlug,
-					orderId: order.documentId || String(order.id),
+					orderId: order.id,
 				},
 				search: (previous) => previous,
 			});
@@ -135,11 +138,11 @@ const OrdersPage = (): JSX.Element => {
 		onPaginationChange,
 		onSortingChange,
 		pageCount,
-		getRowId: (row): string => row.documentId,
+		getRowId: (row): string => row.id,
 	});
 
 	const handleStatusChange = useCallback(
-		(next: Array<SupplierOrderStatus>): void => {
+		(next: Array<SupplierOrderListStatus>): void => {
 			if (next.length === 0) {
 				updateSearchParameters({ order_status: undefined, page: 1 });
 				return;

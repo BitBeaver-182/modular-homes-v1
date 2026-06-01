@@ -2,7 +2,6 @@ import type {
   SupplierQuoteLineResponse,
   SupplierQuoteListResponse,
   SupplierQuoteResponse,
-  SupplierQuoteStatus,
 } from '@moduflow/types';
 import type { Prisma } from '@prisma/client';
 import {
@@ -20,21 +19,21 @@ export type SupplierQuoteWithRelations = Prisma.SupplierQuoteGetPayload<{
     supplier: { include: { address: true } };
     attachment: true;
     lines: { orderBy: { id: 'asc' } };
+    supplierOrders: {
+      orderBy: { createdAt: 'desc' };
+      take: 1;
+    };
   };
 }>;
 
-function toSupplierQuoteStatus(
+function isSupplierQuoteExpired(
   quote: Pick<SupplierQuoteWithRelations, 'status' | 'validUntil'>,
-): SupplierQuoteStatus {
-  if (
+): boolean {
+  return Boolean(
     quote.status === 'received' &&
     quote.validUntil &&
-    quote.validUntil < startOfUtcToday()
-  ) {
-    return 'expired';
-  }
-
-  return quote.status;
+    quote.validUntil < startOfUtcToday(),
+  );
 }
 
 function toSupplierQuoteLineResponse(
@@ -64,11 +63,18 @@ export async function toSupplierQuoteResponse(
   return {
     id: toApiId(quote.id),
     supplier: toSupplierResponse(quote.supplier),
+    supplierOrder: quote.supplierOrders[0]
+      ? {
+          id: toApiId(quote.supplierOrders[0].id),
+          orderNumber: quote.supplierOrders[0].orderNumber,
+        }
+      : null,
     attachment: quote.attachment
       ? await FileUploadMapper.toResponse(quote.attachment, storageService)
       : null,
     quoteNumber: quote.quoteNumber,
-    status: toSupplierQuoteStatus(quote),
+    status: quote.status,
+    isExpired: isSupplierQuoteExpired(quote),
     quoteDate: toDateOnlyString(quote.quoteDate),
     validUntil: toDateOnlyString(quote.validUntil),
     currencyCode: quote.currencyCode,

@@ -34,6 +34,7 @@ import {
 	type QuotesQueryParams,
 } from "@/routes/$locale.o.$organizationSlug._admin._operations.quotes";
 
+import { QuoteCreateSupplierOrderAlert } from "./components/quote-create-supplier-order-alert";
 import { QuoteDeleteAlert } from "./components/quote-delete-alert";
 import { QuoteFormDialog } from "./components/quote-form-dialog";
 import { QuoteStatusAlert } from "./components/quote-status-alert";
@@ -46,17 +47,17 @@ import { useUpdateQuote } from "./hooks/use-update-quote";
 import { quoteToWriteInput } from "./lib/quote-form";
 import { usePaginationHandler } from "../../hooks/use-pagination-handler";
 import { useSortingHandler } from "../../hooks/use-sorting-handler";
+import { useCreateSupplierOrderFromQuote } from "../supplier-orders-detail/hooks/use-create-supplier-order-from-quote";
 
-import type { QuoteWriteInput } from "./types";
+import type { QuoteFilterStatus, QuoteWriteInput } from "./types";
 import type {
 	SupplierQuoteResponse,
-	SupplierQuoteStatus,
 	SupplierQuoteWritableStatus,
 } from "@moduflow/types";
 
 interface StatusAction {
 	quote: SupplierQuoteResponse;
-	status: Extract<SupplierQuoteStatus, "accepted" | "rejected">;
+	status: Extract<SupplierQuoteWritableStatus, "accepted" | "rejected">;
 }
 
 const QuotesPage = (): JSX.Element => {
@@ -69,6 +70,8 @@ const QuotesPage = (): JSX.Element => {
 	const [editingQuote, setEditingQuote] = useState<SupplierQuoteResponse | null>(null);
 	const [deletingQuote, setDeletingQuote] = useState<SupplierQuoteResponse | null>(null);
 	const [statusAction, setStatusAction] = useState<StatusAction | null>(null);
+	const [supplierOrderQuote, setSupplierOrderQuote] =
+		useState<SupplierQuoteResponse | null>(null);
 
 	const { sorting, onSortingChange } = useSortingHandler({
 		currentParams: searchParams,
@@ -92,6 +95,10 @@ const QuotesPage = (): JSX.Element => {
 		useUpdateQuote(organizationId);
 	const { isPending: isDeleting, mutateAsync: deleteQuote } =
 		useDeleteQuote(organizationId);
+	const {
+		isPending: isCreatingSupplierOrder,
+		mutateAsync: createSupplierOrder,
+	} = useCreateSupplierOrderFromQuote(organizationId);
 
 	const rows = data?.data ?? [];
 	const pagination = data?.meta.pagination;
@@ -122,7 +129,7 @@ const QuotesPage = (): JSX.Element => {
 	]);
 
 	const statusOptions = useMemo(
-		(): Array<{ value: SupplierQuoteStatus; label: string }> => [
+		(): Array<{ value: QuoteFilterStatus; label: string }> => [
 			{ value: "received", label: t("quotes.statusReceived") },
 			{ value: "accepted", label: t("quotes.statusAccepted") },
 			{ value: "rejected", label: t("quotes.statusRejected") },
@@ -140,6 +147,9 @@ const QuotesPage = (): JSX.Element => {
 		},
 		onRequestStatus: (quote, status): void => {
 			setStatusAction({ quote, status });
+		},
+		onCreateSupplierOrder: (quote): void => {
+			setSupplierOrderQuote(quote);
 		},
 	});
 
@@ -196,7 +206,7 @@ const QuotesPage = (): JSX.Element => {
 	};
 
 	const handleStatusChange = useCallback(
-		(next: Array<SupplierQuoteStatus>): void => {
+		(next: Array<QuoteFilterStatus>): void => {
 			if (next.length === 0) {
 				updateSearchParams({ quote_status: undefined, page: 1 });
 				return;
@@ -271,6 +281,12 @@ const QuotesPage = (): JSX.Element => {
 			id: quote.id,
 			input: { ...quoteToWriteInput(quote), status },
 		});
+	};
+
+	const handleCreateSupplierOrder = async (
+		quote: SupplierQuoteResponse
+	): Promise<void> => {
+		await createSupplierOrder({ quoteId: quote.id });
 	};
 
 	return (
@@ -425,6 +441,19 @@ const QuotesPage = (): JSX.Element => {
 				onOpenChange={(open): void => {
 					if (!open) {
 						setStatusAction(null);
+					}
+				}}
+			/>
+
+			<QuoteCreateSupplierOrderAlert
+				key={supplierOrderQuote?.id ?? "none"}
+				loading={isCreatingSupplierOrder}
+				open={!!supplierOrderQuote}
+				quote={supplierOrderQuote}
+				onConfirm={handleCreateSupplierOrder}
+				onOpenChange={(open): void => {
+					if (!open) {
+						setSupplierOrderQuote(null);
 					}
 				}}
 			/>

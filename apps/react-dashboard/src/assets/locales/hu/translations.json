@@ -187,6 +187,7 @@
 		"pdfHint": "Csak 1 PDF, legfeljebb 10MB",
 		"emptyStateTitle": "Meg nincs arajanlat",
 		"emptyStateDescription": "Hozd letre az elso arajanlatod az alabbi gombbal.",
+		"columnSupplierOrder": "Beszallitoi rendeles",
 		"titleAcceptQuote": "Arajanlat elfogadasa",
 		"titleRejectQuote": "Arajanlat elutasitasa",
 		"titleCreateSupplierOrder": "Beszallitoi rendeles letrehozasa",

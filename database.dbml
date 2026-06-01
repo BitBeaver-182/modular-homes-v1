@@ -1,0 +1,1851 @@
+Enum "public"."audit_action" {
+    "create"
+    "update"
+    "delete"
+    "status_change"
+    "document_upload"
+    "payment_recorded"
+    "invoice_created"
+    "reservation_created"
+    "reservation_released"
+    "note_added"
+    "other"
+}
+
+Enum "public"."container_status" {
+    "planned"
+    "assigned"
+    "loaded"
+    "departed"
+    "arrived"
+    "unloaded"
+    "closed"
+}
+
+Enum "public"."customer_order_status" {
+    "draft"
+    "awaiting_deposit"
+    "deposit_paid"
+    "confirmed"
+    "awaiting_stock"
+    "ready_for_delivery"
+    "delivered"
+    "completed"
+    "cancelled"
+    "refunded"
+}
+
+Enum "public"."document_entity_type" {
+    "supplier"
+    "supplier_quote"
+    "supplier_order"
+    "shipment"
+    "container"
+    "house_unit"
+    "lead"
+    "customer"
+    "customer_order"
+    "invoice"
+    "payment"
+    "configuration"
+    "other"
+}
+
+Enum "public"."house_unit_status" {
+    "planned"
+    "ordered"
+    "in_production"
+    "incoming"
+    "in_stock"
+    "reserved"
+    "sold"
+    "delivered"
+    "returned"
+    "damaged"
+    "cancelled"
+}
+
+Enum "public"."house_model_status" {
+    "draft"
+    "active"
+    "inactive"
+    "archived"
+}
+
+Enum "public"."installment_status" {
+    "scheduled"
+    "due"
+    "partially_paid"
+    "paid"
+    "overdue"
+    "cancelled"
+}
+
+Enum "public"."invoice_direction" {
+    "payable"
+    "receivable"
+}
+
+Enum "public"."invoice_status" {
+    "draft"
+    "issued"
+    "partially_paid"
+    "paid"
+    "overdue"
+    "disputed"
+    "cancelled"
+    "void"
+}
+
+Enum "public"."invoice_type" {
+    "supplier_goods"
+    "customer_sale"
+    "logistics"
+    "customs"
+    "storage"
+    "delay_fee"
+    "insurance"
+    "tax"
+    "credit_note"
+    "other"
+}
+
+Enum "public"."lead_status" {
+    "new"
+    "contacted"
+    "qualified"
+    "proposal_sent"
+    "negotiating"
+    "won"
+    "lost"
+    "unresponsive"
+}
+
+Enum "public"."payment_method" {
+    "bank_transfer"
+    "cash"
+    "card"
+    "online"
+    "other"
+}
+
+Enum "public"."payment_status" {
+    "pending"
+    "completed"
+    "failed"
+    "reversed"
+    "refunded"
+}
+
+Enum "public"."reservation_status" {
+    "active"
+    "converted_to_sale"
+    "released"
+    "expired"
+    "cancelled"
+}
+
+Enum "public"."shipment_status" {
+    "planned"
+    "booking_requested"
+    "booked"
+    "at_origin_port"
+    "in_transit"
+    "at_destination_port"
+    "customs_clearance"
+    "delivered"
+    "delayed"
+    "cancelled"
+}
+
+Enum "public"."slot_input_type" {
+    "single_select"
+    "multi_select"
+    "boolean"
+    "quantity"
+    "text"
+}
+
+Enum "public"."supplier_order_status" {
+    "draft"
+    "placed"
+    "confirmed"
+    "in_production"
+    "ready_to_ship"
+    "shipped"
+    "arrived"
+    "closed"
+    "cancelled"
+}
+
+Enum "public"."supplier_quote_status" {
+    "draft"
+    "received"
+    "under_review"
+    "accepted"
+    "rejected"
+    "expired"
+}
+
+Table "public"."organizations" {
+  "id" bigint [pk, not null, increment] // internal org id
+  "name" varchar(500) [not null]
+  "subdomain" varchar(255) [unique, not null]
+  "owner_user_id" bigint [ref: > "public"."app_users"."id"]
+  "base_currency_code" "char(3)" [not null, default: 'EUR']
+  "timezone" varchar(100) [not null, default: 'UTC']
+  "status" varchar(50) [not null, default: 'active'] // active|archived|deleted
+  "archived_at" timestamp
+  "deleted_at" timestamp
+  "deleted_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+  "updated_at" timestamp
+}
+
+Table "public"."organization_identities" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "provider" varchar(50) [not null] // e.g. workos|logto
+  "provider_organization_id" varchar(255) [not null]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_organization_identities_org_id_id"]
+    organization_id [name: "idx_organization_identities_organization_id"]
+    (organization_id, provider) [unique, name: "uq_organization_identities_org_provider"]
+    (provider, provider_organization_id) [unique, name: "uq_organization_identities_provider_org_id"]
+  }
+}
+
+/**
+Note: 
+Tenant isolation is enforced with Postgres Row-Level Security (RLS).
+
+App contract:
+- Every tenant-scoped table includes `organization_id` (FK -> organizations.id)
+- `app_users` is intentionally not tenant-scoped (identity lives globally), but initial policy enforces one-org-per-user via unique membership constraint
+- `permissions` is intentionally global (the permission catalog is shared across all orgs)
+- Auth providers are isolated behind identity tables:
+  - `user_identities` maps auth-provider users -> internal `app_users`
+  - `organization_identities` maps auth-provider orgs -> internal `organizations`
+- The application sets a per-request org context using:
+  SELECT set_config('app.organization_id', '<org_id>', true);
+
+RLS policy template (apply to every tenant-scoped table):
+  ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY tenant_isolation ON <table>
+    USING (organization_id = current_setting('app.organization_id', true))
+    WITH CHECK (organization_id = current_setting('app.organization_id', true));
+
+Notes:
+- Use `set_config(..., true)` (is_local=true) inside a transaction so it clears automatically.
+- For migrations/admin maintenance, use a privileged DB role (table owner) or a dedicated path that sets the org context explicitly.
+- To keep user PII isolated, do not grant the app DB role direct SELECT on `app_users`; query users via `organization_memberships` joins or a security-barrier view.
+
+*/ 
+
+Table "public"."invoice_lines" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "invoice_id" bigint [not null, ref: > "public"."invoices"."id"]
+  "description" text [not null]
+  "quantity" numeric(10,2) [not null, default: 1]
+  "unit_price" numeric(12,2) [not null, default: 0]
+  "tax_rate" numeric(5,2) [default: 0]
+  "line_total" numeric(12,2) [not null, default: 0]
+  "related_house_unit_id" bigint [ref: > "public"."house_units"."id"]
+  "related_supplier_order_line_id" bigint [ref: > "public"."supplier_order_lines"."id"]
+  "related_customer_order_line_id" bigint [ref: > "public"."customer_order_lines"."id"]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_invoice_lines_org_id_id"]
+    invoice_id [name: "idx_invoice_lines_invoice_id"]
+    related_customer_order_line_id [name: "idx_invoice_lines_related_customer_order_line_id"]
+    related_house_unit_id [name: "idx_invoice_lines_related_house_unit_id"]
+    related_supplier_order_line_id [name: "idx_invoice_lines_related_supplier_order_line_id"]
+  }
+}
+
+Table "public"."supplier_orders" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "supplier_id" bigint [not null, ref: > "public"."suppliers"."id"]
+  "supplier_quote_id" bigint [ref: > "public"."supplier_quotes"."id"]
+  "order_number" varchar(500)
+  "supplier_po_number" varchar(500)
+  "status" supplier_order_status [not null, default: 'draft']
+  "order_date" date
+  "confirmed_at" timestamp
+  "expected_ready_date" date
+  "expected_ship_date" date
+  "expected_arrival_date" date
+  "currency_code" "char(3)" [not null, default: 'USD']
+  "subtotal_amount" numeric(12,2) [default: 0]
+  "shipping_amount" numeric(12,2) [default: 0]
+  "tax_amount" numeric(12,2) [default: 0]
+  "total_amount" numeric(12,2) [default: 0]
+  "incoterm" varchar(500)
+  "payment_terms" varchar(500)
+  "loading_port" varchar(500)
+  "destination_port" varchar(500)
+  "notes" text
+  "created_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_supplier_orders_org_id_id"]
+    expected_arrival_date [name: "idx_supplier_orders_expected_arrival_date"]
+    order_date [name: "idx_supplier_orders_order_date"]
+    order_number [name: "idx_supplier_orders_order_number"]
+    (organization_id, order_number) [unique, name: "uq_supplier_orders_org_order_number"]
+    status [name: "idx_supplier_orders_status"]
+    supplier_id [name: "idx_supplier_orders_supplier_id"]
+    supplier_quote_id [name: "idx_supplier_orders_supplier_quote_id"]
+  }
+}
+
+Table "public"."invoices" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "invoice_number" varchar(500) [not null]
+  "direction" invoice_direction [not null]
+  "invoice_type" invoice_type [not null]
+  "status" invoice_status [not null, default: 'draft']
+  "supplier_id" bigint [ref: > "public"."suppliers"."id"]
+  "customer_id" bigint [ref: > "public"."customers"."id"]
+  "logistics_provider_id" bigint [ref: > "public"."logistics_providers"."id"]
+  "supplier_order_id" bigint [ref: > "public"."supplier_orders"."id"]
+  "shipment_id" bigint [ref: > "public"."shipments"."id"]
+  "container_id" bigint [ref: > "public"."containers"."id"]
+  "customer_order_id" bigint [ref: > "public"."customer_orders"."id"]
+  "issue_date" date
+  "due_date" date
+  "currency_code" "char(3)" [not null, default: 'EUR']
+  "exchange_rate_to_base" numeric(16,6)
+  "subtotal_amount" numeric(12,2) [default: 0]
+  "tax_amount" numeric(12,2) [default: 0]
+  "total_amount" numeric(12,2) [not null, default: 0]
+  "amount_paid" numeric(12,2) [not null, default: 0]
+  "balance_due" numeric(12,2) [not null, default: 0]
+  "notes" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_invoices_org_id_id"]
+    (organization_id, invoice_number) [unique, name: "uq_invoices_org_invoice_number"]
+    customer_id [name: "idx_invoices_customer_id"]
+    customer_order_id [name: "idx_invoices_customer_order_id"]
+    direction [name: "idx_invoices_direction"]
+    due_date [name: "idx_invoices_due_date"]
+    invoice_number [name: "idx_invoices_invoice_number"]
+    invoice_type [name: "idx_invoices_invoice_type"]
+    shipment_id [name: "idx_invoices_shipment_id"]
+    status [name: "idx_invoices_status"]
+    supplier_id [name: "idx_invoices_supplier_id"]
+    supplier_order_id [name: "idx_invoices_supplier_order_id"]
+  }
+}
+
+Table "public"."notes" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "entity_type" document_entity_type [not null]
+  "entity_id" bigint [not null]
+  "user_id" bigint [ref: > "public"."app_users"."id"]
+  "body" text [not null]
+  "is_internal" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_notes_org_id_id"]
+    created_at [name: "idx_notes_created_at"]
+    (entity_type, entity_id) [name: "idx_notes_entity_type_entity_id"]
+    user_id [name: "idx_notes_user_id"]
+  }
+}
+
+Table "public"."audit_logs" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "entity_type" document_entity_type [not null]
+  "entity_id" bigint [not null]
+  "action" audit_action [not null]
+  "field_name" varchar(500)
+  "old_value" text
+  "new_value" text
+  "change_summary" text
+  "changed_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "ip_address" varchar(500)
+  "user_agent" text
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_audit_logs_org_id_id"]
+    action [name: "idx_audit_logs_action"]
+    changed_by_user_id [name: "idx_audit_logs_changed_by_user_id"]
+    created_at [name: "idx_audit_logs_created_at"]
+    (entity_type, entity_id) [name: "idx_audit_logs_entity_type_entity_id"]
+  }
+}
+
+Table "public"."slot_options" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "component_slot_id" bigint [not null, ref: > "public"."component_slots"."id"]
+  "code" varchar(500) [not null]
+  "name" varchar(500) [not null]
+  "description" text
+  "price_modifier" numeric(12,2) [not null, default: 0]
+  "cost_modifier" numeric(12,2) [default: 0]
+  "currency_code" "char(3)" [not null, default: 'EUR']
+  "is_default" boolean [not null, default: false]
+  "is_active" boolean [not null, default: true]
+  "specs_json" json
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_slot_options_org_id_id"]
+    component_slot_id [name: "idx_slot_options_component_slot_id"]
+    is_active [name: "idx_slot_options_is_active"]
+    (component_slot_id, code) [unique, name: "idx_slot_options_component_slot_id_code"]
+  }
+}
+
+Table "public"."slot_option_translations" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "slot_option_id" bigint [not null, ref: > "public"."slot_options"."id"]
+  "language_code" varchar(3) [not null]
+  "name" varchar(500) [not null]
+  "description" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_slot_option_translations_org_id_id"]
+    language_code [name: "idx_slot_option_translations_language_code"]
+    slot_option_id [name: "idx_slot_option_translations_slot_option_id"]
+    (slot_option_id, language_code) [unique, name: "idx_slot_option_translations_slot_option_id_language_code"]
+  }
+}
+
+Table "public"."documents" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "entity_type" document_entity_type [not null]
+  "entity_id" bigint [not null]
+  "document_type" varchar(500)
+  "file_name" varchar(500) [not null]
+  "file_url" text [not null]
+  "mime_type" varchar(500)
+  "file_size_bytes" bigint
+  "uploaded_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "uploaded_at" timestamp
+  "notes" text
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_documents_org_id_id"]
+    document_type [name: "idx_documents_document_type"]
+    (entity_type, entity_id) [name: "idx_documents_entity_type_entity_id"]
+    uploaded_at [name: "idx_documents_uploaded_at"]
+  }
+}
+
+Table "public"."product_configurations" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "configuration_code" varchar(500)
+  "name" varchar(500)
+  "source" varchar(500)
+  "calculated_price" numeric(12,2)
+  "calculated_cost" numeric(12,2)
+  "currency_code" "char(3)" [not null, default: 'EUR']
+  "configuration_snapshot_json" json
+  "created_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_product_configurations_org_id_id"]
+    configuration_code [name: "idx_product_configurations_configuration_code"]
+    house_model_id [name: "idx_product_configurations_house_model_id"]
+    (organization_id, configuration_code) [unique, name: "uq_product_configurations_org_configuration_code"]
+  }
+}
+
+Table "public"."container_house_units" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "container_id" bigint [not null, ref: > "public"."containers"."id"]
+  "house_unit_id" bigint [not null, ref: > "public"."house_units"."id"]
+  "position_label" varchar(500)
+  "loaded_at" timestamp
+  "unloaded_at" timestamp
+  "notes" text
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_container_house_units_org_id_id"]
+    container_id [name: "idx_container_house_units_container_id"]
+    house_unit_id [name: "idx_container_house_units_house_unit_id"]
+    (container_id, house_unit_id) [unique, name: "idx_container_house_units_container_id_house_unit_id"]
+  }
+}
+
+Table "public"."customer_order_status_history" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "customer_order_id" bigint [not null, ref: > "public"."customer_orders"."id"]
+  "old_status" customer_order_status
+  "new_status" customer_order_status [not null]
+  "reason" text
+  "changed_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "changed_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_customer_order_status_history_org_id_id"]
+    changed_at [name: "idx_customer_order_status_history_changed_at"]
+    customer_order_id [name: "idx_customer_order_status_history_customer_order_id"]
+  }
+}
+
+Table "public"."house_units" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "unit_code" varchar(500) [not null]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "product_configuration_id" bigint [ref: > "public"."product_configurations"."id"]
+  "supplier_order_id" bigint [ref: > "public"."supplier_orders"."id"]
+  "supplier_order_line_id" bigint [ref: > "public"."supplier_order_lines"."id"]
+  "container_id" bigint [ref: > "public"."containers"."id"]
+  "warehouse_location_id" bigint [ref: > "public"."warehouse_locations"."id"]
+  "serial_number" varchar(500)
+  "supplier_serial_number" varchar(500)
+  "status" house_unit_status [not null, default: 'planned']
+  "expected_arrival_date" date
+  "arrived_at" timestamp
+  "available_at" timestamp
+  "reserved_at" timestamp
+  "sold_at" timestamp
+  "delivered_at" timestamp
+  "cost_amount" numeric(12,2)
+  "sale_price_amount" numeric(12,2)
+  "currency_code" "char(3)" [default: 'EUR']
+  "condition_notes" text
+  "internal_notes" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_house_units_org_id_id"]
+    (organization_id, unit_code) [unique, name: "uq_house_units_org_unit_code"]
+    container_id [name: "idx_house_units_container_id"]
+    expected_arrival_date [name: "idx_house_units_expected_arrival_date"]
+    house_model_id [name: "idx_house_units_house_model_id"]
+    product_configuration_id [name: "idx_house_units_product_configuration_id"]
+    status [name: "idx_house_units_status"]
+    supplier_order_id [name: "idx_house_units_supplier_order_id"]
+    unit_code [name: "idx_house_units_unit_code"]
+    warehouse_location_id [name: "idx_house_units_warehouse_location_id"]
+  }
+}
+
+Table "public"."supplier_quote_lines" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "supplier_quote_id" bigint [not null, ref: > "public"."supplier_quotes"."id"]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "product_configuration_id" bigint [ref: > "public"."product_configurations"."id"]
+  "description" text
+  "quantity" int [not null, default: 1]
+  "unit_cost" numeric(12,2) [not null, default: 0]
+  "line_total" numeric(12,2) [not null, default: 0]
+  "estimated_production_days" int
+  "notes" text
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_supplier_quote_lines_org_id_id"]
+    house_model_id [name: "idx_supplier_quote_lines_house_model_id"]
+    product_configuration_id [name: "idx_supplier_quote_lines_product_configuration_id"]
+    supplier_quote_id [name: "idx_supplier_quote_lines_supplier_quote_id"]
+  }
+}
+
+Table "public"."warehouse_locations" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "name" varchar(500) [not null]
+  "address_line_1" varchar(500)
+  "address_line_2" varchar(500)
+  "city" varchar(500)
+  "state_region" varchar(500)
+  "postal_code" varchar(500)
+  "country_code" "char(2)"
+  "capacity_units" int
+  "notes" text
+  "is_active" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_warehouse_locations_org_id_id"]
+  }
+}
+
+Table "public"."component_slots" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "code" varchar(500) [not null]
+  "label" varchar(500) [not null]
+  "description" text
+  "input_type" slot_input_type [not null, default: 'single_select']
+  "required" boolean [not null, default: true]
+  "allow_custom_option" boolean [not null, default: false]
+  "sort_order" int [not null, default: 0]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_component_slots_org_id_id"]
+    (organization_id, code) [unique, name: "uq_component_slots_org_code"]
+    code [name: "idx_component_slots_code"]
+    sort_order [name: "idx_component_slots_sort_order"]
+  }
+}
+
+Table "public"."component_slot_translations" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "component_slot_id" bigint [not null, ref: > "public"."component_slots"."id"]
+  "language_code" varchar(3) [not null]
+  "label" varchar(500) [not null]
+  "description" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_component_slot_translations_org_id_id"]
+    component_slot_id [name: "idx_component_slot_translations_component_slot_id"]
+    language_code [name: "idx_component_slot_translations_language_code"]
+    (component_slot_id, language_code) [unique, name: "idx_component_slot_translations_component_slot_id_language_code"]
+  }
+}
+
+Table "public"."supplier_quotes" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "supplier_id" bigint [not null, ref: > "public"."suppliers"."id"]
+  "quote_number" varchar(500)
+  "status" supplier_quote_status [not null, default: 'received']
+  "quote_date" date
+  "valid_until" date
+  "currency_code" "char(3)" [not null, default: 'USD']
+  "subtotal_amount" numeric(12,2) [default: 0]
+  "shipping_amount" numeric(12,2) [default: 0]
+  "tax_amount" numeric(12,2) [default: 0]
+  "total_amount" numeric(12,2) [default: 0]
+  "incoterm" varchar(500)
+  "payment_terms" varchar(500)
+  "loading_port" varchar(500)
+  "destination_port" varchar(500)
+  "notes" text
+  "accepted_at" timestamp
+  "rejected_at" timestamp
+  "accepted_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_supplier_quotes_org_id_id"]
+    (organization_id, quote_number) [unique, name: "uq_supplier_quotes_org_quote_number"]
+    quote_date [name: "idx_supplier_quotes_quote_date"]
+    quote_number [name: "idx_supplier_quotes_quote_number"]
+    status [name: "idx_supplier_quotes_status"]
+    supplier_id [name: "idx_supplier_quotes_supplier_id"]
+  }
+}
+
+Table "public"."marketing_campaigns" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "marketing_channel_id" bigint [ref: > "public"."marketing_channels"."id"]
+  "market_id" bigint [ref: > "public"."markets"."id"]
+  "campaign_name" varchar(500) [not null]
+  "campaign_external_id" varchar(500)
+  "utm_source" varchar(500)
+  "utm_medium" varchar(500)
+  "utm_campaign" varchar(500)
+  "utm_content" varchar(500)
+  "utm_term" varchar(500)
+  "start_date" date
+  "end_date" date
+  "budget" numeric(12,2)
+  "currency_code" "char(3)" [default: 'EUR']
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_marketing_campaigns_org_id_id"]
+    campaign_external_id [name: "idx_marketing_campaigns_campaign_external_id"]
+    market_id [name: "idx_marketing_campaigns_market_id"]
+    marketing_channel_id [name: "idx_marketing_campaigns_marketing_channel_id"]
+    utm_campaign [name: "idx_marketing_campaigns_utm_campaign"]
+  }
+}
+
+Table "public"."customers" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "customer_code" varchar(500)
+  "market_id" bigint [ref: > "public"."markets"."id"]
+  "preferred_language_code" varchar(3)
+  "first_name" varchar(500)
+  "last_name" varchar(500)
+  "company_name" varchar(500)
+  "email" varchar(500)
+  "phone" varchar(500)
+  "tax_id" varchar(500)
+  "billing_address_line_1" varchar(500)
+  "billing_address_line_2" varchar(500)
+  "billing_city" varchar(500)
+  "billing_state_region" varchar(500)
+  "billing_postal_code" varchar(500)
+  "billing_country_code" "char(2)"
+  "delivery_address_line_1" varchar(500)
+  "delivery_address_line_2" varchar(500)
+  "delivery_city" varchar(500)
+  "delivery_state_region" varchar(500)
+  "delivery_postal_code" varchar(500)
+  "delivery_country_code" "char(2)"
+  "notes" text
+  "created_from_lead_id" bigint [ref: > "public"."leads"."id"]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_customers_org_id_id"]
+    customer_code [name: "idx_customers_customer_code"]
+    email [name: "idx_customers_email"]
+    market_id [name: "idx_customers_market_id"]
+    phone [name: "idx_customers_phone"]
+    preferred_language_code [name: "idx_customers_preferred_language_code"]
+    (organization_id, customer_code) [unique, name: "uq_customers_org_customer_code"]
+  }
+}
+
+Table "public"."shipments" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "supplier_order_id" bigint [not null, ref: > "public"."supplier_orders"."id"]
+  "logistics_provider_id" bigint [ref: > "public"."logistics_providers"."id"]
+  "shipment_number" varchar(500)
+  "status" shipment_status [not null, default: 'planned']
+  "booking_reference" varchar(500)
+  "vessel_name" varchar(500)
+  "voyage_number" varchar(500)
+  "origin_port" varchar(500)
+  "destination_port" varchar(500)
+  "etd" date
+  "eta" date
+  "actual_departure_date" date
+  "actual_arrival_date" date
+  "customs_clearance_date" date
+  "delivered_at" timestamp
+  "tracking_url" text
+  "notes" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_shipments_org_id_id"]
+    eta [name: "idx_shipments_eta"]
+    logistics_provider_id [name: "idx_shipments_logistics_provider_id"]
+    shipment_number [name: "idx_shipments_shipment_number"]
+    (organization_id, shipment_number) [unique, name: "uq_shipments_org_shipment_number"]
+    status [name: "idx_shipments_status"]
+    supplier_order_id [name: "idx_shipments_supplier_order_id"]
+  }
+}
+
+Table "public"."leads" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "lead_code" varchar(500)
+  "marketing_campaign_id" bigint [ref: > "public"."marketing_campaigns"."id"]
+  "assigned_user_id" bigint [ref: > "public"."app_users"."id"]
+  "market_id" bigint [ref: > "public"."markets"."id"]
+  "preferred_language_code" varchar(3)
+  "first_name" varchar(500)
+  "last_name" varchar(500)
+  "email" varchar(500)
+  "phone" varchar(500)
+  "preferred_contact_method" varchar(500)
+  "status" lead_status [not null, default: 'new']
+  "desired_house_model_id" bigint [ref: > "public"."house_models"."id"]
+  "desired_configuration_id" bigint [ref: > "public"."product_configurations"."id"]
+  "desired_delivery_city" varchar(500)
+  "desired_delivery_country_code" "char(2)"
+  "budget_min" numeric(12,2)
+  "budget_max" numeric(12,2)
+  "expected_purchase_date" date
+  "source_form_url" text
+  "landing_page_url" text
+  "raw_payload_json" json
+  "lost_reason" varchar(500)
+  "notes" text
+  "converted_customer_id" bigint [ref: > "public"."customers"."id"]
+  "converted_at" timestamp
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_leads_org_id_id"]
+    assigned_user_id [name: "idx_leads_assigned_user_id"]
+    desired_house_model_id [name: "idx_leads_desired_house_model_id"]
+    email [name: "idx_leads_email"]
+    lead_code [name: "idx_leads_lead_code"]
+    (organization_id, lead_code) [unique, name: "uq_leads_org_lead_code"]
+    market_id [name: "idx_leads_market_id"]
+    marketing_campaign_id [name: "idx_leads_marketing_campaign_id"]
+    phone [name: "idx_leads_phone"]
+    preferred_language_code [name: "idx_leads_preferred_language_code"]
+    status [name: "idx_leads_status"]
+  }
+}
+
+Table "public"."invoice_installments" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "invoice_id" bigint [not null, ref: > "public"."invoices"."id"]
+  "installment_number" int [not null]
+  "status" installment_status [not null, default: 'scheduled']
+  "due_date" date [not null]
+  "amount_due" numeric(12,2) [not null]
+  "amount_paid" numeric(12,2) [not null, default: 0]
+  "paid_at" timestamp
+  "notes" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_invoice_installments_org_id_id"]
+    due_date [name: "idx_invoice_installments_due_date"]
+    invoice_id [name: "idx_invoice_installments_invoice_id"]
+    status [name: "idx_invoice_installments_status"]
+    (invoice_id, installment_number) [unique, name: "idx_invoice_installments_invoice_id_installment_number"]
+  }
+}
+
+Table "public"."lead_activities" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "lead_id" bigint [not null, ref: > "public"."leads"."id"]
+  "user_id" bigint [ref: > "public"."app_users"."id"]
+  "activity_type" varchar(500)
+  "subject" varchar(500)
+  "body" text
+  "scheduled_at" timestamp
+  "completed_at" timestamp
+  "next_follow_up_at" timestamp
+  "outcome" varchar(500)
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_lead_activities_org_id_id"]
+    activity_type [name: "idx_lead_activities_activity_type"]
+    lead_id [name: "idx_lead_activities_lead_id"]
+    next_follow_up_at [name: "idx_lead_activities_next_follow_up_at"]
+    scheduled_at [name: "idx_lead_activities_scheduled_at"]
+    user_id [name: "idx_lead_activities_user_id"]
+  }
+}
+
+Table "public"."expenses" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "supplier_order_id" bigint [ref: > "public"."supplier_orders"."id"]
+  "shipment_id" bigint [ref: > "public"."shipments"."id"]
+  "container_id" bigint [ref: > "public"."containers"."id"]
+  "house_unit_id" bigint [ref: > "public"."house_units"."id"]
+  "invoice_id" bigint [ref: > "public"."invoices"."id"]
+  "expense_type" varchar(500)
+  "description" text
+  "expense_date" date
+  "currency_code" "char(3)" [not null, default: 'EUR']
+  "amount" numeric(12,2) [not null]
+  "allocated_to_inventory" boolean [not null, default: false]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_expenses_org_id_id"]
+    container_id [name: "idx_expenses_container_id"]
+    expense_date [name: "idx_expenses_expense_date"]
+    expense_type [name: "idx_expenses_expense_type"]
+    house_unit_id [name: "idx_expenses_house_unit_id"]
+    invoice_id [name: "idx_expenses_invoice_id"]
+    shipment_id [name: "idx_expenses_shipment_id"]
+    supplier_order_id [name: "idx_expenses_supplier_order_id"]
+  }
+}
+
+Table "public"."payments" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "payment_reference" varchar(500)
+  "direction" invoice_direction [not null]
+  "status" payment_status [not null, default: 'pending']
+  "payment_method" payment_method [not null, default: 'bank_transfer']
+  "paid_by_customer_id" bigint [ref: > "public"."customers"."id"]
+  "paid_to_supplier_id" bigint [ref: > "public"."suppliers"."id"]
+  "paid_to_logistics_provider_id" bigint [ref: > "public"."logistics_providers"."id"]
+  "payment_date" date
+  "currency_code" "char(3)" [not null, default: 'EUR']
+  "amount" numeric(12,2) [not null]
+  "bank_account" varchar(500)
+  "transaction_id" varchar(500)
+  "notes" text
+  "recorded_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_payments_org_id_id"]
+    direction [name: "idx_payments_direction"]
+    paid_by_customer_id [name: "idx_payments_paid_by_customer_id"]
+    paid_to_supplier_id [name: "idx_payments_paid_to_supplier_id"]
+    payment_date [name: "idx_payments_payment_date"]
+    payment_reference [name: "idx_payments_payment_reference"]
+    (organization_id, payment_reference) [unique, name: "uq_payments_org_payment_reference"]
+    status [name: "idx_payments_status"]
+  }
+}
+
+Table "public"."payment_allocations" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "allocation_reference" varchar(255) [not null]
+  "payment_id" bigint [not null, ref: > "public"."payments"."id"]
+  "invoice_id" bigint [not null, ref: > "public"."invoices"."id"]
+  "invoice_installment_id" bigint [ref: > "public"."invoice_installments"."id"]
+  "allocated_amount" numeric(12,2) [not null]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_payment_allocations_org_id_id"]
+    (organization_id, allocation_reference) [unique, name: "uq_payment_allocations_org_allocation_reference"]
+    invoice_id [name: "idx_payment_allocations_invoice_id"]
+    invoice_installment_id [name: "idx_payment_allocations_invoice_installment_id"]
+    payment_id [name: "idx_payment_allocations_payment_id"]
+    (payment_id, invoice_id, invoice_installment_id) [name: "idx_payment_allocations_payment_id_invoice_id_invoice_installment_id"]
+  }
+}
+
+Table "public"."configuration_options" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "product_configuration_id" bigint [not null, ref: > "public"."product_configurations"."id"]
+  "component_slot_id" bigint [not null, ref: > "public"."component_slots"."id"]
+  "slot_option_id" bigint [ref: > "public"."slot_options"."id"]
+  "custom_label" varchar(500)
+  "custom_specs_json" json
+  "quantity" int [not null, default: 1]
+  "unit_price_modifier" numeric(12,2) [default: 0]
+  "unit_cost_modifier" numeric(12,2) [default: 0]
+  "notes" text
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_configuration_options_org_id_id"]
+    component_slot_id [name: "idx_configuration_options_component_slot_id"]
+    product_configuration_id [name: "idx_configuration_options_product_configuration_id"]
+    (product_configuration_id, component_slot_id, slot_option_id) [name: "idx_configuration_options_product_configuration_id_component_slot_id_slot_option_id"]
+    slot_option_id [name: "idx_configuration_options_slot_option_id"]
+  }
+}
+
+Table "public"."app_users" {
+  "id" bigint [pk, not null, increment]
+  "full_name" varchar(500) [not null]
+  "email" varchar(500) [unique, not null]
+  "is_active" boolean [not null, default: true]
+  "last_login_at" timestamp
+  "created_at" timestamp
+  "updated_at" timestamp
+}
+
+Table "public"."user_identities" {
+  "id" bigint [pk, not null, increment]
+  "user_id" bigint [not null, ref: > "public"."app_users"."id"]
+  "provider" varchar(50) [not null] // e.g. workos|logto
+  "provider_user_id" varchar(255) [not null]
+  "provider_email" varchar(500)
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    user_id [name: "idx_user_identities_user_id"]
+    (provider, provider_user_id) [unique, name: "uq_user_identities_provider_user_id"]
+    (user_id, provider) [unique, name: "uq_user_identities_user_provider"]
+  }
+}
+
+Table "public"."organization_memberships" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "user_id" bigint [not null, ref: > "public"."app_users"."id"]
+  "role_id" bigint [ref: > "public"."roles"."id"]
+  "status" varchar(50) [not null, default: 'active'] // active|invited|suspended
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_organization_memberships_org_id_id"]
+    user_id [unique, name: "uq_organization_memberships_user_id"]
+  }
+}
+
+Table "public"."roles" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "name" varchar(255) [not null]
+  "description" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_roles_org_id_id"]
+    (organization_id, name) [unique, name: "uq_roles_org_name"]
+  }
+}
+
+Table "public"."permissions" {
+  "id" bigint [pk, not null, increment]
+  "key" varchar(255) [not null] // e.g. 'catalog.manage'
+  "description" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    key [unique, name: "uq_permissions_key"]
+  }
+}
+
+Table "public"."role_permissions" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "role_id" bigint [not null, ref: > "public"."roles"."id"]
+  "permission_id" bigint [not null, ref: > "public"."permissions"."id"]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_role_permissions_org_id_id"]
+    role_id [name: "idx_role_permissions_role_id"]
+    permission_id [name: "idx_role_permissions_permission_id"]
+    (organization_id, role_id, permission_id) [unique, name: "uq_role_permissions_org_role_permission_id"]
+  }
+}
+
+Table "public"."organization_invites" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "email" varchar(500) [not null]
+  "role_id" bigint [ref: > "public"."roles"."id"]
+  "token" varchar(255) [unique, not null]
+  "expires_at" timestamp [not null]
+  "accepted_at" timestamp
+  "created_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_organization_invites_org_id_id"]
+    email [name: "idx_organization_invites_email"]
+    (organization_id, email) [unique, name: "uq_organization_invites_org_email"]
+  }
+}
+
+Table "public"."api_keys" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "name" varchar(255) [not null]
+  "key_prefix" varchar(32) [not null] // e.g. mk_live_....
+  "key_hash" varchar(255) [not null]   // store hash, never raw key
+  "created_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "last_used_at" timestamp
+  "revoked_at" timestamp
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_api_keys_org_id_id"]
+    (organization_id, name) [unique, name: "uq_api_keys_org_name"]
+    key_prefix [unique, name: "uq_api_keys_key_prefix"]
+  }
+}
+
+Table "public"."idempotency_keys" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "idempotency_key" varchar(255) [not null]
+  "request_hash" varchar(255)
+  "response_status_code" int
+  "response_body_json" jsonb
+  "created_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+  "expires_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_idempotency_keys_org_id_id"]
+    (organization_id, idempotency_key) [unique, name: "uq_idempotency_keys_org_key"]
+    expires_at [name: "idx_idempotency_keys_expires_at"]
+  }
+}
+
+Table "public"."outbox_events" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "aggregate_type" varchar(100) [not null]
+  "aggregate_id" bigint [not null]
+  "event_type" varchar(255) [not null]
+  "payload_json" jsonb [not null]
+  "idempotency_key_id" bigint [ref: > "public"."idempotency_keys"."id"]
+  "status" varchar(50) [not null, default: 'pending'] // pending|processing|processed|failed
+  "attempt_count" int [not null, default: 0]
+  "next_attempt_at" timestamp
+  "processed_at" timestamp
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_outbox_events_org_id_id"]
+    (organization_id, status, next_attempt_at) [name: "idx_outbox_events_org_status_next_attempt_at"]
+    event_type [name: "idx_outbox_events_event_type"]
+  }
+}
+
+Table "public"."plans" {
+  "id" bigint [pk, not null, increment]
+  "code" varchar(100) [unique, not null]
+  "name" varchar(255) [not null]
+  "billing_interval" varchar(50) [not null] // monthly|yearly|custom
+  "price_amount" numeric(12,2) [not null, default: 0]
+  "currency_code" "char(3)" [not null, default: 'EUR']
+  "is_active" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+}
+
+Table "public"."plan_features" {
+  "id" bigint [pk, not null, increment]
+  "plan_id" bigint [not null, ref: > "public"."plans"."id"]
+  "feature_key" varchar(100) [not null]
+  "limit_value" bigint
+  "is_enabled" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (plan_id, feature_key) [unique, name: "uq_plan_features_plan_feature_key"]
+  }
+}
+
+Table "public"."organization_subscriptions" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "plan_id" bigint [not null, ref: > "public"."plans"."id"]
+  "provider" varchar(50) // stripe|paddle|manual
+  "provider_subscription_id" varchar(255)
+  "status" varchar(50) [not null, default: 'trialing'] // trialing|active|past_due|canceled|paused
+  "starts_at" timestamp [not null]
+  "trial_ends_at" timestamp
+  "current_period_start" timestamp
+  "current_period_end" timestamp
+  "canceled_at" timestamp
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_organization_subscriptions_org_id_id"]
+    (organization_id, status) [name: "idx_organization_subscriptions_org_status"]
+    provider_subscription_id [name: "idx_organization_subscriptions_provider_subscription_id"]
+  }
+}
+
+Table "public"."feature_entitlements" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "feature_key" varchar(100) [not null]
+  "limit_value" bigint
+  "is_enabled" boolean [not null, default: true]
+  "source" varchar(50) [not null, default: 'subscription'] // subscription|manual|promo
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_feature_entitlements_org_id_id"]
+    (organization_id, feature_key) [unique, name: "uq_feature_entitlements_org_feature_key"]
+  }
+}
+
+Table "public"."usage_counters" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "metric_key" varchar(100) [not null]
+  "window_start" timestamp [not null]
+  "window_end" timestamp [not null]
+  "quantity" bigint [not null, default: 0]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_usage_counters_org_id_id"]
+    (organization_id, metric_key, window_start, window_end) [unique, name: "uq_usage_counters_org_metric_window"]
+  }
+}
+
+Table "public"."ledger_accounts" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "code" varchar(100) [not null]
+  "name" varchar(255) [not null]
+  "account_type" varchar(50) [not null] // asset|liability|equity|revenue|expense
+  "currency_code" "char(3)"
+  "is_active" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_ledger_accounts_org_id_id"]
+    (organization_id, code) [unique, name: "uq_ledger_accounts_org_code"]
+  }
+}
+
+Table "public"."ledger_entries" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "entry_number" varchar(100) [not null]
+  "entry_date" date [not null]
+  "currency_code" "char(3)" [not null]
+  "description" text
+  "source_type" varchar(50) // invoice|payment|manual_adjustment
+  "source_id" bigint
+  "posted_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_ledger_entries_org_id_id"]
+    (organization_id, entry_number) [unique, name: "uq_ledger_entries_org_entry_number"]
+    entry_date [name: "idx_ledger_entries_entry_date"]
+  }
+}
+
+Table "public"."ledger_entry_lines" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "ledger_entry_id" bigint [not null, ref: > "public"."ledger_entries"."id"]
+  "ledger_account_id" bigint [not null, ref: > "public"."ledger_accounts"."id"]
+  "debit_amount" numeric(12,2) [not null, default: 0]
+  "credit_amount" numeric(12,2) [not null, default: 0]
+  "description" text
+  "invoice_id" bigint [ref: > "public"."invoices"."id"]
+  "payment_id" bigint [ref: > "public"."payments"."id"]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_ledger_entry_lines_org_id_id"]
+    ledger_account_id [name: "idx_ledger_entry_lines_ledger_account_id"]
+    ledger_entry_id [name: "idx_ledger_entry_lines_ledger_entry_id"]
+  }
+}
+
+Table "public"."shipment_tracking_events" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "shipment_id" bigint [ref: > "public"."shipments"."id"]
+  "container_id" bigint [ref: > "public"."containers"."id"]
+  "event_type" varchar(500)
+  "event_location" varchar(500)
+  "event_time" timestamp
+  "source" varchar(500)
+  "description" text
+  "created_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_shipment_tracking_events_org_id_id"]
+    container_id [name: "idx_shipment_tracking_events_container_id"]
+    event_time [name: "idx_shipment_tracking_events_event_time"]
+    event_type [name: "idx_shipment_tracking_events_event_type"]
+    shipment_id [name: "idx_shipment_tracking_events_shipment_id"]
+  }
+}
+
+Table "public"."containers" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "shipment_id" bigint [ref: > "public"."shipments"."id"]
+  "supplier_order_id" bigint [not null, ref: > "public"."supplier_orders"."id"]
+  "container_number" varchar(500)
+  "seal_number" varchar(500)
+  "container_type" varchar(500)
+  "status" container_status [not null, default: 'planned']
+  "loaded_at" timestamp
+  "departed_at" timestamp
+  "arrived_at" timestamp
+  "unloaded_at" timestamp
+  "storage_location" varchar(500)
+  "notes" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_containers_org_id_id"]
+    container_number [name: "idx_containers_container_number"]
+    shipment_id [name: "idx_containers_shipment_id"]
+    status [name: "idx_containers_status"]
+    supplier_order_id [name: "idx_containers_supplier_order_id"]
+  }
+}
+
+Table "public"."suppliers" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "company_name" varchar(500) [not null]
+  "legal_name" varchar(500)
+  "tax_id" varchar(500)
+  "contact_name" varchar(500)
+  "email" varchar(500)
+  "phone" varchar(500)
+  "website" varchar(500)
+  "address_line_1" varchar(500)
+  "address_line_2" varchar(500)
+  "city" varchar(500)
+  "state_region" varchar(500)
+  "postal_code" varchar(500)
+  "country_code" "char(2)"
+  "default_loading_port" varchar(500)
+  "default_payment_terms" varchar(500)
+  "default_incoterm" varchar(500)
+  "notes" text
+  "is_active" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_suppliers_org_id_id"]
+    company_name [name: "idx_suppliers_company_name"]
+    email [name: "idx_suppliers_email"]
+    is_active [name: "idx_suppliers_is_active"]
+  }
+}
+
+Table "public"."supplier_order_lines" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "supplier_order_id" bigint [not null, ref: > "public"."supplier_orders"."id"]
+  "supplier_quote_line_id" bigint [ref: > "public"."supplier_quote_lines"."id"]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "product_configuration_id" bigint [ref: > "public"."product_configurations"."id"]
+  "description" text
+  "quantity" int [not null, default: 1]
+  "unit_cost" numeric(12,2) [not null, default: 0]
+  "line_total" numeric(12,2) [not null, default: 0]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_supplier_order_lines_org_id_id"]
+    house_model_id [name: "idx_supplier_order_lines_house_model_id"]
+    product_configuration_id [name: "idx_supplier_order_lines_product_configuration_id"]
+    supplier_order_id [name: "idx_supplier_order_lines_supplier_order_id"]
+  }
+}
+
+Table "public"."inventory_reservations" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "reservation_code" varchar(500)
+  "house_unit_id" bigint [ref: > "public"."house_units"."id"]
+  "active_house_unit_lock_id" bigint // set to house_unit_id only while reservation is active
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "product_configuration_id" bigint [ref: > "public"."product_configurations"."id"]
+  "lead_id" bigint [ref: > "public"."leads"."id"]
+  "customer_id" bigint [ref: > "public"."customers"."id"]
+  "customer_order_line_id" bigint [ref: > "public"."customer_order_lines"."id"]
+  "market_id" bigint [ref: > "public"."markets"."id"]
+  "status" reservation_status [not null, default: 'active']
+  "quantity" int [not null, default: 1]
+  "reserved_until" date
+  "deposit_required_amount" numeric(12,2)
+  "deposit_received_amount" numeric(12,2) [default: 0]
+  "priority" int [default: 1]
+  "notes" text
+  "created_by_user_id" bigint [ref: > "public"."app_users"."id"]
+  "created_at" timestamp
+  "updated_at" timestamp
+  "released_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_inventory_reservations_org_id_id"]
+    (organization_id, active_house_unit_lock_id) [unique, name: "uq_inventory_reservations_org_active_house_unit_lock_id"]
+    customer_id [name: "idx_inventory_reservations_customer_id"]
+    customer_order_line_id [name: "idx_inventory_reservations_customer_order_line_id"]
+    house_model_id [name: "idx_inventory_reservations_house_model_id"]
+    house_unit_id [name: "idx_inventory_reservations_house_unit_id"]
+    lead_id [name: "idx_inventory_reservations_lead_id"]
+    market_id [name: "idx_inventory_reservations_market_id"]
+    product_configuration_id [name: "idx_inventory_reservations_product_configuration_id"]
+    reservation_code [name: "idx_inventory_reservations_reservation_code"]
+    (organization_id, reservation_code) [unique, name: "uq_inventory_reservations_org_reservation_code"]
+    reserved_until [name: "idx_inventory_reservations_reserved_until"]
+    status [name: "idx_inventory_reservations_status"]
+  }
+}
+
+Table "public"."lead_interests" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "lead_id" bigint [not null, ref: > "public"."leads"."id"]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "product_configuration_id" bigint [ref: > "public"."product_configurations"."id"]
+  "quantity" int [not null, default: 1]
+  "target_price" numeric(12,2)
+  "priority" int [default: 1]
+  "notes" text
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_lead_interests_org_id_id"]
+    house_model_id [name: "idx_lead_interests_house_model_id"]
+    lead_id [name: "idx_lead_interests_lead_id"]
+    product_configuration_id [name: "idx_lead_interests_product_configuration_id"]
+  }
+}
+
+Table "public"."house_model_slots" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "component_slot_id" bigint [not null, ref: > "public"."component_slots"."id"]
+  "required_override" boolean
+  "sort_order_override" int
+  "min_qty" int [default: 1]
+  "max_qty" int [default: 1]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_house_model_slots_org_id_id"]
+    component_slot_id [name: "idx_house_model_slots_component_slot_id"]
+    house_model_id [name: "idx_house_model_slots_house_model_id"]
+    (house_model_id, component_slot_id) [unique, name: "idx_house_model_slots_house_model_id_component_slot_id"]
+  }
+}
+
+Table "public"."house_models" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "sku" varchar(500) [not null]
+  "name" varchar(500) [not null]
+  "slug" varchar(500)
+  "size_label" varchar(500)
+  "description" text
+  "base_price" numeric(12,2) [not null, default: 0]
+  "promo_price" numeric(12,2)
+  "currency_code" "char(3)" [not null, default: 'EUR']
+  "weight_kg" numeric(10,2)
+  "status" house_model_status [not null, default: 'draft']
+  "is_configurable" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+  "external_dimension" jsonb // structured dimension payload (e.g. width/length/height + unit)
+  "internal_dimension" jsonb // structured dimension payload (e.g. usable width/length/height + unit)
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_house_models_org_id_id"]
+    name [name: "idx_house_models_name"]
+    sku [name: "idx_house_models_sku"]
+    (organization_id, sku) [unique, name: "uq_house_models_org_sku"]
+    (organization_id, slug) [unique, name: "uq_house_models_org_slug"]
+    status [name: "idx_house_models_status"]
+  }
+}
+
+Table "public"."house_model_translations" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "language_code" varchar(3) [not null]
+  "name" varchar(500) [not null]
+  "slug" varchar(500)
+  "description" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_house_model_translations_org_id_id"]
+    house_model_id [name: "idx_house_model_translations_house_model_id"]
+    language_code [name: "idx_house_model_translations_language_code"]
+    (house_model_id, language_code) [unique, name: "idx_house_model_translations_house_model_id_language_code"]
+  }
+}
+
+Table "public"."market_house_prices" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "market_id" bigint [not null, ref: > "public"."markets"."id"]
+  "currency_code" "char(3)" [not null]
+  "base_price" numeric(12,2) [not null, default: 0]
+  "promo_price" numeric(12,2)
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_market_house_prices_org_id_id"]
+    house_model_id [name: "idx_market_house_prices_house_model_id"]
+    market_id [name: "idx_market_house_prices_market_id"]
+    (house_model_id, market_id) [unique, name: "idx_market_house_prices_house_model_id_market_id"]
+  }
+}
+
+Table "public"."market_house_models" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "market_id" bigint [not null, ref: > "public"."markets"."id"]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "is_available" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_market_house_models_org_id_id"]
+    house_model_id [name: "idx_market_house_models_house_model_id"]
+    market_id [name: "idx_market_house_models_market_id"]
+    (market_id, house_model_id) [unique, name: "idx_market_house_models_market_id_house_model_id"]
+  }
+}
+
+Table "public"."logistics_providers" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "company_name" varchar(500) [not null]
+  "contact_name" varchar(500)
+  "email" varchar(500)
+  "phone" varchar(500)
+  "website" varchar(500)
+  "notes" text
+  "is_active" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_logistics_providers_org_id_id"]
+  }
+}
+
+Table "public"."customer_order_lines" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "customer_order_id" bigint [not null, ref: > "public"."customer_orders"."id"]
+  "house_model_id" bigint [not null, ref: > "public"."house_models"."id"]
+  "product_configuration_id" bigint [ref: > "public"."product_configurations"."id"]
+  "house_unit_id" bigint [ref: > "public"."house_units"."id"]
+  "inventory_reservation_id" bigint [ref: > "public"."inventory_reservations"."id"]
+  "description" text
+  "quantity" int [not null, default: 1]
+  "unit_price" numeric(12,2) [not null, default: 0]
+  "discount_amount" numeric(12,2) [default: 0]
+  "tax_amount" numeric(12,2) [default: 0]
+  "line_total" numeric(12,2) [not null, default: 0]
+  "configuration_snapshot_json" json
+  "notes" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_customer_order_lines_org_id_id"]
+    (organization_id, house_unit_id) [unique, name: "uq_customer_order_lines_org_house_unit_id"]
+    customer_order_id [name: "idx_customer_order_lines_customer_order_id"]
+    house_model_id [name: "idx_customer_order_lines_house_model_id"]
+    house_unit_id [name: "idx_customer_order_lines_house_unit_id"]
+    inventory_reservation_id [name: "idx_customer_order_lines_inventory_reservation_id"]
+    product_configuration_id [name: "idx_customer_order_lines_product_configuration_id"]
+  }
+}
+
+Table "public"."customer_orders" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "order_number" varchar(500) [not null]
+  "customer_id" bigint [not null, ref: > "public"."customers"."id"]
+  "lead_id" bigint [ref: > "public"."leads"."id"]
+  "assigned_user_id" bigint [ref: > "public"."app_users"."id"]
+  "market_id" bigint [not null, ref: > "public"."markets"."id"]
+  "language_code" varchar(3)
+  "status" customer_order_status [not null, default: 'draft']
+  "order_date" date
+  "confirmed_at" timestamp
+  "required_deposit_percent" numeric(5,2) [not null, default: 50]
+  "required_deposit_amount" numeric(12,2)
+  "deposit_due_date" date
+  "deposit_paid_at" timestamp
+  "currency_code" "char(3)" [not null, default: 'EUR']
+  "subtotal_amount" numeric(12,2) [default: 0]
+  "discount_amount" numeric(12,2) [default: 0]
+  "tax_amount" numeric(12,2) [default: 0]
+  "delivery_amount" numeric(12,2) [default: 0]
+  "total_amount" numeric(12,2) [default: 0]
+  "delivery_address_line_1" varchar(500)
+  "delivery_address_line_2" varchar(500)
+  "delivery_city" varchar(500)
+  "delivery_state_region" varchar(500)
+  "delivery_postal_code" varchar(500)
+  "delivery_country_code" "char(2)"
+  "desired_delivery_date" date
+  "notes" text
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_customer_orders_org_id_id"]
+    (organization_id, order_number) [unique, name: "uq_customer_orders_org_order_number"]
+    assigned_user_id [name: "idx_customer_orders_assigned_user_id"]
+    customer_id [name: "idx_customer_orders_customer_id"]
+    language_code [name: "idx_customer_orders_language_code"]
+    lead_id [name: "idx_customer_orders_lead_id"]
+    market_id [name: "idx_customer_orders_market_id"]
+    order_date [name: "idx_customer_orders_order_date"]
+    order_number [name: "idx_customer_orders_order_number"]
+    status [name: "idx_customer_orders_status"]
+  }
+}
+
+Table "public"."marketing_channels" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "name" varchar(500) [not null]
+  "channel_type" varchar(500)
+  "is_active" boolean [not null, default: true]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_marketing_channels_org_id_id"]
+  }
+}
+
+Table "public"."languages" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "code" varchar(3) [not null]
+  "name" varchar(500) [not null]
+  "is_default" boolean [default: false]
+  "is_active" boolean [default: true]
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_languages_org_id_id"]
+    (organization_id, code) [unique, name: "uq_languages_org_code"]
+  }
+}
+
+Table "public"."markets" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "code" varchar(10) [not null]
+  "name" varchar(500) [not null]
+  "default_language_code" varchar(3) [not null]
+  "currency_code" "char(3)" [not null]
+  "tax_region" varchar(500)
+  "tax_rate" numeric(5,2) [not null, default: 0]
+  "base_shipping_cost" numeric(12,2) [not null, default: 0]
+  "is_active" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_markets_org_id_id"]
+    (organization_id, code) [unique, name: "uq_markets_org_code"]
+    code [name: "idx_markets_code"]
+    currency_code [name: "idx_markets_currency_code"]
+    default_language_code [name: "idx_markets_default_language_code"]
+  }
+}
+
+Table "public"."exchange_rates" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "from_currency_code" "char(3)" [not null]
+  "to_currency_code" "char(3)" [not null]
+  "rate" numeric(16,6) [not null]
+  "effective_at" timestamp [not null]
+  "source" varchar(500)
+  "created_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_exchange_rates_org_id_id"]
+    effective_at [name: "idx_exchange_rates_effective_at"]
+    (from_currency_code, to_currency_code, effective_at) [name: "idx_exchange_rates_pair_effective_at"]
+  }
+}
+
+Table "public"."slot_option_prices" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "slot_option_id" bigint [not null, ref: > "public"."slot_options"."id"]
+  "market_id" bigint [not null, ref: > "public"."markets"."id"]
+  "currency_code" "char(3)" [not null]
+  "price_modifier" numeric(12,2) [not null, default: 0]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_slot_option_prices_org_id_id"]
+    market_id [name: "idx_slot_option_prices_market_id"]
+    slot_option_id [name: "idx_slot_option_prices_slot_option_id"]
+    (slot_option_id, market_id) [unique, name: "idx_slot_option_prices_slot_option_id_market_id"]
+  }
+}
+
+Table "public"."market_configurations" {
+  "organization_id" bigint [not null, ref: > "public"."organizations"."id"]
+  "id" bigint [pk, not null, increment]
+  "product_configuration_id" bigint [not null, ref: > "public"."product_configurations"."id"]
+  "market_id" bigint [not null, ref: > "public"."markets"."id"]
+  "is_available" boolean [not null, default: true]
+  "created_at" timestamp
+  "updated_at" timestamp
+
+  Indexes {
+    (organization_id, id) [unique, name: "uq_market_configurations_org_id_id"]
+    market_id [name: "idx_market_configurations_market_id"]
+    product_configuration_id [name: "idx_market_configurations_product_configuration_id"]
+    (product_configuration_id, market_id) [unique, name: "idx_market_configurations_product_configuration_id_market_id"]
+  }
+}
+
+// Composite tenant foreign keys to prevent cross-organization links
+Ref: invoice_lines.(organization_id, invoice_id) > invoices.(organization_id, id)
+Ref: invoice_lines.(organization_id, related_house_unit_id) > house_units.(organization_id, id)
+Ref: invoice_lines.(organization_id, related_supplier_order_line_id) > supplier_order_lines.(organization_id, id)
+Ref: invoice_lines.(organization_id, related_customer_order_line_id) > customer_order_lines.(organization_id, id)
+
+Ref: supplier_orders.(organization_id, supplier_id) > suppliers.(organization_id, id)
+Ref: supplier_orders.(organization_id, supplier_quote_id) > supplier_quotes.(organization_id, id)
+
+Ref: invoices.(organization_id, supplier_id) > suppliers.(organization_id, id)
+Ref: invoices.(organization_id, customer_id) > customers.(organization_id, id)
+Ref: invoices.(organization_id, logistics_provider_id) > logistics_providers.(organization_id, id)
+Ref: invoices.(organization_id, supplier_order_id) > supplier_orders.(organization_id, id)
+Ref: invoices.(organization_id, shipment_id) > shipments.(organization_id, id)
+Ref: invoices.(organization_id, container_id) > containers.(organization_id, id)
+Ref: invoices.(organization_id, customer_order_id) > customer_orders.(organization_id, id)
+
+Ref: slot_options.(organization_id, component_slot_id) > component_slots.(organization_id, id)
+Ref: slot_option_translations.(organization_id, slot_option_id) > slot_options.(organization_id, id)
+Ref: slot_option_translations.(organization_id, language_code) > languages.(organization_id, code)
+Ref: product_configurations.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: container_house_units.(organization_id, container_id) > containers.(organization_id, id)
+Ref: container_house_units.(organization_id, house_unit_id) > house_units.(organization_id, id)
+Ref: customer_order_status_history.(organization_id, customer_order_id) > customer_orders.(organization_id, id)
+
+Ref: house_units.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: house_units.(organization_id, product_configuration_id) > product_configurations.(organization_id, id)
+Ref: house_units.(organization_id, supplier_order_id) > supplier_orders.(organization_id, id)
+Ref: house_units.(organization_id, supplier_order_line_id) > supplier_order_lines.(organization_id, id)
+Ref: house_units.(organization_id, container_id) > containers.(organization_id, id)
+Ref: house_units.(organization_id, warehouse_location_id) > warehouse_locations.(organization_id, id)
+
+Ref: supplier_quote_lines.(organization_id, supplier_quote_id) > supplier_quotes.(organization_id, id)
+Ref: supplier_quote_lines.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: supplier_quote_lines.(organization_id, product_configuration_id) > product_configurations.(organization_id, id)
+
+Ref: component_slot_translations.(organization_id, component_slot_id) > component_slots.(organization_id, id)
+Ref: component_slot_translations.(organization_id, language_code) > languages.(organization_id, code)
+Ref: supplier_quotes.(organization_id, supplier_id) > suppliers.(organization_id, id)
+Ref: marketing_campaigns.(organization_id, marketing_channel_id) > marketing_channels.(organization_id, id)
+Ref: marketing_campaigns.(organization_id, market_id) > markets.(organization_id, id)
+Ref: customers.(organization_id, market_id) > markets.(organization_id, id)
+Ref: customers.(organization_id, preferred_language_code) > languages.(organization_id, code)
+Ref: customers.(organization_id, created_from_lead_id) > leads.(organization_id, id)
+Ref: shipments.(organization_id, supplier_order_id) > supplier_orders.(organization_id, id)
+Ref: shipments.(organization_id, logistics_provider_id) > logistics_providers.(organization_id, id)
+
+Ref: leads.(organization_id, marketing_campaign_id) > marketing_campaigns.(organization_id, id)
+Ref: leads.(organization_id, market_id) > markets.(organization_id, id)
+Ref: leads.(organization_id, preferred_language_code) > languages.(organization_id, code)
+Ref: leads.(organization_id, desired_house_model_id) > house_models.(organization_id, id)
+Ref: leads.(organization_id, desired_configuration_id) > product_configurations.(organization_id, id)
+Ref: leads.(organization_id, converted_customer_id) > customers.(organization_id, id)
+
+Ref: invoice_installments.(organization_id, invoice_id) > invoices.(organization_id, id)
+Ref: lead_activities.(organization_id, lead_id) > leads.(organization_id, id)
+Ref: expenses.(organization_id, supplier_order_id) > supplier_orders.(organization_id, id)
+Ref: expenses.(organization_id, shipment_id) > shipments.(organization_id, id)
+Ref: expenses.(organization_id, container_id) > containers.(organization_id, id)
+Ref: expenses.(organization_id, house_unit_id) > house_units.(organization_id, id)
+Ref: expenses.(organization_id, invoice_id) > invoices.(organization_id, id)
+
+Ref: payments.(organization_id, paid_by_customer_id) > customers.(organization_id, id)
+Ref: payments.(organization_id, paid_to_supplier_id) > suppliers.(organization_id, id)
+Ref: payments.(organization_id, paid_to_logistics_provider_id) > logistics_providers.(organization_id, id)
+Ref: payment_allocations.(organization_id, payment_id) > payments.(organization_id, id)
+Ref: payment_allocations.(organization_id, invoice_id) > invoices.(organization_id, id)
+Ref: payment_allocations.(organization_id, invoice_installment_id) > invoice_installments.(organization_id, id)
+
+Ref: configuration_options.(organization_id, product_configuration_id) > product_configurations.(organization_id, id)
+Ref: configuration_options.(organization_id, component_slot_id) > component_slots.(organization_id, id)
+Ref: configuration_options.(organization_id, slot_option_id) > slot_options.(organization_id, id)
+Ref: organization_memberships.(organization_id, role_id) > roles.(organization_id, id)
+Ref: role_permissions.(organization_id, role_id) > roles.(organization_id, id)
+Ref: organization_invites.(organization_id, role_id) > roles.(organization_id, id)
+Ref: shipment_tracking_events.(organization_id, shipment_id) > shipments.(organization_id, id)
+Ref: shipment_tracking_events.(organization_id, container_id) > containers.(organization_id, id)
+Ref: containers.(organization_id, shipment_id) > shipments.(organization_id, id)
+Ref: containers.(organization_id, supplier_order_id) > supplier_orders.(organization_id, id)
+
+Ref: supplier_order_lines.(organization_id, supplier_order_id) > supplier_orders.(organization_id, id)
+Ref: supplier_order_lines.(organization_id, supplier_quote_line_id) > supplier_quote_lines.(organization_id, id)
+Ref: supplier_order_lines.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: supplier_order_lines.(organization_id, product_configuration_id) > product_configurations.(organization_id, id)
+
+Ref: inventory_reservations.(organization_id, house_unit_id) > house_units.(organization_id, id)
+Ref: inventory_reservations.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: inventory_reservations.(organization_id, product_configuration_id) > product_configurations.(organization_id, id)
+Ref: inventory_reservations.(organization_id, lead_id) > leads.(organization_id, id)
+Ref: inventory_reservations.(organization_id, customer_id) > customers.(organization_id, id)
+Ref: inventory_reservations.(organization_id, customer_order_line_id) > customer_order_lines.(organization_id, id)
+Ref: inventory_reservations.(organization_id, market_id) > markets.(organization_id, id)
+Ref: lead_interests.(organization_id, lead_id) > leads.(organization_id, id)
+Ref: lead_interests.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: lead_interests.(organization_id, product_configuration_id) > product_configurations.(organization_id, id)
+Ref: house_model_slots.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: house_model_slots.(organization_id, component_slot_id) > component_slots.(organization_id, id)
+Ref: house_model_translations.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: house_model_translations.(organization_id, language_code) > languages.(organization_id, code)
+Ref: market_house_prices.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: market_house_prices.(organization_id, market_id) > markets.(organization_id, id)
+Ref: market_house_models.(organization_id, market_id) > markets.(organization_id, id)
+Ref: market_house_models.(organization_id, house_model_id) > house_models.(organization_id, id)
+
+Ref: customer_order_lines.(organization_id, customer_order_id) > customer_orders.(organization_id, id)
+Ref: customer_order_lines.(organization_id, house_model_id) > house_models.(organization_id, id)
+Ref: customer_order_lines.(organization_id, product_configuration_id) > product_configurations.(organization_id, id)
+Ref: customer_order_lines.(organization_id, house_unit_id) > house_units.(organization_id, id)
+Ref: customer_order_lines.(organization_id, inventory_reservation_id) > inventory_reservations.(organization_id, id)
+Ref: customer_orders.(organization_id, customer_id) > customers.(organization_id, id)
+Ref: customer_orders.(organization_id, lead_id) > leads.(organization_id, id)
+Ref: customer_orders.(organization_id, market_id) > markets.(organization_id, id)
+Ref: customer_orders.(organization_id, language_code) > languages.(organization_id, code)
+Ref: markets.(organization_id, default_language_code) > languages.(organization_id, code)
+Ref: slot_option_prices.(organization_id, slot_option_id) > slot_options.(organization_id, id)
+Ref: slot_option_prices.(organization_id, market_id) > markets.(organization_id, id)
+Ref: market_configurations.(organization_id, product_configuration_id) > product_configurations.(organization_id, id)
+Ref: market_configurations.(organization_id, market_id) > markets.(organization_id, id)
+
+Ref: outbox_events.(organization_id, idempotency_key_id) > idempotency_keys.(organization_id, id)
+Ref: ledger_entry_lines.(organization_id, ledger_entry_id) > ledger_entries.(organization_id, id)
+Ref: ledger_entry_lines.(organization_id, ledger_account_id) > ledger_accounts.(organization_id, id)
+Ref: ledger_entry_lines.(organization_id, invoice_id) > invoices.(organization_id, id)
+Ref: ledger_entry_lines.(organization_id, payment_id) > payments.(organization_id, id)

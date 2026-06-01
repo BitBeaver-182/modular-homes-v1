@@ -49,6 +49,47 @@ enum SupplierQuoteStatus {
   rejected
 }
 
+enum SupplierOrderStatus {
+  draft
+  placed
+  confirmed
+  in_production
+  ready_to_ship
+  shipped
+  arrived
+  closed
+  cancelled
+}
+
+enum InvoiceDirection {
+  payable
+  receivable
+}
+
+enum InvoiceStatus {
+  draft
+  issued
+  partially_paid
+  paid
+  overdue
+  disputed
+  cancelled
+  void
+}
+
+enum InvoiceType {
+  supplier_goods
+  customer_sale
+  logistics
+  customs
+  storage
+  delay_fee
+  insurance
+  tax
+  credit_note
+  other
+}
+
 model User {
   id           BigInt  @id @default(autoincrement())
   email        String  @unique
@@ -63,6 +104,7 @@ model User {
   organizationUsers           OrganizationUser[]
   fileUploads                 FileUpload[]
   statusUpdatedSupplierQuotes SupplierQuote[] @relation("StatusUpdatedSupplierQuotes")
+  createdSupplierOrders       SupplierOrder[] @relation("CreatedSupplierOrders")
 
   @@index([deletedAt])
 }
@@ -83,6 +125,8 @@ model Organization {
   addresses         Address[]
   fileUploads       FileUpload[]
   supplierQuotes    SupplierQuote[]
+  supplierOrders    SupplierOrder[]
+  invoices          Invoice[]
 
   @@index([deletedAt])
 }
@@ -151,6 +195,8 @@ model Supplier {
   organization   Organization   @relation(fields: [organizationId], references: [id])
   address        Address?       @relation(fields: [addressId, organizationId], references: [id, organizationId])
   supplierQuotes SupplierQuote[]
+  supplierOrders SupplierOrder[]
+  invoices       Invoice[]
 
   @@index([organizationId])
   @@index([addressId])
@@ -190,6 +236,7 @@ model SupplierQuote {
   attachment          FileUpload?  @relation(fields: [attachmentId], references: [id])
   statusUpdatedByUser User?        @relation("StatusUpdatedSupplierQuotes", fields: [statusUpdatedByUserId], references: [id])
   lines               SupplierQuoteLine[]
+  supplierOrders      SupplierOrder[]
 
   @@unique([organizationId, id])
   @@index([organizationId, quoteNumber])
@@ -226,6 +273,111 @@ model SupplierQuoteLine {
   @@index([houseModelId])
   @@index([productConfigurationId])
   @@index([supplierQuoteId])
+}
+
+model SupplierOrder {
+  id                  BigInt              @id @default(autoincrement())
+  organizationId      BigInt
+  supplierId          BigInt
+  supplierQuoteId     BigInt?
+  orderNumber         String?
+  supplierPoNumber    String?
+  status              SupplierOrderStatus @default(draft)
+  orderDate           DateTime?
+  confirmedAt         DateTime?
+  expectedReadyDate   DateTime?
+  expectedShipDate    DateTime?
+  expectedArrivalDate DateTime?
+  currencyCode        String              @default("USD") @db.Char(3)
+  subtotalAmount      Decimal             @default(0) @db.Decimal(12, 2)
+  shippingAmount      Decimal             @default(0) @db.Decimal(12, 2)
+  taxAmount           Decimal             @default(0) @db.Decimal(12, 2)
+  totalAmount         Decimal             @default(0) @db.Decimal(12, 2)
+  incoterm            String?
+  paymentTerms        String?
+  loadingPort         String?
+  destinationPort     String?
+  notes               String?
+  createdByUserId     BigInt?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  supplierQuote SupplierQuote? @relation(fields: [supplierQuoteId], references: [id])
+  createdByUser User?          @relation("CreatedSupplierOrders", fields: [createdByUserId], references: [id])
+  lines         SupplierOrderLine[]
+  invoices      Invoice[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, orderNumber])
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([supplierId])
+  @@index([supplierQuoteId])
+  @@index([orderDate])
+  @@index([expectedArrivalDate])
+}
+
+model SupplierOrderLine {
+  id                     BigInt   @id @default(autoincrement())
+  organizationId         BigInt
+  supplierOrderId        BigInt
+  supplierQuoteLineId    BigInt?
+  houseModelId           BigInt?
+  productConfigurationId BigInt?
+  description            String?
+  quantity               Int      @default(1)
+  unitCost               Decimal  @default(0) @db.Decimal(12, 2)
+  lineTotal              Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt              DateTime @default(now())
+
+  supplierOrder SupplierOrder @relation(fields: [supplierOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, id])
+  @@index([organizationId])
+  @@index([supplierOrderId])
+  @@index([supplierQuoteLineId])
+  @@index([houseModelId])
+  @@index([productConfigurationId])
+}
+
+model Invoice {
+  id                 BigInt           @id @default(autoincrement())
+  organizationId     BigInt
+  invoiceNumber      String
+  direction          InvoiceDirection
+  invoiceType        InvoiceType
+  status             InvoiceStatus    @default(draft)
+  supplierId         BigInt?
+  supplierOrderId    BigInt?
+  issueDate          DateTime?
+  dueDate            DateTime?
+  currencyCode       String           @default("EUR") @db.Char(3)
+  exchangeRateToBase Decimal?         @db.Decimal(16, 6)
+  subtotalAmount     Decimal          @default(0) @db.Decimal(12, 2)
+  taxAmount          Decimal          @default(0) @db.Decimal(12, 2)
+  totalAmount        Decimal          @default(0) @db.Decimal(12, 2)
+  amountPaid         Decimal          @default(0) @db.Decimal(12, 2)
+  balanceDue         Decimal          @default(0) @db.Decimal(12, 2)
+  notes              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+  supplier      Supplier?     @relation(fields: [supplierId], references: [id])
+  supplierOrder SupplierOrder? @relation(fields: [supplierOrderId], references: [id])
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, invoiceNumber])
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([supplierId])
+  @@index([supplierOrderId])
+  @@index([direction])
+  @@index([invoiceType])
+  @@index([dueDate])
 }
 
 model OrganizationInvitation {

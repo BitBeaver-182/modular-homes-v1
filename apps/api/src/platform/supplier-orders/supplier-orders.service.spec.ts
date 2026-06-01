@@ -1,0 +1,212 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { Prisma } from '@prisma/client';
+import { SupplierOrdersService } from './supplier-orders.service';
+
+describe('SupplierOrdersService', () => {
+  const prisma = {
+    $transaction: jest.fn(),
+    supplierQuote: {
+      findFirst: jest.fn(),
+    },
+    supplierOrder: {
+      create: jest.fn(),
+      count: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+    },
+  };
+
+  let service: SupplierOrdersService;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    prisma.$transaction.mockImplementation(
+      (callback: (tx: typeof prisma) => unknown) => callback(prisma),
+    );
+    prisma.supplierQuote.findFirst.mockResolvedValue(null);
+    prisma.supplierOrder.findFirst.mockResolvedValue(null);
+    prisma.supplierOrder.findMany.mockResolvedValue([{ id: 1n }]);
+    prisma.supplierOrder.count.mockResolvedValue(1);
+    service = new SupplierOrdersService(prisma as never);
+  });
+
+  it('creates a draft supplier order from an accepted quote', async () => {
+    prisma.supplierQuote.findFirst.mockResolvedValue({
+      id: 12n,
+      organizationId: 4n,
+      supplierId: 8n,
+      status: 'accepted',
+      validUntil: new Date('2099-06-30T00:00:00.000Z'),
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('1000.00'),
+      shippingAmount: new Prisma.Decimal('100.00'),
+      taxAmount: new Prisma.Decimal('50.00'),
+      totalAmount: new Prisma.Decimal('1150.00'),
+      paymentTerms: 'Net 30',
+      notes: 'Ready to order',
+      supplier: null,
+      lines: [
+        {
+          id: 91n,
+          organizationId: 4n,
+          supplierQuoteId: 12n,
+          houseModelId: 15n,
+          productConfigurationId: 19n,
+          description: 'Model A',
+          quantity: 2,
+          unitCost: new Prisma.Decimal('500.00'),
+          lineTotal: new Prisma.Decimal('1000.00'),
+          estimatedProductionDays: null,
+          notes: null,
+          createdAt: new Date('2026-06-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-06-01T00:00:00.000Z'),
+        },
+      ],
+    });
+    prisma.supplierOrder.create.mockResolvedValue({ id: 101n });
+    prisma.supplierOrder.update.mockResolvedValue({ id: 101n });
+
+    await service.create(
+      {
+        userId: 9n,
+        email: 'buyer@example.com',
+        organizationId: 4n,
+        governanceRole: 'member',
+      },
+      { quoteId: '12' },
+    );
+
+    expect(prisma.supplierOrder.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        organizationId: 4n,
+        supplierId: 8n,
+        supplierQuoteId: 12n,
+        status: 'draft',
+        createdByUserId: 9n,
+        currencyCode: 'EUR',
+        lines: {
+          create: [
+            expect.objectContaining({
+              organizationId: 4n,
+              supplierQuoteLineId: 91n,
+              houseModelId: 15n,
+              productConfigurationId: 19n,
+              description: 'Model A',
+              quantity: 2,
+            }),
+          ],
+        },
+      }),
+      select: { id: true },
+    });
+    expect(prisma.supplierOrder.update).toHaveBeenCalledWith({
+      where: { id: 101n },
+      data: { orderNumber: 'SO-000101' },
+      include: expect.any(Object),
+    });
+  });
+
+  it('lists supplier orders with safe filters and sorting', async () => {
+    await service.findAll(4n, {
+      page: 1,
+      limit: 25,
+      search: 'SO-2026',
+      status: ['processing', 'shipped'],
+      supplierIds: ['8'],
+      createdFrom: '2026-06-01',
+      createdTo: '2026-06-30',
+      sortField: 'supplier.name',
+      sortCriteria: 'asc',
+    });
+
+    expect(prisma.supplierOrder.findMany).toHaveBeenCalledWith({
+      where: {
+        organizationId: 4n,
+        AND: [
+          {
+            status: {
+              in: [
+                'placed',
+                'confirmed',
+                'in_production',
+                'ready_to_ship',
+                'shipped',
+              ],
+            },
+          },
+          {
+            supplierId: { in: [8n] },
+          },
+          {
+            createdAt: {
+              gte: new Date('2026-06-01T00:00:00.000Z'),
+              lte: new Date('2026-06-30T23:59:59.999Z'),
+            },
+          },
+          {
+            OR: [
+              { orderNumber: { contains: 'SO-2026', mode: 'insensitive' } },
+              {
+                supplierPoNumber: {
+                  contains: 'SO-2026',
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      orderBy: [{ supplier: { name: 'asc' } }, { id: 'asc' }],
+      skip: 0,
+      take: 25,
+      include: expect.any(Object),
+    });
+  });
+
+  it('searches by numeric id when given a numeric token', async () => {
+    await service.findAll(4n, {
+      search: '42',
+    });
+
+    expect(prisma.supplierOrder.findMany).toHaveBeenCalledWith({
+      where: {
+        organizationId: 4n,
+        AND: [
+          {
+            OR: [
+              { orderNumber: { contains: '42', mode: 'insensitive' } },
+              { supplierPoNumber: { contains: '42', mode: 'insensitive' } },
+              { id: 42n },
+            ],
+          },
+        ],
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      skip: 0,
+      take: 10,
+      include: expect.any(Object),
+    });
+  });
+
+  it('maps delivered filter to arrived and closed persisted statuses', async () => {
+    await service.findAll(4n, {
+      status: ['delivered'],
+    });
+
+    expect(prisma.supplierOrder.findMany).toHaveBeenCalledWith({
+      where: {
+        organizationId: 4n,
+        AND: [
+          {
+            status: { in: ['arrived', 'closed'] },
+          },
+        ],
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      skip: 0,
+      take: 10,
+      include: expect.any(Object),
+    });
+  });
+});

@@ -1,4 +1,3 @@
-import { SUPPLIER_QUOTE_STATUSES } from "@moduflow/types";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -8,9 +7,12 @@ import {
 	numberRangeSchema,
 } from "@/common/validation-schema";
 import QuotesPage from "@/features/quotes";
-import { QUOTE_SORT_FIELDS } from "@/features/quotes/types";
+import {
+	QUOTE_FILTER_STATUSES,
+	QUOTE_SORT_FIELDS,
+} from "@/features/quotes/types";
 
-const quoteStatusSchema = z.enum(SUPPLIER_QUOTE_STATUSES);
+const quoteFilterStatusSchema = z.enum(QUOTE_FILTER_STATUSES);
 const quoteSortSchema = createSortSchema(QUOTE_SORT_FIELDS);
 
 export const tableFiltersSchema = z.object({
@@ -20,7 +22,7 @@ export const tableFiltersSchema = z.object({
 });
 
 const quoteFiltersSchema = z.object({
-	quote_status: z.array(quoteStatusSchema).optional(),
+	quote_status: z.array(quoteFilterStatusSchema).optional(),
 	quoteDate: dateRangeSchema.optional().catch(undefined),
 	// Using flat keys for cleaner URLs as discussed
 	supplier_ids: z.array(z.string()).optional().catch(undefined),

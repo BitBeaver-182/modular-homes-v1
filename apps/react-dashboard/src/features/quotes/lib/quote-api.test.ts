@@ -37,7 +37,7 @@ describe("quote Moduflow API", () => {
 			search: " sq-2026 ",
 			sortBy: "supplier.name",
 			sortOrder: "desc",
-			quote_status: ["received", "expired"],
+			quote_status: ["received", "accepted"],
 			supplier_ids: ["7", "8"],
 			quoteDate: { from: "2026-05-01", to: "2026-05-31" },
 			amount: { min: 1000, max: 5000 },
@@ -46,7 +46,25 @@ describe("quote Moduflow API", () => {
 		await getQuotes(context, params);
 
 		expect(moduflowRequestMock).toHaveBeenCalledWith(
-			"/supplier-quotes?page=2&limit=25&search=sq-2026&sortField=supplier.name&sortCriteria=desc&status=received&status=expired&supplierIds=7&supplierIds=8&quoteDateFrom=2026-05-01&quoteDateTo=2026-05-31&totalAmountMin=1000&totalAmountMax=5000",
+			"/supplier-quotes?page=2&limit=25&search=sq-2026&sortField=supplier.name&sortCriteria=desc&status=received&status=accepted&supplierIds=7&supplierIds=8&quoteDateFrom=2026-05-01&quoteDateTo=2026-05-31&totalAmountMin=1000&totalAmountMax=5000",
+			{
+				headers: { "x-organization-id": "42" },
+				method: "GET",
+			}
+		);
+	});
+
+	it("maps expired as a dedicated backend filter while preserving other statuses", async () => {
+		const params: QuotesQueryParams = {
+			page: 1,
+			pageSize: 10,
+			quote_status: ["expired", "accepted"],
+		};
+
+		await getQuotes(context, params);
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-quotes?page=1&limit=10&status=accepted&isExpired=true",
 			{
 				headers: { "x-organization-id": "42" },
 				method: "GET",

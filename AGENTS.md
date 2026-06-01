@@ -66,7 +66,7 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 | ---------- | ---------------- | ------------------------------------- | -------------------------------------------- | -------------- |
 | 2026-05-30 | System           | Making the same mistake twice         | Check this table before every single output. | v1.0 (Initial) |
 | 2026-05-30 | Git Workflow     | Submitting giant single-commit PRs    | Micro-commit often throughout development.   | v1.0 (Initial) |
-| 2026-05-30 | Logic            | Assuming user intent on vague prompts | Halt and ask for explicit clarification.     | v1.0 (Initial) |
+| 2026-05-30 | Logic            | Assuming user intent on vague prompts | Halt and ask for explicit clarification. [REVISION - 2026-05-31: when a user reports a runtime failure, do not infer likely causes from code paths alone; reproduce the failing request or capture the actual runtime error/log before concluding.] | v1.1 |
 | 2026-05-30 | Upload Storage   | Letting callers branch on public/private buckets or hardcoding bucket names outside storage service | Callers pass file context; `StorageService` owns bucket resolution and public/private URL behavior. | v1.0 |
 | 2026-05-30 | Upload Expiry    | Treating Supabase signed upload URL lifetime as the product contract | Use an app-level 300 second upload window stored in `expiresAt`; cleanup expired pending uploads by `expiresAt`. | v1.0 |
 | 2026-05-30 | Upload Cleanup   | Marking expired uploads `ORPHANED` without deleting the storage object or making it sweepable | Delete the storage object immediately when confirm expires a pending upload, or explicitly keep cleanup responsible for that status. | v1.0 |
@@ -76,6 +76,9 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 | 2026-05-31 | Nest Query DTOs | Using Strapi-style bracket query keys like `sort[field]` as DTO property names | Use explicit validated DTO fields or proper nested DTOs for API query params; keep sortable fields whitelisted in the DTO/service layer. | v1.0 |
 | 2026-05-31 | Service Boundaries | Exposing service dependencies to controllers through getters like `getStorageService()` | The service should own mapping and dependency usage internally; controllers should call service methods, not reach through to internal collaborators. | v1.0 |
 | 2026-05-31 | Update Semantics | Letting optional array updates silently delete existing records when the caller passes an empty array | Define array-update behavior explicitly; `undefined` means untouched, and empty arrays must not clear data unless the contract explicitly supports clearing. | v1.0 |
+| 2026-05-31 | API Debugging | Starting unrelated frontend processes or asking for more reproduction when the user has already provided an API curl | Run the provided API curl against the running backend, capture the actual HTTP response and server/runtime stack, and avoid touching unrelated services unless needed. | v1.0 |
+| 2026-05-31 | Derived State | Reintroducing removed lifecycle values like supplier quote `expired` as persisted or response `status` values | Keep persisted/contract status enums limited to real writable states; expose derived lifecycle state through explicit booleans like `isExpired`. | v1.0 |
+| 2026-06-01 | Frontend Conflict UX | Showing create actions that are expected to fail because a related record already exists | Hide the create action when the related supplier order already exists and show a direct link to the existing order in the list/table instead. | v1.0 |
 
 ---
 
@@ -86,3 +89,6 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 - **Log Entry #3 (Upload Storage Rules):** Added upload-specific storage ownership, expiry, cleanup, and filename validation rules.
 - **Log Entry #4 (Frontend Type + Filter Discipline):** Added rules to avoid local aliases for shared contracts and to test query serialization against the real route filter surface.
 - **Log Entry #5 (DTO + Service Semantics):** Added rules for clean Nest query DTOs, service/controller boundaries, and explicit semantics for optional array updates.
+- **Log Entry #6 (API Debugging Discipline):** Added a rule to use provided API curls directly and avoid unrelated frontend work during backend incident debugging.
+- **Log Entry #7 (Derived State Discipline):** Added a rule to keep derived lifecycle state out of persisted/response status enums.
+- **Log Entry #8 (Frontend Conflict UX):** Added a rule to remove create actions that are known to fail and replace them with links to the existing related record.

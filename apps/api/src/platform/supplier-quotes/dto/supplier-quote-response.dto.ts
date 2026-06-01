@@ -1,5 +1,6 @@
 import type {
   FileUploadResponse as FileUploadContract,
+  SupplierQuoteOrderRef as SupplierQuoteOrderRefContract,
   SupplierQuoteLineResponse as SupplierQuoteLineContract,
   SupplierQuoteListResponse as SupplierQuoteListContract,
   SupplierQuoteResponse as SupplierQuoteContract,
@@ -11,6 +12,20 @@ import { Expose, Type } from 'class-transformer';
 import { createPaginatedResponseDto } from '../../../common/dto/paginated-response.dto';
 import { FileUploadPresenter } from '../../../uploads/presenters/file-upload.presenter';
 import { SupplierResponse } from '../../suppliers/dto/supplier-response.dto';
+
+export class SupplierQuoteOrderRefResponse implements SupplierQuoteOrderRefContract {
+  constructor(partial: SupplierQuoteOrderRefContract) {
+    Object.assign(this, partial);
+  }
+
+  @ApiProperty({ example: '101' })
+  @Expose()
+  id!: string;
+
+  @ApiPropertyOptional({ example: 'SO-000101', nullable: true })
+  @Expose()
+  orderNumber!: string | null;
+}
 
 export class SupplierQuoteLineResponse implements SupplierQuoteLineContract {
   constructor(partial: SupplierQuoteLineContract) {
@@ -76,6 +91,11 @@ export class SupplierQuoteResponse implements SupplierQuoteContract {
   @Type(() => SupplierResponse)
   supplier!: SupplierResponse;
 
+  @ApiPropertyOptional({ type: SupplierQuoteOrderRefResponse, nullable: true })
+  @Expose()
+  @Type(() => SupplierQuoteOrderRefResponse)
+  supplierOrder!: SupplierQuoteOrderRefResponse | null;
+
   @ApiPropertyOptional({ type: FileUploadPresenter, nullable: true })
   @Expose()
   @Type(() => FileUploadPresenter)
@@ -88,6 +108,10 @@ export class SupplierQuoteResponse implements SupplierQuoteContract {
   @ApiProperty({ enum: SUPPLIER_QUOTE_STATUSES })
   @Expose()
   status!: SupplierQuoteStatus;
+
+  @ApiProperty({ example: false })
+  @Expose()
+  isExpired!: boolean;
 
   @ApiPropertyOptional({ example: '2026-05-30', nullable: true })
   @Expose()

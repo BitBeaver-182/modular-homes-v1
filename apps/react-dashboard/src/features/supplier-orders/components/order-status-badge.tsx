@@ -2,15 +2,15 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 
-import type { SupplierOrderStatus } from "../types";
+import type { SupplierOrderListStatus } from "@moduflow/types";
 import type { JSX } from "react";
 
 interface OrderStatusBadgeProps {
-	status: SupplierOrderStatus | null | undefined;
+	status: SupplierOrderListStatus | null | undefined;
 }
 
 const STATUS_VARIANT: Record<
-	SupplierOrderStatus,
+	SupplierOrderListStatus,
 	"default" | "secondary" | "outline" | "destructive"
 > = {
 	draft: "secondary",
