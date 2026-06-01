@@ -3,7 +3,7 @@ import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._ad
 
 import { uploadSupplierDocument } from "./upload-api";
 
-import type { QuoteWriteInput } from "../types";
+import type { QuoteFilterStatus, QuoteWriteInput } from "../types";
 import type {
 	CreateSupplierQuoteRequest,
 	SupplierQuoteResponse,
@@ -86,7 +86,15 @@ export const toQuoteQueryString = (params: QuotesQueryParams): string => {
 		query.set("sortCriteria", params.sortOrder === "asc" ? "asc" : "desc");
 	}
 
-	appendArray(query, "status", params.quote_status);
+	const selectedStatuses = params.quote_status ?? [];
+	const nonExpiredStatuses = selectedStatuses.filter(
+		(status): status is Exclude<QuoteFilterStatus, "expired"> => status !== "expired"
+	);
+
+	appendArray(query, "status", nonExpiredStatuses);
+	if (selectedStatuses.includes("expired")) {
+		query.set("isExpired", "true");
+	}
 	appendArray(query, "supplierIds", params.supplier_ids);
 	appendDateRange(query, params.quoteDate, {
 		from: "quoteDateFrom",

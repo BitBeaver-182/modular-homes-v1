@@ -11,6 +11,15 @@ export const QUOTE_SORT_FIELDS = [
 ] as const;
 export type QuoteSortField = (typeof QUOTE_SORT_FIELDS)[number];
 
+export const QUOTE_FILTER_STATUSES = [
+	"received",
+	"accepted",
+	"rejected",
+	"expired",
+] as const;
+
+export type QuoteFilterStatus = (typeof QUOTE_FILTER_STATUSES)[number];
+
 export interface QuoteWriteInput {
 	supplierId: string;
 	quoteNumber: string;

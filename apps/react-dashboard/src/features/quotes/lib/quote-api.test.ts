@@ -54,6 +54,24 @@ describe("quote Moduflow API", () => {
 		);
 	});
 
+	it("maps expired as a dedicated backend filter while preserving other statuses", async () => {
+		const params: QuotesQueryParams = {
+			page: 1,
+			pageSize: 10,
+			quote_status: ["expired", "accepted"],
+		};
+
+		await getQuotes(context, params);
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-quotes?page=1&limit=10&status=accepted&isExpired=true",
+			{
+				headers: { "x-organization-id": "42" },
+				method: "GET",
+			}
+		);
+	});
+
 	it("omits empty filter values so unavailable filters do not leak into the query", () => {
 		const params = {
 			page: 1,

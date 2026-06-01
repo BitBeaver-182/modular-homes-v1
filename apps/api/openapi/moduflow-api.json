@@ -1990,6 +1990,15 @@
             }
           },
           {
+            "name": "isExpired",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": true,
+              "type": "boolean"
+            }
+          },
+          {
             "name": "supplierIds",
             "required": false,
             "in": "query",

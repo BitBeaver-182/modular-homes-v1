@@ -49,10 +49,9 @@ import { usePaginationHandler } from "../../hooks/use-pagination-handler";
 import { useSortingHandler } from "../../hooks/use-sorting-handler";
 import { useCreateSupplierOrderFromQuote } from "../supplier-orders-detail/hooks/use-create-supplier-order-from-quote";
 
-import type { QuoteWriteInput } from "./types";
+import type { QuoteFilterStatus, QuoteWriteInput } from "./types";
 import type {
 	SupplierQuoteResponse,
-	SupplierQuoteStatus,
 	SupplierQuoteWritableStatus,
 } from "@moduflow/types";
 
@@ -130,10 +129,11 @@ const QuotesPage = (): JSX.Element => {
 	]);
 
 	const statusOptions = useMemo(
-		(): Array<{ value: SupplierQuoteStatus; label: string }> => [
+		(): Array<{ value: QuoteFilterStatus; label: string }> => [
 			{ value: "received", label: t("quotes.statusReceived") },
 			{ value: "accepted", label: t("quotes.statusAccepted") },
 			{ value: "rejected", label: t("quotes.statusRejected") },
+			{ value: "expired", label: t("quotes.statusExpired") },
 		],
 		[t]
 	);
@@ -206,7 +206,7 @@ const QuotesPage = (): JSX.Element => {
 	};
 
 	const handleStatusChange = useCallback(
-		(next: Array<SupplierQuoteStatus>): void => {
+		(next: Array<QuoteFilterStatus>): void => {
 			if (next.length === 0) {
 				updateSearchParams({ quote_status: undefined, page: 1 });
 				return;

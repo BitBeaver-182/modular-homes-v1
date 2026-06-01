@@ -690,7 +690,7 @@ function buildSupplierQuoteWhere(
     parseBigIntId(id, 'supplierId'),
   );
 
-  addStatusFilter(andFilters, query.status ?? []);
+  addStatusFilter(andFilters, query.status ?? [], query.isExpired === true);
 
   if (supplierIds.length > 0) {
     where.supplierId = { in: supplierIds };
@@ -749,22 +749,33 @@ function buildSupplierQuoteWhere(
 function addStatusFilter(
   andFilters: Prisma.SupplierQuoteWhereInput[],
   statuses: SupplierQuoteStatus[],
+  includeExpired: boolean,
 ): void {
-  if (statuses.length === 0) {
+  if (statuses.length === 0 && !includeExpired) {
     return;
   }
 
-  const statusFilters = statuses.map((status) =>
-    status === 'received'
-      ? {
-          status: 'received' as const,
-          OR: [
-            { validUntil: null },
-            { validUntil: { gte: startOfUtcToday() } },
-          ],
-        }
-      : { status },
-  );
+  const statusFilters = [
+    ...statuses.map((status) =>
+      status === 'received'
+        ? {
+            status: 'received' as const,
+            OR: [
+              { validUntil: null },
+              { validUntil: { gte: startOfUtcToday() } },
+            ],
+          }
+        : { status },
+    ),
+    ...(includeExpired
+      ? [
+          {
+            status: 'received' as const,
+            validUntil: { lt: startOfUtcToday() },
+          },
+        ]
+      : []),
+  ];
 
   andFilters.push({
     OR: statusFilters,
