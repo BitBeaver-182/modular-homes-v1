@@ -188,6 +188,24 @@ describe("SupplierOrderDetailPage", () => {
 		).not.toBeNull();
 	});
 
+	it("hides order-line editing controls for terminal order statuses", () => {
+		currentOrder = {
+			...orderFixture,
+			status: "closed",
+		};
+
+		render(<SupplierOrderDetailPage />);
+
+		expect(
+			screen.queryByRole("button", { name: /Add product/i }),
+		).toBeNull();
+		expect(
+			screen.getByText(
+				"Order lines are read-only after the order reaches a terminal status.",
+			),
+		).not.toBeNull();
+	});
+
 	it("falls back to the quote supplier when the direct supplier is missing", () => {
 		currentOrder = {
 			...orderFixture,

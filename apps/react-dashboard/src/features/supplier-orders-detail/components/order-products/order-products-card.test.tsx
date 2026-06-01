@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { toast } from "sonner";
 
 import { OrderProductsCard } from "./order-products-card";
 
@@ -38,6 +39,8 @@ vi.mock("react-i18next", () => ({
 			const translations: Record<string, string> = {
 				"orders.productsTitle": "Products",
 				"orders.productsAddAction": "Add product",
+				"orders.productsEditAction": "Edit line",
+				"orders.productsDeleteAction": "Remove line",
 				"orders.productsEditLineTitle": "Edit product line",
 				"orders.productsAddToOrderTitle": "Add product to order",
 				"orders.productsFieldProduct": "Product",
@@ -55,10 +58,12 @@ vi.mock("react-i18next", () => ({
 				"orders.productsRemoveDescription": "Remove this product line from the order?",
 				"orders.productsRemoveAction": "Remove product",
 				"orders.productsToastCompleteFields": "Please complete all product fields.",
+				"orders.productsToastQuantityWholeNumber": "Quantity must be a whole number.",
 				"orders.productsToastPriceQtyPositive": "Price and quantity must be greater than zero.",
 				"orders.productsToastUpdated": "Product updated.",
 				"orders.productsToastAdded": "Product added to order.",
 				"orders.productsToastRemoved": "Product removed from order.",
+				"orders.productsLockedDescription": "Order lines are read-only after the order reaches a terminal status.",
 				"orders.notApplicable": "—",
 				"orders.save": "Save",
 				"common.cancel": "Cancel",
@@ -76,6 +81,7 @@ describe("OrderProductsCard", () => {
 		render(
 			<OrderProductsCard
 				currency="EUR"
+				editable
 				mutating={false}
 				orderLines={[lineFixture]}
 				onSaveOrderLines={onSaveOrderLines}
@@ -106,7 +112,7 @@ describe("OrderProductsCard", () => {
 
 		onSaveOrderLines.mockClear();
 
-		await user.click(screen.getAllByRole("button")[1]!);
+		await user.click(screen.getByRole("button", { name: "Edit line" }));
 		const productInput = screen.getByPlaceholderText("Product");
 		await user.clear(productInput);
 		await user.type(productInput, "Updated line");
@@ -131,11 +137,56 @@ describe("OrderProductsCard", () => {
 
 		onSaveOrderLines.mockClear();
 
-		await user.click(screen.getAllByRole("button")[2]!);
+		await user.click(screen.getByRole("button", { name: "Remove line" }));
 		await user.click(screen.getByText("Remove product"));
 
 		await waitFor(() => {
 			expect(onSaveOrderLines).toHaveBeenCalledWith([]);
 		});
+	});
+
+	it("rejects decimal quantities before saving", async () => {
+		const user = userEvent.setup();
+		const onSaveOrderLines = vi.fn().mockResolvedValue(undefined);
+
+		render(
+			<OrderProductsCard
+				currency="EUR"
+				editable
+				mutating={false}
+				orderLines={[]}
+				onSaveOrderLines={onSaveOrderLines}
+			/>,
+		);
+
+		await user.click(screen.getByText("Add product"));
+		await user.type(screen.getByPlaceholderText("Product"), "Decimal line");
+		await user.type(screen.getByPlaceholderText("Quantity"), "1.5");
+		await user.type(screen.getByPlaceholderText("Unit price (EUR)"), "250");
+		await user.click(screen.getByText("Save"));
+
+		expect(onSaveOrderLines).not.toHaveBeenCalled();
+		expect(toast.error).toHaveBeenCalledWith("Quantity must be a whole number.");
+	});
+
+	it("renders order lines as read-only when editing is disabled", () => {
+		render(
+			<OrderProductsCard
+				currency="EUR"
+				editable={false}
+				mutating={false}
+				orderLines={[lineFixture]}
+				onSaveOrderLines={vi.fn()}
+			/>,
+		);
+
+		expect(screen.queryByText("Add product")).toBeNull();
+		expect(screen.queryByRole("button", { name: "Edit line" })).toBeNull();
+		expect(screen.queryByRole("button", { name: "Remove line" })).toBeNull();
+		expect(
+			screen.getByText(
+				"Order lines are read-only after the order reaches a terminal status.",
+			),
+		).not.toBeNull();
 	});
 });

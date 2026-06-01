@@ -20,6 +20,13 @@ import { OrderInvoicesCard } from "./components/order-invoices";
 import { OrderProductsCard } from "./components/order-products/order-products-card";
 import { OrderSidebar } from "./components/order-sidebar";
 
+const TERMINAL_ORDER_STATUSES = new Set([
+	"shipped",
+	"arrived",
+	"closed",
+	"cancelled",
+]);
+
 const getDisplaySupplierName = (order: {
 	supplier: { name: string } | null;
 	quote: { supplier: { name: string } | null } | null;
@@ -84,6 +91,7 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 	}
 
 	const supplierName = getDisplaySupplierName(order) ?? t("orders.unknownSupplier");
+	const canEditOrderLines = !TERMINAL_ORDER_STATUSES.has(order.status);
 
 	return (
 		<div className="space-y-6">
@@ -135,6 +143,7 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 				<div className="space-y-6 lg:col-span-2">
 					<OrderProductsCard
 						currency={order.currencyCode}
+						editable={canEditOrderLines}
 						mutating={updateOrder.isPending}
 						orderLines={order.orderLines}
 						onSaveOrderLines={async (orderLines) => {

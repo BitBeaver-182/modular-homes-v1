@@ -53,6 +53,7 @@ interface EditableOrderLine extends SupplierOrderDetailLineResponse {
 
 interface OrderProductsCardProps {
 	currency: string;
+	editable: boolean;
 	mutating: boolean;
 	orderLines: Array<SupplierOrderDetailLineResponse>;
 	onSaveOrderLines: (lines: Array<SupplierOrderLineWriteInput>) => Promise<void>;
@@ -106,6 +107,7 @@ const toWriteInput = (line: EditableOrderLine): SupplierOrderLineWriteInput => (
 
 export const OrderProductsCard = ({
 	currency,
+	editable,
 	mutating,
 	orderLines,
 	onSaveOrderLines,
@@ -159,11 +161,20 @@ export const OrderProductsCard = ({
 
 	const upsertLine = async (): Promise<void> => {
 		const description = form.description.trim();
+		const normalizedQuantity = form.quantity.trim();
 		const unitCost = Number.parseFloat(form.unitCost);
-		const quantity = Number.parseFloat(form.quantity);
+		const quantity = Number.parseInt(normalizedQuantity, 10);
 
-		if (!description || !Number.isFinite(unitCost) || !Number.isFinite(quantity)) {
+		if (!description || !Number.isFinite(unitCost) || !normalizedQuantity) {
 			toast.error(t("orders.productsToastCompleteFields"));
+			return;
+		}
+		if (!/^\d+$/.test(normalizedQuantity) || !Number.isFinite(quantity)) {
+			toast.error(
+				t("orders.productsToastQuantityWholeNumber", {
+					defaultValue: "Quantity must be a whole number.",
+				}),
+			);
 			return;
 		}
 		if (unitCost <= 0 || quantity <= 0) {
@@ -216,94 +227,110 @@ export const OrderProductsCard = ({
 	};
 
 	const columns = useMemo<Array<ColumnDef<EditableOrderLine>>>(
-		(): Array<ColumnDef<EditableOrderLine>> => [
-			{
-				accessorKey: "description",
-				header: t("orders.productsColumnProduct"),
-				cell: ({ row }): string =>
-					row.original.description?.trim() || t("orders.notApplicable"),
-			},
-			{
-				accessorKey: "houseModelId",
-				header: t("orders.productsColumnModel", { defaultValue: "Model ID" }),
-				cell: ({ row }): string => renderReference(row.original.houseModelId),
-			},
-			{
-				accessorKey: "productConfigurationId",
-				header: t("orders.productsColumnConfiguration", {
-					defaultValue: "Configuration ID",
-				}),
-				cell: ({ row }): string =>
-					renderReference(row.original.productConfigurationId),
-			},
-			{
-				id: "quantity",
-				header: () => (
-					<span className="block text-right">{t("orders.productsColumnQuantity")}</span>
-				),
-				cell: ({ row }): JSX.Element => (
-					<span className="block text-right">{row.original.quantity}</span>
-				),
-			},
-			{
-				id: "unitCost",
-				header: () => (
-					<span className="block text-right">
-						{t("orders.productsColumnUnitPrice", { defaultValue: "Unit cost" })}
-					</span>
-				),
-				cell: ({ row }): JSX.Element => (
-					<span className="block text-right">
-						{formatAmount(row.original.unitCost.amount, row.original.unitCost.currencyCode)}
-					</span>
-				),
-			},
-			{
-				id: "lineTotal",
-				header: () => (
-					<span className="block text-right">{t("orders.productsColumnTotal")}</span>
-				),
-				cell: ({ row }): JSX.Element => (
-					<span className="block text-right font-medium">
-						{formatAmount(
-							row.original.lineTotal.amount,
-							row.original.lineTotal.currencyCode,
-						)}
-					</span>
-				),
-			},
-			{
-				id: "actions",
-				header: t("orders.productsColumnActions"),
-				cell: ({ row }): JSX.Element => (
-					<div className="flex justify-end gap-1">
-						<Button
-							disabled={mutating}
-							size="icon-sm"
-							type="button"
-							variant="ghost"
-							onClick={() => {
-								openEditDialog(row.index);
-							}}
-						>
-							<Pencil className="size-4" />
-						</Button>
-						<Button
-							disabled={mutating}
-							size="icon-sm"
-							type="button"
-							variant="ghost"
-							onClick={() => {
-								setDeletingIndex(row.index);
-							}}
-						>
-							<Trash2 className="size-4" />
-						</Button>
-					</div>
-				),
-			},
-		],
-		[formatAmount, mutating, openEditDialog, t],
+		(): Array<ColumnDef<EditableOrderLine>> => {
+			const baseColumns: Array<ColumnDef<EditableOrderLine>> = [
+				{
+					accessorKey: "description",
+					header: t("orders.productsColumnProduct"),
+					cell: ({ row }): string =>
+						row.original.description?.trim() || t("orders.notApplicable"),
+				},
+				{
+					accessorKey: "houseModelId",
+					header: t("orders.productsColumnModel", { defaultValue: "Model ID" }),
+					cell: ({ row }): string => renderReference(row.original.houseModelId),
+				},
+				{
+					accessorKey: "productConfigurationId",
+					header: t("orders.productsColumnConfiguration", {
+						defaultValue: "Configuration ID",
+					}),
+					cell: ({ row }): string =>
+						renderReference(row.original.productConfigurationId),
+				},
+				{
+					id: "quantity",
+					header: () => (
+						<span className="block text-right">{t("orders.productsColumnQuantity")}</span>
+					),
+					cell: ({ row }): JSX.Element => (
+						<span className="block text-right">{row.original.quantity}</span>
+					),
+				},
+				{
+					id: "unitCost",
+					header: () => (
+						<span className="block text-right">
+							{t("orders.productsColumnUnitPrice", { defaultValue: "Unit cost" })}
+						</span>
+					),
+					cell: ({ row }): JSX.Element => (
+						<span className="block text-right">
+							{formatAmount(row.original.unitCost.amount, row.original.unitCost.currencyCode)}
+						</span>
+					),
+				},
+				{
+					id: "lineTotal",
+					header: () => (
+						<span className="block text-right">{t("orders.productsColumnTotal")}</span>
+					),
+					cell: ({ row }): JSX.Element => (
+						<span className="block text-right font-medium">
+							{formatAmount(
+								row.original.lineTotal.amount,
+								row.original.lineTotal.currencyCode,
+							)}
+						</span>
+					),
+				},
+			];
+
+			if (!editable) {
+				return baseColumns;
+			}
+
+			return [
+				...baseColumns,
+				{
+					id: "actions",
+					header: t("orders.productsColumnActions"),
+					cell: ({ row }): JSX.Element => (
+						<div className="flex justify-end gap-1">
+							<Button
+								aria-label={t("orders.productsEditAction", {
+									defaultValue: "Edit line",
+								})}
+								disabled={mutating}
+								size="icon-sm"
+								type="button"
+								variant="ghost"
+								onClick={() => {
+									openEditDialog(row.index);
+								}}
+							>
+								<Pencil className="size-4" />
+							</Button>
+							<Button
+								aria-label={t("orders.productsDeleteAction", {
+									defaultValue: "Remove line",
+								})}
+								disabled={mutating}
+								size="icon-sm"
+								type="button"
+								variant="ghost"
+								onClick={() => {
+									setDeletingIndex(row.index);
+								}}
+							>
+								<Trash2 className="size-4" />
+							</Button>
+						</div>
+					),
+				},
+			];
+		},
+		[editable, formatAmount, mutating, openEditDialog, t],
 	);
 
 	const table = useReactTable({
@@ -317,17 +344,27 @@ export const OrderProductsCard = ({
 		<Card>
 			<CardHeader className="flex flex-row items-center justify-between">
 				<CardTitle>{t("orders.productsTitle")}</CardTitle>
-				<Button
-					disabled={mutating}
-					size="sm"
-					type="button"
-					onClick={openAddDialog}
-				>
-					<Plus className="mr-2 size-4" />
-					{t("orders.productsAddAction")}
-				</Button>
+				{editable ? (
+					<Button
+						disabled={mutating}
+						size="sm"
+						type="button"
+						onClick={openAddDialog}
+					>
+						<Plus className="mr-2 size-4" />
+						{t("orders.productsAddAction")}
+					</Button>
+				) : null}
 			</CardHeader>
 			<CardContent className="space-y-6">
+				{!editable ? (
+					<p className="text-sm text-muted-foreground">
+						{t("orders.productsLockedDescription", {
+							defaultValue:
+								"Order lines are read-only after the order reaches a terminal status.",
+						})}
+					</p>
+				) : null}
 				{normalizedLines.length === 0 ? (
 					<p className="text-sm text-muted-foreground">{t("orders.productsEmpty")}</p>
 				) : (
@@ -408,7 +445,7 @@ export const OrderProductsCard = ({
 						/>
 						<Input
 							disabled={mutating}
-							inputMode="decimal"
+							inputMode="numeric"
 							placeholder={t("orders.productsFieldQuantity")}
 							value={form.quantity}
 							onChange={(event) => {
