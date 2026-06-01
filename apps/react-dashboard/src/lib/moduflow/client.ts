@@ -3,6 +3,7 @@ import {
 	StrapiRequestError,
 	isStrapiErrorResponse,
 } from "@/lib/strapi/error";
+import type { ApiErrorDetail } from "@moduflow/types";
 
 type ModuflowRequestOptions = Omit<RequestInit, "body"> & {
 	auth?: boolean;
@@ -11,12 +12,24 @@ type ModuflowRequestOptions = Omit<RequestInit, "body"> & {
 
 export class ModuflowRequestError extends Error {
 	public readonly status: number;
+	public readonly details?: ApiErrorDetail[];
 
-	public constructor(message: string, status: number) {
+	public constructor(message: string, status: number, details?: ApiErrorDetail[]) {
 		super(message);
 		this.name = "ModuflowRequestError";
 		this.status = status;
+		this.details = details;
 	}
+}
+
+interface ModuflowErrorEnvelope {
+	error: {
+		status?: number;
+		message?: string;
+		details?: {
+			errors?: ApiErrorDetail[];
+		};
+	};
 }
 
 const sanitizeBaseUrl = (rawBaseUrl?: string): string => {
@@ -30,10 +43,54 @@ const sanitizeBaseUrl = (rawBaseUrl?: string): string => {
 const getModuflowApiBaseUrl = (): string =>
 	sanitizeBaseUrl(import.meta.env.VITE_MODUFLOW_API_URL);
 
-const readErrorMessage = async (response: Response): Promise<string> => {
+const isApiErrorDetail = (value: unknown): value is ApiErrorDetail => {
+	if (typeof value !== "object" || value === null) {
+		return false;
+	}
+
+	return (
+		"path" in value &&
+		Array.isArray((value as { path?: unknown }).path) &&
+		"message" in value &&
+		typeof (value as { message?: unknown }).message === "string" &&
+		"name" in value &&
+		typeof (value as { name?: unknown }).name === "string"
+	);
+};
+
+const isModuflowErrorEnvelope = (value: unknown): value is ModuflowErrorEnvelope => {
+	if (typeof value !== "object" || value === null || !("error" in value)) {
+		return false;
+	}
+
+	const error = (value as { error?: unknown }).error;
+	if (typeof error !== "object" || error === null) {
+		return false;
+	}
+
+	const message = (error as { message?: unknown }).message;
+	if (message !== undefined && typeof message !== "string") {
+		return false;
+	}
+
+	const details = (error as { details?: unknown }).details;
+	if (details === undefined) {
+		return true;
+	}
+	if (typeof details !== "object" || details === null) {
+		return false;
+	}
+
+	const errors = (details as { errors?: unknown }).errors;
+	return errors === undefined || (Array.isArray(errors) && errors.every(isApiErrorDetail));
+};
+
+const readErrorResponse = async (
+	response: Response,
+): Promise<{ details?: ApiErrorDetail[]; message: string }> => {
 	const text = await response.text();
 	if (!text) {
-		return response.statusText || "Request failed";
+		return { message: response.statusText || "Request failed" };
 	}
 
 	try {
@@ -42,15 +99,21 @@ const readErrorMessage = async (response: Response): Promise<string> => {
 		if (isStrapiErrorResponse(parsed)) {
 			throw new StrapiRequestError(parsed.error);
 		}
+		if (isModuflowErrorEnvelope(parsed)) {
+			return {
+				details: parsed.error.details?.errors,
+				message: parsed.error.message || response.statusText || "Request failed",
+			};
+		}
 
 		if (typeof parsed === "object" && parsed !== null && "message" in parsed) {
 			const { message } = parsed;
 			if (Array.isArray(message)) {
-				return message.join("\n");
+				return { message: message.join("\n") };
 			}
 
 			if (typeof message === "string") {
-				return message;
+				return { message };
 			}
 		}
 	} catch (error) {
@@ -58,10 +121,10 @@ const readErrorMessage = async (response: Response): Promise<string> => {
 			throw error;
 		}
 
-		return text.trim().slice(0, 500);
+		return { message: text.trim().slice(0, 500) };
 	}
 
-	return response.statusText || "Request failed";
+	return { message: response.statusText || "Request failed" };
 };
 
 export const moduflowRequest = async <T>(
@@ -91,9 +154,11 @@ export const moduflowRequest = async <T>(
 	});
 
 	if (!response.ok) {
+		const errorResponse = await readErrorResponse(response);
 		throw new ModuflowRequestError(
-			await readErrorMessage(response),
-			response.status
+			errorResponse.message,
+			response.status,
+			errorResponse.details,
 		);
 	}
 

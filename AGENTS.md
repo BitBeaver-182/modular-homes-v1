@@ -82,6 +82,8 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 | 2026-06-01 | PR Sequencing | Planning or implementing multiple PR slices in one pass for a large feature rollout | Complete exactly one PR slice at a time, stop for user review, and only then plan or implement the next PR. | v1.0 |
 | 2026-06-01 | Planning Workflow | Starting implementation for a new PR slice before aligning with `PLAN.md` and the user | For each new PR slice in a staged rollout, pause first, align the implementation plan with `PLAN.md`, confirm that plan with the user, and only then write code. | v1.0 |
 | 2026-06-01 | Persistence Design | Accepting user-entered values for fields that can be derived reliably from other stored fields | Prefer deriving values instead of storing redundant client-supplied values; for invoices in this codebase, compute `totalAmount` from `subtotalAmount` and `taxAmount` server-side. | v1.0 |
+| 2026-06-01 | Frontend Form Patterns | Inventing new form layouts, unlabeled inputs, or ad hoc interaction patterns when the app already has an established form implementation | Follow the existing dashboard form pattern used in features like `suppliers`: labeled fields, consistent field wrappers, and the same interaction structure unless the user explicitly asks for a new pattern. | v1.0 |
+| 2026-06-01 | Validation Flow | Replacing server-side validation with custom client-side blocking logic and generic toast errors by default | Submit forms to the API and surface returned field errors back into the form UI; do not substitute generic client-side validation/toast flows unless the user explicitly asks for client-side validation. | v1.0 |
 
 ---
 
@@ -98,3 +100,5 @@ _This table tracks specific coding style, logic, and architectural mistakes corr
 - **Log Entry #9 (PR Sequencing Discipline):** Added a rule to deliver large feature rollouts one PR at a time and stop for user review between PRs.
 - **Log Entry #10 (Plan Alignment Discipline):** Added a rule to align each new staged PR with `PLAN.md` and the user before implementation starts.
 - **Log Entry #11 (Derived Persistence Discipline):** Added a rule to derive calculable fields server-side instead of storing redundant client-entered values.
+- **Log Entry #12 (Frontend Form Discipline):** Added a rule to preserve existing dashboard form patterns instead of inventing new unlabeled form UI.
+- **Log Entry #13 (Server Validation Discipline):** Added a rule to keep validation server-driven by default and map API field errors back into forms.

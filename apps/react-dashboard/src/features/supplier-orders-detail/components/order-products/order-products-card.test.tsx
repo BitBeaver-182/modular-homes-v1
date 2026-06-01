@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 
 import { OrderProductsCard } from "./order-products-card";
@@ -145,7 +144,7 @@ describe("OrderProductsCard", () => {
 		});
 	});
 
-	it("rejects decimal quantities before saving", async () => {
+	it("submits decimal quantities to the save handler so the API can validate them", async () => {
 		const user = userEvent.setup();
 		const onSaveOrderLines = vi.fn().mockResolvedValue(undefined);
 
@@ -165,8 +164,15 @@ describe("OrderProductsCard", () => {
 		await user.type(screen.getByPlaceholderText("Unit price (EUR)"), "250");
 		await user.click(screen.getByText("Save"));
 
-		expect(onSaveOrderLines).not.toHaveBeenCalled();
-		expect(toast.error).toHaveBeenCalledWith("Quantity must be a whole number.");
+		await waitFor(() => {
+			expect(onSaveOrderLines).toHaveBeenCalledWith([
+				expect.objectContaining({
+					description: "Decimal line",
+					quantity: 1.5,
+					unitCost: 250,
+				}),
+			]);
+		});
 	});
 
 	it("renders order lines as read-only when editing is disabled", () => {

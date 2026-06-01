@@ -1,5 +1,6 @@
 import { FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState, type JSX } from "react";
+import { FormProvider, type FieldPath } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -24,6 +25,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -37,6 +39,7 @@ import { useDeleteOrderInvoice } from "@/features/supplier-orders-detail/hooks/u
 import { useCreateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-create-order-invoice";
 import { useUpdateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-update-order-invoice";
 import { useCurrency } from "@/hooks/use-currency";
+import { useModuflowForm } from "@/lib/moduflow/use-moduflow-form";
 
 import {
 	SUPPLIER_ORDER_INVOICE_STATUSES,
@@ -54,7 +57,7 @@ interface OrderInvoicesCardProps {
 	orderId: string;
 }
 
-interface InvoiceFormState {
+interface InvoiceFormValues {
 	dueDate: string;
 	invoiceNumber: string;
 	invoiceType: SupplierOrderInvoiceType;
@@ -63,6 +66,7 @@ interface InvoiceFormState {
 	status: SupplierOrderInvoiceStatus;
 	subtotalAmount: string;
 	taxAmount: string;
+	root?: string;
 }
 
 const INVOICE_STATUS_VARIANT: Record<
@@ -79,7 +83,7 @@ const INVOICE_STATUS_VARIANT: Record<
 	void: "secondary",
 };
 
-const EMPTY_FORM: InvoiceFormState = {
+const EMPTY_FORM: InvoiceFormValues = {
 	dueDate: "",
 	invoiceNumber: "",
 	invoiceType: "supplier_goods",
@@ -104,7 +108,7 @@ const toDateInputValue = (value: string | null): string =>
 
 const toFormState = (
 	invoice: SupplierOrderDetailInvoiceResponse,
-): InvoiceFormState => ({
+): InvoiceFormValues => ({
 	dueDate: toDateInputValue(invoice.dueDate),
 	invoiceNumber: invoice.invoiceNumber,
 	invoiceType: invoice.invoiceType,
@@ -116,31 +120,23 @@ const toFormState = (
 });
 
 const normalizeInvoiceInput = (
-	form: InvoiceFormState,
-):
-	| CreateSupplierOrderInvoiceRequest
-	| UpdateSupplierOrderInvoiceRequest
-	| null => {
-	const invoiceNumber = form.invoiceNumber.trim();
-	const subtotalAmount = Number.parseFloat(form.subtotalAmount);
-	const taxAmount = Number.parseFloat(form.taxAmount);
-
-	if (!invoiceNumber || !Number.isFinite(subtotalAmount) || !Number.isFinite(taxAmount)) {
-		return null;
-	}
-	if (subtotalAmount < 0 || taxAmount < 0) {
-		return null;
-	}
-
+	form: InvoiceFormValues,
+): CreateSupplierOrderInvoiceRequest | UpdateSupplierOrderInvoiceRequest => {
 	return {
 		dueDate: form.dueDate || null,
-		invoiceNumber,
+		invoiceNumber: form.invoiceNumber.trim(),
 		invoiceType: form.invoiceType,
 		issueDate: form.issueDate || null,
 		notes: form.notes.trim() || null,
 		status: form.status,
-		subtotalAmount,
-		taxAmount,
+		subtotalAmount:
+			form.subtotalAmount.trim() === ""
+				? (undefined as unknown as number)
+				: Number(form.subtotalAmount),
+		taxAmount:
+			form.taxAmount.trim() === ""
+				? (undefined as unknown as number)
+				: Number(form.taxAmount),
 	};
 };
 
@@ -158,7 +154,6 @@ export const OrderInvoicesCard = ({
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
 	const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
-	const [form, setForm] = useState<InvoiceFormState>(EMPTY_FORM);
 
 	const invoicesSorted = useMemo(
 		(): Array<SupplierOrderDetailInvoiceResponse> =>
@@ -179,13 +174,26 @@ export const OrderInvoicesCard = ({
 			: invoicesSorted.find((invoice) => invoice.id === editingInvoiceId) ?? null;
 	const mutating =
 		createInvoice.isPending || updateInvoice.isPending || deleteInvoice.isPending;
+	const form = useModuflowForm<InvoiceFormValues>({
+		defaultValues: EMPTY_FORM,
+		mapField: (key) => mapInvoiceField(key),
+		mode: "onSubmit",
+	});
+	const {
+		register,
+		reset,
+		setValue,
+		submit,
+		watch,
+		formState: { errors },
+	} = form;
 	const derivedTotalAmount =
-		(Number.parseFloat(form.subtotalAmount) || 0) +
-		(Number.parseFloat(form.taxAmount) || 0);
+		(Number.parseFloat(watch("subtotalAmount") || "") || 0) +
+		(Number.parseFloat(watch("taxAmount") || "") || 0);
 
 	const resetDialog = (): void => {
 		setEditingInvoiceId(null);
-		setForm(EMPTY_FORM);
+		reset(EMPTY_FORM);
 	};
 
 	const openCreateDialog = (): void => {
@@ -195,22 +203,12 @@ export const OrderInvoicesCard = ({
 
 	const openEditDialog = (invoice: SupplierOrderDetailInvoiceResponse): void => {
 		setEditingInvoiceId(invoice.id);
-		setForm(toFormState(invoice));
+		reset(toFormState(invoice));
 		setIsDialogOpen(true);
 	};
 
-	const saveInvoice = async (): Promise<void> => {
-		const payload = normalizeInvoiceInput(form);
-		if (!payload) {
-			toast.error(
-				t("orders.invoiceRequiredFields", {
-					defaultValue:
-						"Invoice number, subtotal amount, and tax amount are required.",
-				}),
-			);
-			return;
-		}
-
+	const saveInvoice = async (values: InvoiceFormValues): Promise<void> => {
+		const payload = normalizeInvoiceInput(values);
 		try {
 			if (editingInvoice) {
 				await updateInvoice.mutateAsync({
@@ -368,11 +366,11 @@ export const OrderInvoicesCard = ({
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>
-							{editingInvoice
-								? t("orders.invoiceEditTitle")
-								: t("orders.invoiceCreateTitle")}
-						</DialogTitle>
+							<DialogTitle>
+								{editingInvoice
+									? t("orders.invoiceEditTitle")
+									: t("orders.invoiceCreateTitle")}
+							</DialogTitle>
 						<DialogDescription>
 							{t("orders.invoiceDialogDescription", {
 								defaultValue:
@@ -380,159 +378,208 @@ export const OrderInvoicesCard = ({
 							})}
 						</DialogDescription>
 					</DialogHeader>
-					<div className="space-y-3">
-						<Input
-							disabled={mutating}
-							placeholder={t("orders.invoiceNumber", { defaultValue: "Invoice number" })}
-							value={form.invoiceNumber}
-							onChange={(event) => {
-								setForm((previous) => ({
-									...previous,
-									invoiceNumber: event.target.value,
-								}));
-							}}
-						/>
-						<div className="grid gap-3 md:grid-cols-2">
-							<Select
-								disabled={mutating}
-								value={form.invoiceType}
-								onValueChange={(value: SupplierOrderInvoiceType) => {
-									setForm((previous) => ({
-										...previous,
-										invoiceType: value,
-									}));
-								}}
-							>
-								<SelectTrigger>
-									<SelectValue
-										placeholder={t("orders.invoiceType", { defaultValue: "Invoice type" })}
-									/>
-								</SelectTrigger>
-								<SelectContent>
-									{SUPPLIER_ORDER_INVOICE_TYPES.map((type) => (
-										<SelectItem key={type} value={type}>
-											{humanize(type)}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<Select
-								disabled={mutating}
-								value={form.status}
-								onValueChange={(value: SupplierOrderInvoiceStatus) => {
-									setForm((previous) => ({
-										...previous,
-										status: value,
-									}));
-								}}
-							>
-								<SelectTrigger>
-									<SelectValue
-										placeholder={t("orders.invoiceStatus")}
-									/>
-								</SelectTrigger>
-								<SelectContent>
-									{SUPPLIER_ORDER_INVOICE_STATUSES.map((status) => (
-										<SelectItem key={status} value={status}>
-											{humanize(status)}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="grid gap-3 md:grid-cols-2">
-							<Input
-								disabled={mutating}
-								type="date"
-								value={form.issueDate}
-								onChange={(event) => {
-									setForm((previous) => ({
-										...previous,
-										issueDate: event.target.value,
-									}));
-								}}
-							/>
-							<Input
-								disabled={mutating}
-								type="date"
-								value={form.dueDate}
-								onChange={(event) => {
-									setForm((previous) => ({
-										...previous,
-										dueDate: event.target.value,
-									}));
-								}}
-							/>
-						</div>
-						<div className="grid gap-3 md:grid-cols-2">
-							<Input
-								disabled={mutating}
-								inputMode="decimal"
-								placeholder={t("orders.invoiceSubtotalAmount", {
-									defaultValue: "Subtotal amount ({{currency}})",
-									currency,
-								})}
-								value={form.subtotalAmount}
-								onChange={(event) => {
-									setForm((previous) => ({
-										...previous,
-										subtotalAmount: event.target.value,
-									}));
-								}}
-							/>
-							<Input
-								disabled={mutating}
-								inputMode="decimal"
-								placeholder={t("orders.invoiceTaxAmount", {
-									defaultValue: "Tax amount ({{currency}})",
-									currency,
-								})}
-								value={form.taxAmount}
-								onChange={(event) => {
-									setForm((previous) => ({
-										...previous,
-										taxAmount: event.target.value,
-									}));
-								}}
-							/>
-						</div>
-						<div className="rounded-lg border bg-muted/40 px-4 py-3">
-							<p className="text-sm text-muted-foreground">
-								{t("orders.invoiceDerivedTotal", { defaultValue: "Derived total" })}
-							</p>
-							<p className="text-lg font-semibold">
-								{formatAmount(derivedTotalAmount, currency)}
-							</p>
-						</div>
-						<Textarea
-							disabled={mutating}
-							placeholder={t("orders.invoiceNotes", { defaultValue: "Notes" })}
-							rows={4}
-							value={form.notes}
-							onChange={(event) => {
-								setForm((previous) => ({
-									...previous,
-									notes: event.target.value,
-								}));
-							}}
-						/>
-					</div>
-					<DialogFooter>
-						<Button
-							disabled={mutating}
-							type="button"
-							variant="outline"
-							onClick={() => {
-								setIsDialogOpen(false);
-								resetDialog();
-							}}
+					<FormProvider {...form}>
+						<form
+							className="contents"
+							onSubmit={submit(async (values): Promise<void> => {
+								await saveInvoice(values);
+							})}
 						>
-							{t("common.cancel")}
-						</Button>
-						<Button disabled={mutating} type="button" onClick={() => void saveInvoice()}>
-							{editingInvoice ? t("orders.save") : t("orders.create")}
-						</Button>
-					</DialogFooter>
+							{errors.root?.message ? (
+								<p className="text-destructive text-sm" role="alert">
+									{errors.root.message}
+								</p>
+							) : null}
+							<div className="grid gap-3">
+								<Field data-invalid={Boolean(errors.invoiceNumber?.message) || undefined}>
+									<FieldLabel htmlFor="invoice-number">
+										{t("orders.invoiceNumber", { defaultValue: "Invoice number" })}
+									</FieldLabel>
+									<Input
+										aria-invalid={Boolean(errors.invoiceNumber?.message)}
+										disabled={mutating}
+										id="invoice-number"
+										placeholder={t("orders.invoiceNumber", { defaultValue: "Invoice number" })}
+										{...register("invoiceNumber")}
+									/>
+									{errors.invoiceNumber?.message ? (
+										<FieldError>{errors.invoiceNumber.message}</FieldError>
+									) : null}
+								</Field>
+								<div className="grid gap-3 md:grid-cols-2">
+									<Field data-invalid={Boolean(errors.invoiceType?.message) || undefined}>
+										<FieldLabel htmlFor="invoice-type">
+											{t("orders.invoiceType", { defaultValue: "Invoice type" })}
+										</FieldLabel>
+										<Select
+											disabled={mutating}
+											value={watch("invoiceType")}
+											onValueChange={(value: SupplierOrderInvoiceType) => {
+												setValue("invoiceType", value, { shouldDirty: true });
+											}}
+										>
+											<SelectTrigger aria-invalid={Boolean(errors.invoiceType?.message)} id="invoice-type">
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												{SUPPLIER_ORDER_INVOICE_TYPES.map((type) => (
+													<SelectItem key={type} value={type}>
+														{humanize(type)}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										{errors.invoiceType?.message ? (
+											<FieldError>{errors.invoiceType.message}</FieldError>
+										) : null}
+									</Field>
+									<Field data-invalid={Boolean(errors.status?.message) || undefined}>
+										<FieldLabel htmlFor="invoice-status">
+											{t("orders.invoiceStatus")}
+										</FieldLabel>
+										<Select
+											disabled={mutating}
+											value={watch("status")}
+											onValueChange={(value: SupplierOrderInvoiceStatus) => {
+												setValue("status", value, { shouldDirty: true });
+											}}
+										>
+											<SelectTrigger aria-invalid={Boolean(errors.status?.message)} id="invoice-status">
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												{SUPPLIER_ORDER_INVOICE_STATUSES.map((status) => (
+													<SelectItem key={status} value={status}>
+														{humanize(status)}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										{errors.status?.message ? (
+											<FieldError>{errors.status.message}</FieldError>
+										) : null}
+									</Field>
+								</div>
+								<div className="grid gap-3 md:grid-cols-2">
+									<Field data-invalid={Boolean(errors.issueDate?.message) || undefined}>
+										<FieldLabel htmlFor="invoice-issue-date">
+											{t("orders.invoiceIssueDate", { defaultValue: "Issue date" })}
+										</FieldLabel>
+										<Input
+											aria-invalid={Boolean(errors.issueDate?.message)}
+											disabled={mutating}
+											id="invoice-issue-date"
+											type="date"
+											{...register("issueDate")}
+										/>
+										{errors.issueDate?.message ? (
+											<FieldError>{errors.issueDate.message}</FieldError>
+										) : null}
+									</Field>
+									<Field data-invalid={Boolean(errors.dueDate?.message) || undefined}>
+										<FieldLabel htmlFor="invoice-due-date">
+											{t("orders.invoiceDueDate", { defaultValue: "Due date" })}
+										</FieldLabel>
+										<Input
+											aria-invalid={Boolean(errors.dueDate?.message)}
+											disabled={mutating}
+											id="invoice-due-date"
+											type="date"
+											{...register("dueDate")}
+										/>
+										{errors.dueDate?.message ? (
+											<FieldError>{errors.dueDate.message}</FieldError>
+										) : null}
+									</Field>
+								</div>
+								<div className="grid gap-3 md:grid-cols-2">
+									<Field data-invalid={Boolean(errors.subtotalAmount?.message) || undefined}>
+										<FieldLabel htmlFor="invoice-subtotal">
+											{t("orders.invoiceSubtotalAmount", {
+												defaultValue: "Subtotal amount ({{currency}})",
+												currency,
+											})}
+										</FieldLabel>
+										<Input
+											aria-invalid={Boolean(errors.subtotalAmount?.message)}
+											disabled={mutating}
+											id="invoice-subtotal"
+											inputMode="decimal"
+											placeholder={t("orders.invoiceSubtotalAmount", {
+												defaultValue: "Subtotal amount ({{currency}})",
+												currency,
+											})}
+											{...register("subtotalAmount")}
+										/>
+										{errors.subtotalAmount?.message ? (
+											<FieldError>{errors.subtotalAmount.message}</FieldError>
+										) : null}
+									</Field>
+									<Field data-invalid={Boolean(errors.taxAmount?.message) || undefined}>
+										<FieldLabel htmlFor="invoice-tax">
+											{t("orders.invoiceTaxAmount", {
+												defaultValue: "Tax amount ({{currency}})",
+												currency,
+											})}
+										</FieldLabel>
+										<Input
+											aria-invalid={Boolean(errors.taxAmount?.message)}
+											disabled={mutating}
+											id="invoice-tax"
+											inputMode="decimal"
+											placeholder={t("orders.invoiceTaxAmount", {
+												defaultValue: "Tax amount ({{currency}})",
+												currency,
+											})}
+											{...register("taxAmount")}
+										/>
+										{errors.taxAmount?.message ? (
+											<FieldError>{errors.taxAmount.message}</FieldError>
+										) : null}
+									</Field>
+								</div>
+								<div className="rounded-lg border bg-muted/40 px-4 py-3">
+									<p className="text-sm text-muted-foreground">
+										{t("orders.invoiceDerivedTotal", { defaultValue: "Derived total" })}
+									</p>
+									<p className="text-lg font-semibold">
+										{formatAmount(derivedTotalAmount, currency)}
+									</p>
+								</div>
+								<Field data-invalid={Boolean(errors.notes?.message) || undefined}>
+									<FieldLabel htmlFor="invoice-notes">
+										{t("orders.invoiceNotes", { defaultValue: "Notes" })}
+									</FieldLabel>
+									<Textarea
+										aria-invalid={Boolean(errors.notes?.message)}
+										disabled={mutating}
+										id="invoice-notes"
+										rows={4}
+										{...register("notes")}
+									/>
+									{errors.notes?.message ? (
+										<FieldError>{errors.notes.message}</FieldError>
+									) : null}
+								</Field>
+							</div>
+							<DialogFooter>
+								<Button
+									disabled={mutating}
+									type="button"
+									variant="outline"
+									onClick={() => {
+										setIsDialogOpen(false);
+										resetDialog();
+									}}
+								>
+									{t("common.cancel")}
+								</Button>
+								<Button disabled={mutating} type="submit">
+									{editingInvoice ? t("orders.save") : t("orders.create")}
+								</Button>
+							</DialogFooter>
+						</form>
+					</FormProvider>
 				</DialogContent>
 			</Dialog>
 
@@ -569,3 +616,22 @@ export const OrderInvoicesCard = ({
 		</Card>
 	);
 };
+
+function mapInvoiceField(
+	key: string,
+): FieldPath<InvoiceFormValues> | undefined {
+	const fieldMap: Record<string, FieldPath<InvoiceFormValues>> = {
+		invoiceNumber: "invoiceNumber",
+		invoiceType: "invoiceType",
+		status: "status",
+		issueDate: "issueDate",
+		dueDate: "dueDate",
+		subtotalAmount: "subtotalAmount",
+		taxAmount: "taxAmount",
+		notes: "notes",
+		root: "root",
+		"": "root",
+	};
+
+	return fieldMap[key];
+}
