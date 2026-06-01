@@ -43,7 +43,14 @@ export const OrderInvoicesCard = ({
 
 	const invoicesSorted = useMemo(
 		(): Array<SupplierOrderDetailInvoiceResponse> =>
-			[...invoices].sort((left, right) => Number(right.id) - Number(left.id)),
+			[...invoices].sort((left, right) => {
+				const leftId = BigInt(left.id);
+				const rightId = BigInt(right.id);
+				if (leftId === rightId) {
+					return 0;
+				}
+				return rightId > leftId ? 1 : -1;
+			}),
 		[invoices],
 	);
 

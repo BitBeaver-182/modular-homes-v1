@@ -5,11 +5,18 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrderStatusBadge } from "@/features/supplier-orders/components/order-status-badge";
 
-import type { SupplierOrderDetailResponse } from "@moduflow/types";
+import type {
+	SupplierOrderDetailResponse,
+	SupplierResponse,
+} from "@moduflow/types";
 
 interface OrderSidebarProps {
 	order: SupplierOrderDetailResponse;
 }
+
+const getDisplaySupplier = (
+	order: SupplierOrderDetailResponse,
+): SupplierResponse | null => order.supplier ?? order.quote?.supplier ?? null;
 
 const formatOptionalDate = (value: string | null): string =>
 	value ? new Date(value).toLocaleDateString() : "—";
@@ -27,6 +34,7 @@ const humanize = (value: string): string =>
 
 export const OrderSidebar = ({ order }: OrderSidebarProps): JSX.Element => {
 	const { t } = useTranslation();
+	const displaySupplier = getDisplaySupplier(order);
 
 	return (
 		<div className="space-y-6">
@@ -67,23 +75,23 @@ export const OrderSidebar = ({ order }: OrderSidebarProps): JSX.Element => {
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4 text-sm">
-					{order.supplier ? (
+					{displaySupplier ? (
 						<>
 							<div>
 								<p className="text-xs text-muted-foreground">{t("orders.sidebarSupplierName")}</p>
-								<p className="font-medium">{order.supplier.name}</p>
+								<p className="font-medium">{displaySupplier.name}</p>
 							</div>
 							<div>
 								<p className="text-xs text-muted-foreground">{t("orders.sidebarSupplierPhone")}</p>
-								<p className="font-medium">{renderValue(order.supplier.phoneNumber)}</p>
+								<p className="font-medium">{renderValue(displaySupplier.phoneNumber)}</p>
 							</div>
 							<div>
 								<p className="text-xs text-muted-foreground">{t("orders.sidebarSupplierEmail")}</p>
-								<p className="break-all font-medium">{renderValue(order.supplier.email)}</p>
+								<p className="break-all font-medium">{renderValue(displaySupplier.email)}</p>
 							</div>
 							<div>
 								<p className="text-xs text-muted-foreground">{t("orders.sidebarSupplierWebsite")}</p>
-								<p className="break-all font-medium">{renderValue(order.supplier.website)}</p>
+								<p className="break-all font-medium">{renderValue(displaySupplier.website)}</p>
 							</div>
 						</>
 					) : (

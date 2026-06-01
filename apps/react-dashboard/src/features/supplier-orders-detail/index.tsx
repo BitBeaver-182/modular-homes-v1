@@ -19,6 +19,11 @@ import { OrderInvoicesCard } from "./components/order-invoices";
 import { OrderProductsCard } from "./components/order-products/order-products-card";
 import { OrderSidebar } from "./components/order-sidebar";
 
+const getDisplaySupplierName = (order: {
+	supplier: { name: string } | null;
+	quote: { supplier: { name: string } | null } | null;
+}): string | null => order.supplier?.name ?? order.quote?.supplier?.name ?? null;
+
 const SupplierOrderDetailPage = (): JSX.Element => {
 	const { t } = useTranslation();
 	const { locale, organizationSlug, orderId } = Route.useParams();
@@ -76,6 +81,8 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 		);
 	}
 
+	const supplierName = getDisplaySupplierName(order) ?? t("orders.unknownSupplier");
+
 	return (
 		<div className="space-y-6">
 			<div className="flex shrink-0 flex-col gap-2">
@@ -116,7 +123,7 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 							{order.orderNumber ?? order.id}
 						</h1>
 						<p className="text-sm text-muted-foreground">
-							{order.supplier?.name ?? t("orders.unknownSupplier")}
+							{supplierName}
 						</p>
 					</div>
 				</div>

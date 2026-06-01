@@ -14,7 +14,7 @@ export const useGetOrder = (
 	const organizationId = activeMembership.organization.id;
 
 	return useQuery({
-		queryKey: orderKeys.detail(orderId ?? ""),
+		queryKey: orderKeys.detail(orderId ?? "", organizationId),
 		queryFn: () => getSupplierOrderDetail({ organizationId }, orderId!),
 		enabled: Boolean(orderId),
 	});

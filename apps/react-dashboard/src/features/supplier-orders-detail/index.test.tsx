@@ -83,6 +83,8 @@ const orderFixture: SupplierOrderDetailResponse = {
 	],
 };
 
+let currentOrder: SupplierOrderDetailResponse = orderFixture;
+
 vi.mock("@/hooks/use-currency", () => ({
 	useCurrency: () => ({
 		formatAmount: (amount: number, currencyCode: string) =>
@@ -92,7 +94,7 @@ vi.mock("@/hooks/use-currency", () => ({
 
 vi.mock("@/features/supplier-orders-detail/hooks/use-get-order", () => ({
 	useGetOrder: () => ({
-		data: orderFixture,
+		data: currentOrder,
 		isLoading: false,
 		isError: false,
 		error: null,
@@ -160,6 +162,7 @@ vi.mock("react-i18next", () => ({
 
 describe("SupplierOrderDetailPage", () => {
 	it("renders the read-only supplier-order detail foundation", () => {
+		currentOrder = orderFixture;
 		render(<SupplierOrderDetailPage />);
 
 		expect(
@@ -172,5 +175,31 @@ describe("SupplierOrderDetailPage", () => {
 		expect(screen.getByText("Model A")).not.toBeNull();
 		expect(screen.queryByText("Create invoice")).toBeNull();
 		expect(screen.queryByText("Add product")).toBeNull();
+	});
+
+	it("falls back to the quote supplier when the direct supplier is missing", () => {
+		currentOrder = {
+			...orderFixture,
+			supplier: null,
+			quote: {
+				...orderFixture.quote!,
+				supplier: {
+					id: "9",
+					name: "Quote Supplier",
+					phoneNumber: "123",
+					email: "quote@acme.test",
+					address: null,
+					website: "https://quote.test",
+					createdAt: "2026-06-01T00:00:00.000Z",
+					updatedAt: "2026-06-01T00:00:00.000Z",
+				},
+			},
+		};
+
+		render(<SupplierOrderDetailPage />);
+
+		expect(screen.getAllByText("Quote Supplier")).toHaveLength(2);
+		expect(screen.queryByText("Unknown supplier")).toBeNull();
+		expect(screen.queryByText("No supplier linked")).toBeNull();
 	});
 });
