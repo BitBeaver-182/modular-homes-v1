@@ -4,32 +4,38 @@ import {
 	type UseMutationResult,
 } from "@tanstack/react-query";
 
+import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
+
 import { orderKeys } from "../../supplier-orders/hooks/order-keys";
 import {
-	createSupplierInvoice,
-	type SupplierInvoiceWriteInput,
-} from "../lib/order-api";
+	createSupplierOrderInvoice,
+	type CreateSupplierOrderInvoiceRequest,
+} from "../../supplier-orders/lib/order-api";
+
+import type { SupplierOrderDetailInvoiceResponse } from "@moduflow/types";
 
 export interface CreateOrderInvoiceVariables {
-	orderDocumentId: string;
-	input: SupplierInvoiceWriteInput;
+	orderId: string;
+	input: CreateSupplierOrderInvoiceRequest;
 }
 
 export const useCreateOrderInvoice = (): UseMutationResult<
-	void,
+	SupplierOrderDetailInvoiceResponse,
 	Error,
 	CreateOrderInvoiceVariables
 > => {
 	const queryClient = useQueryClient();
+	const { activeMembership } = AdminRoute.useRouteContext();
+	const organizationId = activeMembership.organization.id;
 
 	return useMutation({
-		mutationFn: ({ input }: CreateOrderInvoiceVariables) =>
-			createSupplierInvoice(input),
+		mutationFn: ({ orderId, input }: CreateOrderInvoiceVariables) =>
+			createSupplierOrderInvoice({ organizationId }, orderId, input),
 		onSuccess: async (_data, variables): Promise<void> => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: orderKeys.lists() }),
 				queryClient.invalidateQueries({
-					queryKey: orderKeys.detail(variables.orderDocumentId),
+					queryKey: orderKeys.detail(variables.orderId),
 				}),
 			]);
 		},

@@ -110,6 +110,27 @@ vi.mock("@/features/supplier-orders-detail/hooks/use-update-order", () => ({
 	}),
 }));
 
+vi.mock("@/features/supplier-orders-detail/hooks/use-create-order-invoice", () => ({
+	useCreateOrderInvoice: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-update-order-invoice", () => ({
+	useUpdateOrderInvoice: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-delete-order-invoice", () => ({
+	useDeleteOrderInvoice: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
 vi.mock("@tanstack/react-router", async () => {
 	const actual = await vi.importActual<typeof TanstackRouter>(
 		"@tanstack/react-router"
@@ -152,6 +173,9 @@ vi.mock("react-i18next", () => ({
 				"orders.invoiceTotal": "Total",
 				"orders.invoicePaid": "Paid",
 				"orders.invoiceRemaining": "Remaining",
+				"orders.invoiceCreateAction": "Create invoice",
+				"orders.invoiceDeleteTitle": "Delete invoice?",
+				"orders.deleteCannotUndo": "This action cannot be undone.",
 				"orders.sidebarOrderInfoTitle": "Order information",
 				"orders.sidebarSupplierTitle": "Supplier",
 				"orders.sidebarSupplierName": "Name",
@@ -182,7 +206,9 @@ describe("SupplierOrderDetailPage", () => {
 		expect(screen.getByText("Invoices")).not.toBeNull();
 		expect(screen.getByText("INV-2026-001")).not.toBeNull();
 		expect(screen.getByText("Model A")).not.toBeNull();
-		expect(screen.queryByText("Create invoice")).toBeNull();
+		expect(
+			screen.getByRole("button", { name: /Create invoice/i }),
+		).not.toBeNull();
 		expect(
 			screen.getByRole("button", { name: /Add product/i }),
 		).not.toBeNull();

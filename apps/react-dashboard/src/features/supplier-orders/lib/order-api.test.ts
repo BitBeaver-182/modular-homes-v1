@@ -3,8 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
 
 import {
+	createSupplierOrderInvoice,
+	deleteSupplierOrderInvoice,
 	getSupplierOrderDetail,
 		getSupplierOrders,
+	updateSupplierOrderInvoice,
 	toSupplierOrderQueryString,
 	updateSupplierOrder,
 } from "./order-api";
@@ -104,6 +107,80 @@ describe("supplier order Moduflow API", () => {
 				},
 				headers: { "x-organization-id": "42" },
 				method: "PATCH",
+			}
+		);
+	});
+
+	it("creates a supplier-order invoice through the platform API", async () => {
+		await createSupplierOrderInvoice(context, "101", {
+			invoiceNumber: "INV-2026-001",
+			invoiceType: "supplier_goods",
+			status: "issued",
+			issueDate: "2026-06-03",
+			dueDate: "2026-06-30",
+			subtotalAmount: 1000,
+			taxAmount: 150,
+			notes: "Awaiting remainder",
+		});
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices",
+			{
+				body: {
+					invoiceNumber: "INV-2026-001",
+					invoiceType: "supplier_goods",
+					status: "issued",
+					issueDate: "2026-06-03",
+					dueDate: "2026-06-30",
+					subtotalAmount: 1000,
+					taxAmount: 150,
+					notes: "Awaiting remainder",
+				},
+				headers: { "x-organization-id": "42" },
+				method: "POST",
+			}
+		);
+	});
+
+	it("updates a supplier-order invoice through the platform API", async () => {
+		await updateSupplierOrderInvoice(context, "101", "77", {
+			invoiceNumber: "INV-2026-001",
+			invoiceType: "supplier_goods",
+			status: "partially_paid",
+			issueDate: "2026-06-03",
+			dueDate: "2026-06-30",
+			subtotalAmount: 900,
+			taxAmount: 135,
+			notes: "Revised",
+		});
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices/77",
+			{
+				body: {
+					invoiceNumber: "INV-2026-001",
+					invoiceType: "supplier_goods",
+					status: "partially_paid",
+					issueDate: "2026-06-03",
+					dueDate: "2026-06-30",
+					subtotalAmount: 900,
+					taxAmount: 135,
+					notes: "Revised",
+				},
+				headers: { "x-organization-id": "42" },
+				method: "PATCH",
+			}
+		);
+	});
+
+	it("deletes a supplier-order invoice through the platform API", async () => {
+		await deleteSupplierOrderInvoice(context, "101", "77");
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices/77",
+			{
+				headers: { "x-organization-id": "42" },
+				method: "DELETE",
 			}
 		);
 	});

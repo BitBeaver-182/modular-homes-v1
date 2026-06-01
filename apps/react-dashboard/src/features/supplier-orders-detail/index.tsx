@@ -153,7 +153,11 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 							});
 						}}
 					/>
-					<OrderInvoicesCard invoices={order.invoices} />
+					<OrderInvoicesCard
+						currency={order.currencyCode}
+						invoices={order.invoices}
+						orderId={order.id}
+					/>
 				</div>
 				<OrderSidebar order={order} />
 			</div>

@@ -2,11 +2,14 @@ import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/
 import { moduflowRequest } from "@/lib/moduflow/client";
 
 import type {
+	CreateSupplierOrderInvoiceRequest,
 	CreateSupplierOrderRequest,
+	SupplierOrderDetailInvoiceResponse,
 	SupplierOrderDetailResponse,
 	SupplierOrderLineWriteInput,
 	SupplierOrderListItemResponse,
 	SupplierOrderListResponse,
+	UpdateSupplierOrderInvoiceRequest,
 	UpdateSupplierOrderRequest,
 } from "@moduflow/types";
 
@@ -113,7 +116,54 @@ export const updateSupplierOrder = async (
 		}
 	);
 
-export type { SupplierOrderLineWriteInput, UpdateSupplierOrderRequest };
+export const createSupplierOrderInvoice = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	input: CreateSupplierOrderInvoiceRequest,
+): Promise<SupplierOrderDetailInvoiceResponse> =>
+	moduflowRequest<SupplierOrderDetailInvoiceResponse>(
+		`/supplier-orders/${encodeURIComponent(orderId)}/invoices`,
+		{
+			body: input,
+			headers: organizationHeaders(context),
+			method: "POST",
+		}
+	);
+
+export const updateSupplierOrderInvoice = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	invoiceId: string,
+	input: UpdateSupplierOrderInvoiceRequest,
+): Promise<SupplierOrderDetailInvoiceResponse> =>
+	moduflowRequest<SupplierOrderDetailInvoiceResponse>(
+		`/supplier-orders/${encodeURIComponent(orderId)}/invoices/${encodeURIComponent(invoiceId)}`,
+		{
+			body: input,
+			headers: organizationHeaders(context),
+			method: "PATCH",
+		}
+	);
+
+export const deleteSupplierOrderInvoice = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	invoiceId: string,
+): Promise<void> =>
+	moduflowRequest<void>(
+		`/supplier-orders/${encodeURIComponent(orderId)}/invoices/${encodeURIComponent(invoiceId)}`,
+		{
+			headers: organizationHeaders(context),
+			method: "DELETE",
+		}
+	);
+
+export type {
+	CreateSupplierOrderInvoiceRequest,
+	SupplierOrderLineWriteInput,
+	UpdateSupplierOrderInvoiceRequest,
+	UpdateSupplierOrderRequest,
+};
 
 export const createSupplierOrderFromQuote = async (args: {
 	organizationId: string;
