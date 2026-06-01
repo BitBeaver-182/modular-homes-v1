@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Prisma } from '@prisma/client';
 import { SupplierOrdersService } from './supplier-orders.service';
@@ -208,5 +209,56 @@ describe('SupplierOrdersService', () => {
       take: 10,
       include: expect.any(Object),
     });
+  });
+
+  it('returns a supplier order detail record for the active organization', async () => {
+    prisma.supplierOrder.findFirst.mockResolvedValue({
+      id: 101n,
+      organizationId: 4n,
+      supplierId: 8n,
+      supplierQuoteId: 12n,
+      supplier: null,
+      supplierQuote: null,
+      lines: [],
+      invoices: [],
+      status: 'confirmed',
+      orderNumber: 'SO-000101',
+      supplierPoNumber: 'PO-2026-009',
+      orderDate: new Date('2026-06-01T00:00:00.000Z'),
+      confirmedAt: null,
+      expectedReadyDate: null,
+      expectedShipDate: null,
+      expectedArrivalDate: null,
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('1000.00'),
+      shippingAmount: new Prisma.Decimal('100.00'),
+      taxAmount: new Prisma.Decimal('50.00'),
+      totalAmount: new Prisma.Decimal('1150.00'),
+      incoterm: null,
+      paymentTerms: null,
+      loadingPort: null,
+      destinationPort: null,
+      notes: null,
+      createdByUserId: null,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+    });
+
+    const result = await service.findOne(4n, '101');
+
+    expect(prisma.supplierOrder.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 101n,
+        organizationId: 4n,
+      },
+      include: expect.any(Object),
+    });
+    expect(result.id).toBe(101n);
+  });
+
+  it('throws not found when a supplier order detail record is missing', async () => {
+    prisma.supplierOrder.findFirst.mockResolvedValue(null);
+
+    await expect(service.findOne(4n, '101')).rejects.toThrow(NotFoundException);
   });
 });

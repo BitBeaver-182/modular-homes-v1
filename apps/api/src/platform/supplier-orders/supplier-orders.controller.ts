@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiCreatedResponse,
   ApiOkResponse,
@@ -17,10 +25,12 @@ import { ApiOrganizationHeader } from '../platform-swagger.decorator';
 import { CreateSupplierOrderDto } from './dto/create-supplier-order.dto';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
 import {
+  SupplierOrderDetailResponse,
   SupplierOrderListItemResponse,
   SupplierOrderListResponse,
 } from './dto/supplier-order-response.dto';
 import {
+  toSupplierOrderDetailResponse,
   toSupplierOrderListItemResponse,
   toSupplierOrderListResponse,
 } from './mappers/supplier-order.mapper';
@@ -71,6 +81,25 @@ export class SupplierOrdersController {
     return plainToInstance(
       SupplierOrderListResponse,
       toSupplierOrderListResponse(result.data, result.meta),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get Supplier Order',
+    description: 'Return a supplier order detail view in the active organization.',
+  })
+  @ApiOkResponse({ type: SupplierOrderDetailResponse })
+  async findOne(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+  ): Promise<SupplierOrderDetailResponse> {
+    return plainToInstance(
+      SupplierOrderDetailResponse,
+      toSupplierOrderDetailResponse(
+        await this.supplierOrdersService.findOne(organizationId, id),
+      ),
       { excludeExtraneousValues: true },
     );
   }

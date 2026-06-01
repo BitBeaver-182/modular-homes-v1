@@ -1,16 +1,21 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
-import { orderKeys } from "../../supplier-orders/hooks/order-keys";
-import { getSupplierOrder } from "../lib/order-api";
+import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
 
-import type { SupplierOrder } from "../../supplier-orders/types";
+import { orderKeys } from "../../supplier-orders/hooks/order-keys";
+import { getSupplierOrderDetail } from "../../supplier-orders/lib/order-api";
+
+import type { SupplierOrderDetailResponse } from "@moduflow/types";
 
 export const useGetOrder = (
-	documentId: string | undefined | null,
-): UseQueryResult<SupplierOrder, Error> => {
+	orderId: string | undefined | null,
+): UseQueryResult<SupplierOrderDetailResponse, Error> => {
+	const { activeMembership } = AdminRoute.useRouteContext();
+	const organizationId = activeMembership.organization.id;
+
 	return useQuery({
-		queryKey: orderKeys.detail(documentId ?? ""),
-		queryFn: () => getSupplierOrder(documentId!),
-		enabled: Boolean(documentId),
+		queryKey: orderKeys.detail(orderId ?? ""),
+		queryFn: () => getSupplierOrderDetail({ organizationId }, orderId!),
+		enabled: Boolean(orderId),
 	});
 };

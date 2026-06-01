@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useMemo, type JSX } from "react";
+import { type JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -12,28 +12,12 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { useCreateInvoicePayment } from "@/features/supplier-orders-detail/hooks/use-create-invoice-payment";
-import { useCreateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-create-order-invoice";
-import { useDeleteInvoicePayment } from "@/features/supplier-orders-detail/hooks/use-delete-invoice-payment";
-import { useDeleteOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-delete-order-invoice";
 import { useGetOrder } from "@/features/supplier-orders-detail/hooks/use-get-order";
-import { useUpdateInvoicePayment } from "@/features/supplier-orders-detail/hooks/use-update-invoice-payment";
-import { useUpdateOrder } from "@/features/supplier-orders-detail/hooks/use-update-order";
-import { useUpdateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-update-order-invoice";
-import type {
-	SupplierInvoicePaymentUpdateInput,
-	SupplierInvoicePaymentWriteInput,
-	SupplierInvoiceUpdateInput,
-	SupplierInvoiceWriteInput,
-} from "@/features/supplier-orders-detail/lib/order-api";
 import { Route } from "@/routes/$locale.o.$organizationSlug._admin._operations.supplier-orders_.$orderId";
 
 import { OrderInvoicesCard } from "./components/order-invoices";
 import { OrderProductsCard } from "./components/order-products/order-products-card";
 import { OrderSidebar } from "./components/order-sidebar";
-
-const getOrderNumber = (orderId: number): string =>
-	`SO-${String(orderId).padStart(6, "0")}`;
 
 const SupplierOrderDetailPage = (): JSX.Element => {
 	const { t } = useTranslation();
@@ -47,34 +31,6 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 		error,
 		refetch,
 	} = useGetOrder(orderId);
-
-	const updateOrder = useUpdateOrder();
-	const createInvoice = useCreateOrderInvoice();
-	const updateInvoice = useUpdateOrderInvoice();
-	const deleteInvoice = useDeleteOrderInvoice();
-	const createPayment = useCreateInvoicePayment();
-	const updatePayment = useUpdateInvoicePayment();
-	const deletePayment = useDeleteInvoicePayment();
-
-	const anyMutationInFlight = useMemo(
-		() =>
-			updateOrder.isPending ||
-			createInvoice.isPending ||
-			updateInvoice.isPending ||
-			deleteInvoice.isPending ||
-			createPayment.isPending ||
-			updatePayment.isPending ||
-			deletePayment.isPending,
-		[
-			createInvoice.isPending,
-			createPayment.isPending,
-			deleteInvoice.isPending,
-			deletePayment.isPending,
-			updateInvoice.isPending,
-			updateOrder.isPending,
-			updatePayment.isPending,
-		]
-	);
 
 	const goToOrders = (): void => {
 		void navigate({
@@ -120,71 +76,6 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 		);
 	}
 
-	const supplierName =
-		order.supplier?.name ??
-		order.quote?.supplier?.name ??
-		t("orders.unknownSupplier");
-	const currency = order.quote?.total?.currency_code?.toUpperCase() ?? "EUR";
-	const orderNumber = getOrderNumber(order.id);
-
-	const handleCreateInvoice = async (
-		input: SupplierInvoiceWriteInput
-	): Promise<void> => {
-		await createInvoice.mutateAsync({
-			orderDocumentId: order.documentId,
-			input,
-		});
-	};
-
-	const handleUpdateInvoice = async (
-		invoiceDocumentId: string,
-		input: SupplierInvoiceUpdateInput
-	): Promise<void> => {
-		await updateInvoice.mutateAsync({
-			orderDocumentId: order.documentId,
-			invoiceDocumentId,
-			input,
-		});
-	};
-
-	const handleDeleteInvoice = async (
-		invoiceDocumentId: string
-	): Promise<void> => {
-		await deleteInvoice.mutateAsync({
-			orderDocumentId: order.documentId,
-			invoiceDocumentId,
-		});
-	};
-
-	const handleCreatePayment = async (
-		input: SupplierInvoicePaymentWriteInput
-	): Promise<void> => {
-		await createPayment.mutateAsync({
-			orderDocumentId: order.documentId,
-			input,
-		});
-	};
-
-	const handleUpdatePayment = async (
-		paymentDocumentId: string,
-		input: SupplierInvoicePaymentUpdateInput
-	): Promise<void> => {
-		await updatePayment.mutateAsync({
-			orderDocumentId: order.documentId,
-			paymentDocumentId,
-			input,
-		});
-	};
-
-	const handleDeletePayment = async (
-		paymentDocumentId: string
-	): Promise<void> => {
-		await deletePayment.mutateAsync({
-			orderDocumentId: order.documentId,
-			paymentDocumentId,
-		});
-	};
-
 	return (
 		<div className="space-y-6">
 			<div className="flex shrink-0 flex-col gap-2">
@@ -213,55 +104,33 @@ const SupplierOrderDetailPage = (): JSX.Element => {
 						<BreadcrumbSeparator />
 						<BreadcrumbItem>
 							<BreadcrumbPage className="text-gray-400">
-								{orderNumber}
+								{order.orderNumber ?? order.id}
 							</BreadcrumbPage>
 						</BreadcrumbItem>
 					</BreadcrumbList>
 				</Breadcrumb>
 
-				<div className="flex items-center justify-between">
-					<h1 className="text-2xl font-bold">{orderNumber}</h1>
+				<div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+					<div>
+						<h1 className="text-2xl font-bold">
+							{order.orderNumber ?? order.id}
+						</h1>
+						<p className="text-sm text-muted-foreground">
+							{order.supplier?.name ?? t("orders.unknownSupplier")}
+						</p>
+					</div>
 				</div>
 			</div>
 
 			<div className="grid gap-6 lg:grid-cols-3">
 				<div className="space-y-6 lg:col-span-2">
 					<OrderProductsCard
-						currency={currency}
-						mutating={anyMutationInFlight}
-						order={order}
-						onSaveOrderLines={async (orderLines) => {
-							await updateOrder.mutateAsync({
-								documentId: order.documentId,
-								input: { orderLines },
-							});
-						}}
+						currency={order.currencyCode}
+						orderLines={order.orderLines}
 					/>
-					<OrderInvoicesCard
-						currency={currency}
-						invoices={order.invoices ?? []}
-						mutating={anyMutationInFlight}
-						orderDocumentId={order.documentId}
-						orderQuote={order.quote}
-						supplierName={supplierName}
-						onCreateInvoice={handleCreateInvoice}
-						onCreatePayment={handleCreatePayment}
-						onDeleteInvoice={handleDeleteInvoice}
-						onDeletePayment={handleDeletePayment}
-						onUpdateInvoice={handleUpdateInvoice}
-						onUpdatePayment={handleUpdatePayment}
-					/>
+					<OrderInvoicesCard invoices={order.invoices} />
 				</div>
-				<OrderSidebar
-					mutating={anyMutationInFlight}
-					order={order}
-					onUpdateOrder={async (input) => {
-						await updateOrder.mutateAsync({
-							documentId: order.documentId,
-							input,
-						});
-					}}
-				/>
+				<OrderSidebar order={order} />
 			</div>
 		</div>
 	);

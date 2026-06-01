@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
 
-import { getSupplierOrders, toSupplierOrderQueryString } from "./order-api";
+import {
+	getSupplierOrderDetail,
+	getSupplierOrders,
+	toSupplierOrderQueryString,
+} from "./order-api";
 
 const { moduflowRequestMock } = vi.hoisted(() => ({
 	moduflowRequestMock: vi.fn(),
@@ -58,5 +62,17 @@ describe("supplier order Moduflow API", () => {
 		} as SupplierOrdersSearchParameters;
 
 		expect(toSupplierOrderQueryString(params)).toBe("page=1&limit=10");
+	});
+
+	it("requests supplier-order detail from the platform API", async () => {
+		await getSupplierOrderDetail(context, "101");
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101",
+			{
+				headers: { "x-organization-id": "42" },
+				method: "GET",
+			}
+		);
 	});
 });

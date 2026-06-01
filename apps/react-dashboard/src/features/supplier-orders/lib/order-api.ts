@@ -3,6 +3,7 @@ import { moduflowRequest } from "@/lib/moduflow/client";
 
 import type {
 	CreateSupplierOrderRequest,
+	SupplierOrderDetailResponse,
 	SupplierOrderListItemResponse,
 	SupplierOrderListResponse,
 } from "@moduflow/types";
@@ -78,6 +79,18 @@ export const getSupplierOrders = async (
 ): Promise<SupplierOrderListResponse> =>
 	moduflowRequest<SupplierOrderListResponse>(
 		`/supplier-orders?${toSupplierOrderQueryString(parameters)}`,
+		{
+			headers: organizationHeaders(context),
+			method: "GET",
+		}
+	);
+
+export const getSupplierOrderDetail = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+): Promise<SupplierOrderDetailResponse> =>
+	moduflowRequest<SupplierOrderDetailResponse>(
+		`/supplier-orders/${encodeURIComponent(orderId)}`,
 		{
 			headers: organizationHeaders(context),
 			method: "GET",
