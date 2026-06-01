@@ -353,6 +353,11 @@
 		"validation": {
 			"required": "This field is required",
 			"string": "This field must be a string",
+			"number": "This field must be a number",
+			"integer": "This field must be a whole number",
+			"enum": "Please select a valid option",
+			"date": "Please enter a valid date",
+			"min": "Must be at least {{min}}",
 			"email": "Please enter a valid email address",
 			"minLength": "Must be at least {{min}} characters",
 			"maxLength": "Must be at most {{max}} characters",

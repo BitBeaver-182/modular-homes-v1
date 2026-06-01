@@ -364,7 +364,7 @@ export const OrderInvoicesCard = ({
 					}
 				}}
 			>
-				<DialogContent>
+				<DialogContent className="sm:max-w-2xl">
 					<DialogHeader>
 							<DialogTitle>
 								{editingInvoice

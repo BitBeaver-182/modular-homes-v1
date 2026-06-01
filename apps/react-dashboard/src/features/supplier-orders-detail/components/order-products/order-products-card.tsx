@@ -418,7 +418,7 @@ export const OrderProductsCard = ({
 					}
 				}}
 			>
-				<DialogContent>
+				<DialogContent className="sm:max-w-xl">
 					<FormProvider {...form}>
 						<form
 							className="contents"
