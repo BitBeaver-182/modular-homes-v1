@@ -110,6 +110,28 @@ export interface SupplierOrderLineWriteInput {
   unitCost: number;
 }
 
+export interface CreateSupplierOrderInvoiceRequest {
+  invoiceNumber: string;
+  invoiceType: SupplierOrderInvoiceType;
+  status: SupplierOrderInvoiceStatus;
+  issueDate?: string | null;
+  dueDate?: string | null;
+  subtotalAmount: number;
+  taxAmount: number;
+  notes?: string | null;
+}
+
+export interface UpdateSupplierOrderInvoiceRequest {
+  invoiceNumber: string;
+  invoiceType: SupplierOrderInvoiceType;
+  status: SupplierOrderInvoiceStatus;
+  issueDate?: string | null;
+  dueDate?: string | null;
+  subtotalAmount: number;
+  taxAmount: number;
+  notes?: string | null;
+}
+
 export interface UpdateSupplierOrderRequest {
   /**
    * Full replacement semantics for order lines.

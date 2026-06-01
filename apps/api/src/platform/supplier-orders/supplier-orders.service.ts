@@ -11,6 +11,10 @@ import type { AuthenticatedActor } from '../../auth/auth.types';
 import { PrismaService } from '../../database/prisma.service';
 import { parseBigIntId } from '../../common/ids/parse-bigint-id';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
+import {
+  CreateSupplierOrderInvoiceDto,
+  UpdateSupplierOrderInvoiceDto,
+} from './dto/supplier-order-invoice.dto';
 import { UpdateSupplierOrderDto } from './dto/update-supplier-order.dto';
 import type { SupplierOrderWithRelations } from './mappers/supplier-order.mapper';
 import type { CreateSupplierOrderRequest } from '@moduflow/types';
@@ -347,6 +351,165 @@ export class SupplierOrdersService {
       });
     });
   }
+
+  async createInvoice(
+    organizationId: bigint,
+    orderId: string,
+    dto: CreateSupplierOrderInvoiceDto,
+  ) {
+    const order = await this.findOne(organizationId, orderId);
+
+    try {
+      return await this.prisma.invoice.create({
+        data: buildCreateInvoiceData(organizationId, order, dto),
+      });
+    } catch (error) {
+      throw translateInvoiceWriteError(error);
+    }
+  }
+
+  async updateInvoice(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    dto: UpdateSupplierOrderInvoiceDto,
+  ) {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+
+    try {
+      return await this.prisma.invoice.update({
+        where: { id: invoice.id },
+        data: buildUpdateInvoiceData(order, dto, invoice.amountPaid),
+      });
+    } catch (error) {
+      throw translateInvoiceWriteError(error);
+    }
+  }
+
+  async deleteInvoice(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+  ): Promise<void> {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+
+    await this.prisma.invoice.delete({
+      where: { id: invoice.id },
+    });
+  }
+
+  private async findInvoiceForOrder(
+    organizationId: bigint,
+    supplierOrderId: bigint,
+    invoiceId: string,
+  ) {
+    const parsedInvoiceId = parseBigIntId(invoiceId, 'invoiceId');
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id: parsedInvoiceId,
+        organizationId,
+        supplierOrderId,
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Supplier order invoice not found');
+    }
+
+    return invoice;
+  }
+}
+
+function buildCreateInvoiceData(
+  organizationId: bigint,
+  order: Pick<SupplierOrderWithRelations, 'id' | 'supplierId' | 'currencyCode'>,
+  dto: CreateSupplierOrderInvoiceDto,
+): Prisma.InvoiceUncheckedCreateInput {
+  const amountPaid = new Prisma.Decimal(0);
+  const commonFields = buildInvoiceCommonFields(order, dto, amountPaid);
+
+  return {
+    organizationId,
+    supplierId: order.supplierId,
+    supplierOrderId: order.id,
+    ...commonFields,
+  };
+}
+
+function buildUpdateInvoiceData(
+  order: Pick<SupplierOrderWithRelations, 'supplierId' | 'currencyCode'>,
+  dto: UpdateSupplierOrderInvoiceDto,
+  amountPaid: Prisma.Decimal,
+): Prisma.InvoiceUncheckedUpdateInput {
+  return {
+    supplierId: order.supplierId,
+    ...buildInvoiceCommonFields(order, dto, amountPaid),
+  };
+}
+
+function buildInvoiceCommonFields(
+  order: Pick<SupplierOrderWithRelations, 'currencyCode'>,
+  dto: CreateSupplierOrderInvoiceDto | UpdateSupplierOrderInvoiceDto,
+  amountPaid: Prisma.Decimal,
+): {
+  invoiceNumber: string;
+  direction: 'payable';
+  invoiceType: (typeof dto)['invoiceType'];
+  status: (typeof dto)['status'];
+  issueDate: Date | null;
+  dueDate: Date | null;
+  currencyCode: string;
+  subtotalAmount: Prisma.Decimal;
+  taxAmount: Prisma.Decimal;
+  totalAmount: Prisma.Decimal;
+  amountPaid: Prisma.Decimal;
+  balanceDue: Prisma.Decimal;
+  notes: string | null;
+} {
+  const subtotalAmount = new Prisma.Decimal(dto.subtotalAmount);
+  const taxAmount = new Prisma.Decimal(dto.taxAmount);
+  const totalAmount = subtotalAmount.add(taxAmount);
+
+  return {
+    invoiceNumber: dto.invoiceNumber,
+    direction: 'payable',
+    invoiceType: dto.invoiceType,
+    status: dto.status,
+    issueDate: dto.issueDate ? new Date(dto.issueDate) : null,
+    dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+    currencyCode: order.currencyCode,
+    subtotalAmount,
+    taxAmount,
+    totalAmount,
+    amountPaid,
+    balanceDue: totalAmount.sub(amountPaid),
+    notes: dto.notes ?? null,
+  };
+}
+
+function translateInvoiceWriteError(error: unknown): Error {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002'
+  ) {
+    return new BadRequestException('Invoice number already exists');
+  }
+
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new BadRequestException('Could not save supplier order invoice');
 }
 
 function assertNoNewLineReferences(

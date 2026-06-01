@@ -4,9 +4,12 @@ import { SupplierOrdersService } from './supplier-orders.service';
 describe('SupplierOrdersController', () => {
   const supplierOrdersService = {
     create: jest.fn(),
+    createInvoice: jest.fn(),
+    deleteInvoice: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
+    updateInvoice: jest.fn(),
   };
 
   let controller: SupplierOrdersController;
@@ -208,6 +211,130 @@ describe('SupplierOrdersController', () => {
           currencyCode: 'EUR',
         },
       }),
+    );
+  });
+
+  it('creates a supplier-order invoice through the scoped service', async () => {
+    supplierOrdersService.createInvoice.mockResolvedValue({
+      id: 77n,
+      organizationId: 2n,
+      invoiceNumber: 'INV-2026-001',
+      direction: 'payable',
+      invoiceType: 'supplier_goods',
+      status: 'issued',
+      supplierId: 8n,
+      supplierOrderId: 101n,
+      issueDate: new Date('2026-06-03T00:00:00.000Z'),
+      dueDate: new Date('2026-06-30T00:00:00.000Z'),
+      currencyCode: 'EUR',
+      exchangeRateToBase: null,
+      subtotalAmount: 1000,
+      taxAmount: 150,
+      totalAmount: 1150,
+      amountPaid: 0,
+      balanceDue: 1150,
+      notes: 'Awaiting remainder',
+      createdAt: new Date('2026-06-03T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-03T00:00:00.000Z'),
+    });
+
+    const response = await controller.createInvoice(2n, '101', {
+      invoiceNumber: 'INV-2026-001',
+      invoiceType: 'supplier_goods',
+      status: 'issued',
+      issueDate: '2026-06-03',
+      dueDate: '2026-06-30',
+      subtotalAmount: 1000,
+      taxAmount: 150,
+      notes: 'Awaiting remainder',
+    });
+
+    expect(supplierOrdersService.createInvoice).toHaveBeenCalledWith(2n, '101', {
+      invoiceNumber: 'INV-2026-001',
+      invoiceType: 'supplier_goods',
+      status: 'issued',
+      issueDate: '2026-06-03',
+      dueDate: '2026-06-30',
+      subtotalAmount: 1000,
+      taxAmount: 150,
+      notes: 'Awaiting remainder',
+    });
+    expect(response).toEqual(
+      expect.objectContaining({
+        id: '77',
+        direction: 'payable',
+        totalAmount: { amount: 1150, currencyCode: 'EUR' },
+      }),
+    );
+  });
+
+  it('updates a supplier-order invoice through the scoped service', async () => {
+    supplierOrdersService.updateInvoice.mockResolvedValue({
+      id: 77n,
+      organizationId: 2n,
+      invoiceNumber: 'INV-2026-001',
+      direction: 'payable',
+      invoiceType: 'supplier_goods',
+      status: 'partially_paid',
+      supplierId: 8n,
+      supplierOrderId: 101n,
+      issueDate: new Date('2026-06-03T00:00:00.000Z'),
+      dueDate: new Date('2026-06-30T00:00:00.000Z'),
+      currencyCode: 'EUR',
+      exchangeRateToBase: null,
+      subtotalAmount: 900,
+      taxAmount: 135,
+      totalAmount: 1035,
+      amountPaid: 300,
+      balanceDue: 735,
+      notes: 'Revised',
+      createdAt: new Date('2026-06-03T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-04T00:00:00.000Z'),
+    });
+
+    const response = await controller.updateInvoice(2n, '101', '77', {
+      invoiceNumber: 'INV-2026-001',
+      invoiceType: 'supplier_goods',
+      status: 'partially_paid',
+      issueDate: '2026-06-03',
+      dueDate: '2026-06-30',
+      subtotalAmount: 900,
+      taxAmount: 135,
+      notes: 'Revised',
+    });
+
+    expect(supplierOrdersService.updateInvoice).toHaveBeenCalledWith(
+      2n,
+      '101',
+      '77',
+      {
+        invoiceNumber: 'INV-2026-001',
+        invoiceType: 'supplier_goods',
+        status: 'partially_paid',
+        issueDate: '2026-06-03',
+        dueDate: '2026-06-30',
+        subtotalAmount: 900,
+        taxAmount: 135,
+        notes: 'Revised',
+      },
+    );
+    expect(response).toEqual(
+      expect.objectContaining({
+        id: '77',
+        status: 'partially_paid',
+      }),
+    );
+  });
+
+  it('deletes a supplier-order invoice through the scoped service', async () => {
+    supplierOrdersService.deleteInvoice.mockResolvedValue(undefined);
+
+    await controller.deleteInvoice(2n, '101', '77');
+
+    expect(supplierOrdersService.deleteInvoice).toHaveBeenCalledWith(
+      2n,
+      '101',
+      '77',
     );
   });
 });

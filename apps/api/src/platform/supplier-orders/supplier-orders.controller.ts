@@ -1,7 +1,9 @@
 import {
+  Delete,
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -10,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -24,14 +27,20 @@ import { PlatformMembershipGuard } from '../platform-membership.guard';
 import { PlatformOrganizationContextGuard } from '../platform-organization-context.guard';
 import { ApiOrganizationHeader } from '../platform-swagger.decorator';
 import { CreateSupplierOrderDto } from './dto/create-supplier-order.dto';
+import {
+  CreateSupplierOrderInvoiceDto,
+  UpdateSupplierOrderInvoiceDto,
+} from './dto/supplier-order-invoice.dto';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
 import {
+  SupplierOrderDetailInvoiceResponse,
   SupplierOrderDetailResponse,
   SupplierOrderListItemResponse,
   SupplierOrderListResponse,
 } from './dto/supplier-order-response.dto';
 import { UpdateSupplierOrderDto } from './dto/update-supplier-order.dto';
 import {
+  toSupplierOrderDetailInvoiceResponse,
   toSupplierOrderDetailResponse,
   toSupplierOrderListItemResponse,
   toSupplierOrderListResponse,
@@ -125,6 +134,74 @@ export class SupplierOrdersController {
         await this.supplierOrdersService.update(organizationId, id, dto),
       ),
       { excludeExtraneousValues: true },
+    );
+  }
+
+  @Post(':id/invoices')
+  @ApiOperation({
+    summary: 'Create Supplier Order Invoice',
+    description:
+      'Create an invoice for a supplier order in the active organization.',
+  })
+  @ApiCreatedResponse({ type: SupplierOrderDetailInvoiceResponse })
+  async createInvoice(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Body() dto: CreateSupplierOrderInvoiceDto,
+  ): Promise<SupplierOrderDetailInvoiceResponse> {
+    return plainToInstance(
+      SupplierOrderDetailInvoiceResponse,
+      toSupplierOrderDetailInvoiceResponse(
+        await this.supplierOrdersService.createInvoice(organizationId, id, dto),
+      ),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Patch(':id/invoices/:invoiceId')
+  @ApiOperation({
+    summary: 'Update Supplier Order Invoice',
+    description:
+      'Update an invoice for a supplier order in the active organization.',
+  })
+  @ApiOkResponse({ type: SupplierOrderDetailInvoiceResponse })
+  async updateInvoice(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() dto: UpdateSupplierOrderInvoiceDto,
+  ): Promise<SupplierOrderDetailInvoiceResponse> {
+    return plainToInstance(
+      SupplierOrderDetailInvoiceResponse,
+      toSupplierOrderDetailInvoiceResponse(
+        await this.supplierOrdersService.updateInvoice(
+          organizationId,
+          id,
+          invoiceId,
+          dto,
+        ),
+      ),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Delete(':id/invoices/:invoiceId')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Delete Supplier Order Invoice',
+    description:
+      'Delete an invoice for a supplier order in the active organization.',
+  })
+  @ApiNoContentResponse()
+  async deleteInvoice(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+  ): Promise<void> {
+    await this.supplierOrdersService.deleteInvoice(
+      organizationId,
+      id,
+      invoiceId,
     );
   }
 }

@@ -6,6 +6,12 @@ import { SupplierOrdersService } from './supplier-orders.service';
 describe('SupplierOrdersService', () => {
   const prisma = {
     $transaction: jest.fn(),
+    invoice: {
+      create: jest.fn(),
+      delete: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
     supplierQuote: {
       findFirst: jest.fn(),
     },
@@ -34,6 +40,10 @@ describe('SupplierOrdersService', () => {
     prisma.supplierOrder.findFirst.mockResolvedValue(null);
     prisma.supplierOrder.findMany.mockResolvedValue([{ id: 1n }]);
     prisma.supplierOrder.count.mockResolvedValue(1);
+    prisma.invoice.create.mockResolvedValue({ id: 1n });
+    prisma.invoice.update.mockResolvedValue({ id: 1n });
+    prisma.invoice.delete.mockResolvedValue({ id: 1n });
+    prisma.invoice.findFirst.mockResolvedValue(null);
     prisma.supplierOrderLine.create.mockResolvedValue({ id: 1n });
     prisma.supplierOrderLine.update.mockResolvedValue({ id: 1n });
     prisma.supplierOrderLine.deleteMany.mockResolvedValue({ count: 0 });
@@ -633,5 +643,280 @@ describe('SupplierOrdersService', () => {
         ],
       }),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('creates a supplier-order invoice with derived totals and payable direction', async () => {
+    prisma.supplierOrder.findFirst.mockResolvedValue({
+      id: 101n,
+      organizationId: 4n,
+      supplierId: 8n,
+      supplierQuoteId: null,
+      supplier: null,
+      supplierQuote: null,
+      lines: [],
+      invoices: [],
+      status: 'confirmed',
+      orderNumber: 'SO-000101',
+      supplierPoNumber: null,
+      orderDate: null,
+      confirmedAt: null,
+      expectedReadyDate: null,
+      expectedShipDate: null,
+      expectedArrivalDate: null,
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('0'),
+      shippingAmount: new Prisma.Decimal('0'),
+      taxAmount: new Prisma.Decimal('0'),
+      totalAmount: new Prisma.Decimal('0'),
+      incoterm: null,
+      paymentTerms: null,
+      loadingPort: null,
+      destinationPort: null,
+      notes: null,
+      createdByUserId: null,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+    });
+    prisma.invoice.create.mockResolvedValue({
+      id: 77n,
+      organizationId: 4n,
+      invoiceNumber: 'INV-2026-001',
+      direction: 'payable',
+      invoiceType: 'supplier_goods',
+      status: 'issued',
+      supplierId: 8n,
+      supplierOrderId: 101n,
+      issueDate: new Date('2026-06-03T00:00:00.000Z'),
+      dueDate: new Date('2026-06-30T00:00:00.000Z'),
+      currencyCode: 'EUR',
+      exchangeRateToBase: null,
+      subtotalAmount: new Prisma.Decimal('1000'),
+      taxAmount: new Prisma.Decimal('150'),
+      totalAmount: new Prisma.Decimal('1150'),
+      amountPaid: new Prisma.Decimal('0'),
+      balanceDue: new Prisma.Decimal('1150'),
+      notes: 'Awaiting remainder',
+      createdAt: new Date('2026-06-03T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-03T00:00:00.000Z'),
+    });
+
+    await service.createInvoice(4n, '101', {
+      invoiceNumber: 'INV-2026-001',
+      invoiceType: 'supplier_goods',
+      status: 'issued',
+      issueDate: '2026-06-03',
+      dueDate: '2026-06-30',
+      subtotalAmount: 1000,
+      taxAmount: 150,
+      notes: 'Awaiting remainder',
+    });
+
+    expect(prisma.invoice.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        organizationId: 4n,
+        supplierId: 8n,
+        supplierOrderId: 101n,
+        invoiceNumber: 'INV-2026-001',
+        direction: 'payable',
+        invoiceType: 'supplier_goods',
+        status: 'issued',
+        currencyCode: 'EUR',
+        subtotalAmount: new Prisma.Decimal('1000'),
+        taxAmount: new Prisma.Decimal('150'),
+        totalAmount: new Prisma.Decimal('1150'),
+        amountPaid: new Prisma.Decimal('0'),
+        balanceDue: new Prisma.Decimal('1150'),
+        notes: 'Awaiting remainder',
+      }),
+    });
+  });
+
+  it('updates a supplier-order invoice and preserves amount paid', async () => {
+    prisma.supplierOrder.findFirst.mockResolvedValue({
+      id: 101n,
+      organizationId: 4n,
+      supplierId: 8n,
+      supplierQuoteId: null,
+      supplier: null,
+      supplierQuote: null,
+      lines: [],
+      invoices: [],
+      status: 'confirmed',
+      orderNumber: 'SO-000101',
+      supplierPoNumber: null,
+      orderDate: null,
+      confirmedAt: null,
+      expectedReadyDate: null,
+      expectedShipDate: null,
+      expectedArrivalDate: null,
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('0'),
+      shippingAmount: new Prisma.Decimal('0'),
+      taxAmount: new Prisma.Decimal('0'),
+      totalAmount: new Prisma.Decimal('0'),
+      incoterm: null,
+      paymentTerms: null,
+      loadingPort: null,
+      destinationPort: null,
+      notes: null,
+      createdByUserId: null,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+    });
+    prisma.invoice.findFirst.mockResolvedValue({
+      id: 77n,
+      organizationId: 4n,
+      invoiceNumber: 'INV-2026-001',
+      direction: 'payable',
+      invoiceType: 'supplier_goods',
+      status: 'issued',
+      supplierId: 8n,
+      supplierOrderId: 101n,
+      issueDate: null,
+      dueDate: null,
+      currencyCode: 'EUR',
+      exchangeRateToBase: null,
+      subtotalAmount: new Prisma.Decimal('1000'),
+      taxAmount: new Prisma.Decimal('150'),
+      totalAmount: new Prisma.Decimal('1150'),
+      amountPaid: new Prisma.Decimal('300'),
+      balanceDue: new Prisma.Decimal('850'),
+      notes: null,
+      createdAt: new Date('2026-06-03T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-03T00:00:00.000Z'),
+    });
+
+    await service.updateInvoice(4n, '101', '77', {
+      invoiceNumber: 'INV-2026-001',
+      invoiceType: 'supplier_goods',
+      status: 'partially_paid',
+      issueDate: '2026-06-03',
+      dueDate: '2026-06-30',
+      subtotalAmount: 900,
+      taxAmount: 135,
+      notes: 'Revised invoice',
+    });
+
+    expect(prisma.invoice.update).toHaveBeenCalledWith({
+      where: { id: 77n },
+      data: expect.objectContaining({
+        amountPaid: new Prisma.Decimal('300'),
+        subtotalAmount: new Prisma.Decimal('900'),
+        taxAmount: new Prisma.Decimal('135'),
+        totalAmount: new Prisma.Decimal('1035'),
+        balanceDue: new Prisma.Decimal('735'),
+        currencyCode: 'EUR',
+      }),
+    });
+  });
+
+  it('rejects invoice updates when the invoice does not belong to the parent order', async () => {
+    prisma.supplierOrder.findFirst.mockResolvedValue({
+      id: 101n,
+      organizationId: 4n,
+      supplierId: 8n,
+      supplierQuoteId: null,
+      supplier: null,
+      supplierQuote: null,
+      lines: [],
+      invoices: [],
+      status: 'confirmed',
+      orderNumber: 'SO-000101',
+      supplierPoNumber: null,
+      orderDate: null,
+      confirmedAt: null,
+      expectedReadyDate: null,
+      expectedShipDate: null,
+      expectedArrivalDate: null,
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('0'),
+      shippingAmount: new Prisma.Decimal('0'),
+      taxAmount: new Prisma.Decimal('0'),
+      totalAmount: new Prisma.Decimal('0'),
+      incoterm: null,
+      paymentTerms: null,
+      loadingPort: null,
+      destinationPort: null,
+      notes: null,
+      createdByUserId: null,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+    });
+    prisma.invoice.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.updateInvoice(4n, '101', '77', {
+        invoiceNumber: 'INV-2026-001',
+        invoiceType: 'supplier_goods',
+        status: 'issued',
+        issueDate: '2026-06-03',
+        dueDate: '2026-06-30',
+        subtotalAmount: 1000,
+        taxAmount: 150,
+        notes: null,
+      }),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('deletes a supplier-order invoice scoped to the parent order', async () => {
+    prisma.supplierOrder.findFirst.mockResolvedValue({
+      id: 101n,
+      organizationId: 4n,
+      supplierId: 8n,
+      supplierQuoteId: null,
+      supplier: null,
+      supplierQuote: null,
+      lines: [],
+      invoices: [],
+      status: 'confirmed',
+      orderNumber: 'SO-000101',
+      supplierPoNumber: null,
+      orderDate: null,
+      confirmedAt: null,
+      expectedReadyDate: null,
+      expectedShipDate: null,
+      expectedArrivalDate: null,
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('0'),
+      shippingAmount: new Prisma.Decimal('0'),
+      taxAmount: new Prisma.Decimal('0'),
+      totalAmount: new Prisma.Decimal('0'),
+      incoterm: null,
+      paymentTerms: null,
+      loadingPort: null,
+      destinationPort: null,
+      notes: null,
+      createdByUserId: null,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+    });
+    prisma.invoice.findFirst.mockResolvedValue({
+      id: 77n,
+      organizationId: 4n,
+      invoiceNumber: 'INV-2026-001',
+      direction: 'payable',
+      invoiceType: 'supplier_goods',
+      status: 'issued',
+      supplierId: 8n,
+      supplierOrderId: 101n,
+      issueDate: null,
+      dueDate: null,
+      currencyCode: 'EUR',
+      exchangeRateToBase: null,
+      subtotalAmount: new Prisma.Decimal('1000'),
+      taxAmount: new Prisma.Decimal('150'),
+      totalAmount: new Prisma.Decimal('1150'),
+      amountPaid: new Prisma.Decimal('0'),
+      balanceDue: new Prisma.Decimal('1150'),
+      notes: null,
+      createdAt: new Date('2026-06-03T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-03T00:00:00.000Z'),
+    });
+
+    await service.deleteInvoice(4n, '101', '77');
+
+    expect(prisma.invoice.delete).toHaveBeenCalledWith({
+      where: { id: 77n },
+    });
   });
 });

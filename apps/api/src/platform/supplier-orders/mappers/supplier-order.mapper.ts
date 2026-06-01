@@ -33,6 +33,7 @@ export type SupplierOrderWithRelations = Prisma.SupplierOrderGetPayload<{
     };
   };
 }>;
+export type SupplierOrderInvoiceRecord = Prisma.InvoiceGetPayload<{}>;
 
 type SupplierOrderListMeta = SupplierOrderListResponse['meta'];
 type SupplierOrderDetailMoney = SupplierOrderDetailResponse['totalAmount'];
@@ -154,8 +155,8 @@ function toSupplierOrderDetailLineResponse(
   };
 }
 
-function toSupplierOrderDetailInvoiceResponse(
-  invoice: SupplierOrderWithRelations['invoices'][number],
+export function toSupplierOrderDetailInvoiceResponse(
+  invoice: SupplierOrderWithRelations['invoices'][number] | SupplierOrderInvoiceRecord,
 ): SupplierOrderDetailInvoiceResponse {
   return {
     id: toApiId(invoice.id),
