@@ -237,7 +237,9 @@ export class SupplierOrdersService {
       }
 
       const nextLines = dto.orderLines ?? [];
-      const existingLineIds = new Set(currentOrder.lines.map((line) => line.id));
+      const existingLineIds = new Set(
+        currentOrder.lines.map((line) => line.id),
+      );
       const existingLinesById = new Map(
         currentOrder.lines.map((line) => [line.id, line] as const),
       );
@@ -350,7 +352,10 @@ export class SupplierOrdersService {
 function assertNoNewLineReferences(
   line: NonNullable<UpdateSupplierOrderDto['orderLines']>[number],
 ): void {
-  if (line.supplierQuoteLineId !== undefined && line.supplierQuoteLineId !== null) {
+  if (
+    line.supplierQuoteLineId !== undefined &&
+    line.supplierQuoteLineId !== null
+  ) {
     throw new BadRequestException(
       'New supplier order lines cannot set supplierQuoteLineId',
     );
