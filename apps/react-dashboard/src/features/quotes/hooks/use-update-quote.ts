@@ -7,12 +7,14 @@ import {
 import { quoteKeys } from "./quote-keys";
 import { updateQuote } from "../lib/quote-api";
 
-import type { QuoteWriteInput } from "../types";
-import type { SupplierQuoteResponse } from "@moduflow/types";
+import type {
+	SupplierQuoteResponse,
+	UpdateSupplierQuoteRequest,
+} from "@moduflow/types";
 
 export interface UpdateQuoteVariables {
 	id: string;
-	input: QuoteWriteInput;
+	input: UpdateSupplierQuoteRequest;
 }
 
 export const useUpdateQuote = (

@@ -416,18 +416,18 @@ export class SupplierQuotesService {
         id: attachmentId,
         organizationId,
         context: 'SUPPLIER_DOCUMENT',
-        status: 'CONFIRMED',
+        status: { in: ['PENDING', 'CONFIRMED'] },
         expiresAt: { not: null },
       },
       data: {
+        status: 'CONFIRMED',
+        confirmedAt: new Date(),
         expiresAt: null,
       },
     });
 
     if (count === 0) {
-      throw new BadRequestException(
-        'Attachment must be a confirmed supplier document',
-      );
+      throw new BadRequestException('Attachment must be a supplier document');
     }
   }
 
@@ -484,15 +484,44 @@ export class SupplierQuotesService {
         id: normalized,
         organizationId,
         context: 'SUPPLIER_DOCUMENT',
-        status: 'CONFIRMED',
       },
-      select: { id: true },
+      select: {
+        id: true,
+        status: true,
+        expiresAt: true,
+        key: true,
+        context: true,
+      },
     });
 
     if (!upload) {
-      throw new BadRequestException(
-        'Attachment must be a confirmed supplier document',
-      );
+      throw new BadRequestException('Attachment must be a supplier document');
+    }
+
+    if (upload.status === 'PENDING' && isExpiredUpload(upload.expiresAt)) {
+      await this.storageService.delete(upload.context, upload.key);
+      await this.prisma.fileUpload.updateMany({
+        where: {
+          id: normalized,
+          organizationId,
+          status: 'PENDING',
+        },
+        data: { status: 'ORPHANED' },
+      });
+      throw new BadRequestException('Attachment upload has expired');
+    }
+
+    if (upload.status !== 'PENDING' && upload.status !== 'CONFIRMED') {
+      throw new BadRequestException('Attachment must be a supplier document');
+    }
+
+    const objectExists = await this.storageService.exists(
+      upload.context,
+      upload.key,
+    );
+
+    if (!objectExists) {
+      throw new BadRequestException('Attachment file was not uploaded');
     }
 
     const existingQuote = await this.prisma.supplierQuote.findFirst({
@@ -889,6 +918,10 @@ function isUniqueConstraintError(error: unknown): error is { code: 'P2002' } {
     'code' in error &&
     error.code === 'P2002'
   );
+}
+
+function isExpiredUpload(value: Date | null): boolean {
+  return value !== null && value.getTime() <= Date.now();
 }
 
 function startOfUtcToday(): Date {

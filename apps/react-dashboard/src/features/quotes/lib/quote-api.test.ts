@@ -2,20 +2,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._admin._operations.quotes";
 
-import { createQuote, getQuotes, toQuoteQueryString, updateQuote } from "./quote-api";
+import {
+	buildCreateQuotePayload,
+	buildUpdateQuotePayload,
+	createQuote,
+	getQuotes,
+	toQuoteQueryString,
+	updateQuote,
+} from "./quote-api";
 
 const { moduflowRequestMock } = vi.hoisted(() => ({
 	moduflowRequestMock: vi.fn(),
 }));
-const { uploadSupplierDocumentMock } = vi.hoisted(() => ({
-	uploadSupplierDocumentMock: vi.fn(),
-}));
 
 vi.mock("@/lib/moduflow/client", () => ({
 	moduflowRequest: moduflowRequestMock,
-}));
-vi.mock("./upload-api", () => ({
-	uploadSupplierDocument: uploadSupplierDocumentMock,
 }));
 
 describe("quote Moduflow API", () => {
@@ -27,7 +28,6 @@ describe("quote Moduflow API", () => {
 			data: [],
 			meta: { pagination: {} },
 		});
-		uploadSupplierDocumentMock.mockReset();
 	});
 
 	it("maps the available quote filters to the platform API query format", async () => {
@@ -89,27 +89,25 @@ describe("quote Moduflow API", () => {
 		);
 	});
 
-	it("uses subtotal-only write payloads and rolls back uploaded files on create failure", async () => {
-		const file = new File(["pdf"], "quote.pdf", { type: "application/pdf" });
-		uploadSupplierDocumentMock.mockResolvedValue({ id: "file_123" });
-		moduflowRequestMock
-			.mockRejectedValueOnce(new Error("quote failed"))
-			.mockResolvedValueOnce(undefined);
-
-		await expect(
-			createQuote(context, {
-				supplierId: "7",
-				quoteNumber: "SQ-1",
-				quotationDate: "2026-05-01",
-				expirationDate: "2026-05-31",
-				amount: "2500",
-				currencyCode: "eur",
-				notes: "",
-				status: "received",
-				pdfFile: file,
-				removeExistingPdf: false,
-			})
-		).rejects.toThrow("quote failed");
+	it("uses subtotal-only write payloads when creating quotes", async () => {
+		await createQuote(
+			context,
+			buildCreateQuotePayload(
+				{
+					supplierId: "7",
+					quoteNumber: "SQ-1",
+					quotationDate: "2026-05-01",
+					expirationDate: "2026-05-31",
+					amount: "2500",
+					currencyCode: "eur",
+					notes: "",
+					status: "received",
+					pdfFile: null,
+					removeExistingPdf: false,
+				},
+				undefined,
+			),
+		);
 
 		const createRequest = moduflowRequestMock.mock.calls[0]?.[1] as {
 			body: Record<string, unknown>;
@@ -122,40 +120,38 @@ describe("quote Moduflow API", () => {
 			method: "POST",
 		});
 		expect(createRequest.body).not.toHaveProperty("totalAmount");
-		expect(moduflowRequestMock).toHaveBeenNthCalledWith(2, "/uploads/file_123", {
-			headers: { "x-organization-id": "42" },
-			method: "DELETE",
-		});
 	});
 
-	it("rolls back a newly uploaded replacement file when quote update fails", async () => {
-		const file = new File(["pdf"], "replacement.pdf", { type: "application/pdf" });
-		uploadSupplierDocumentMock.mockResolvedValue({ id: "file_456" });
-		moduflowRequestMock
-			.mockRejectedValueOnce(new Error("update failed"))
-			.mockResolvedValueOnce(undefined);
-
-		await expect(
-			updateQuote(context, "99", {
-				supplierId: "7",
-				quoteNumber: "SQ-1",
-				quotationDate: "2026-05-01",
-				expirationDate: "2026-05-31",
-				amount: "2500",
-				currencyCode: "EUR",
-				notes: "",
-				status: "received",
-				pdfFile: file,
-				removeExistingPdf: false,
-			})
-		).rejects.toThrow("update failed");
+	it("passes a pending attachment id when updating quotes", async () => {
+		await updateQuote(
+			context,
+			"99",
+			buildUpdateQuotePayload(
+				{
+					supplierId: "7",
+					quoteNumber: "SQ-1",
+					quotationDate: "2026-05-01",
+					expirationDate: "2026-05-31",
+					amount: "2500",
+					currencyCode: "EUR",
+					notes: "",
+					status: "received",
+					pdfFile: null,
+					removeExistingPdf: false,
+				},
+				"file_456",
+			),
+		);
 
 		expect(moduflowRequestMock).toHaveBeenNthCalledWith(
-			2,
-			"/uploads/file_456",
+			1,
+			"/supplier-quotes/99",
 			{
+				body: expect.objectContaining({
+					attachmentId: "file_456",
+				}),
 				headers: { "x-organization-id": "42" },
-				method: "DELETE",
+				method: "PATCH",
 			}
 		);
 	});

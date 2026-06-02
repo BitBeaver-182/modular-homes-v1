@@ -44,7 +44,15 @@ import { useDeleteQuote } from "./hooks/use-delete-quote";
 import { useGetQuotes } from "./hooks/use-get-quotes";
 import { useQuotesTable } from "./hooks/use-quotes-table";
 import { useUpdateQuote } from "./hooks/use-update-quote";
+import {
+	buildCreateQuotePayload,
+	buildUpdateQuotePayload,
+} from "./lib/quote-api";
 import { quoteToWriteInput } from "./lib/quote-form";
+import {
+	createPendingSupplierDocumentUpload,
+	deleteSupplierDocumentUpload,
+} from "./lib/upload-api";
 import { usePaginationHandler } from "../../hooks/use-pagination-handler";
 import { useSortingHandler } from "../../hooks/use-sorting-handler";
 import { useCreateSupplierOrderFromQuote } from "../supplier-orders-detail/hooks/use-create-supplier-order-from-quote";
@@ -72,6 +80,10 @@ const QuotesPage = (): JSX.Element => {
 	const [statusAction, setStatusAction] = useState<StatusAction | null>(null);
 	const [supplierOrderQuote, setSupplierOrderQuote] =
 		useState<SupplierQuoteResponse | null>(null);
+	const [pendingQuoteAttachment, setPendingQuoteAttachment] = useState<{
+		file: File;
+		fileId: string;
+	} | null>(null);
 
 	const { sorting, onSortingChange } = useSortingHandler({
 		currentParams: searchParams,
@@ -186,8 +198,62 @@ const QuotesPage = (): JSX.Element => {
 		getRowId: (row): string => row.id,
 	});
 
+	const discardPendingQuoteAttachment = useCallback(
+		(pending: { file: File; fileId: string } | null): void => {
+			if (!pending) {
+				return;
+			}
+
+			void deleteSupplierDocumentUpload(
+				{ organizationId },
+				pending.fileId,
+			).catch(() => undefined);
+		},
+		[organizationId]
+	);
+
+	const resolveQuoteAttachmentId = useCallback(
+		async (value: QuoteWriteInput): Promise<string | null | undefined> => {
+			if (value.pdfFile) {
+				const currentPending =
+					pendingQuoteAttachment?.file === value.pdfFile
+						? pendingQuoteAttachment
+						: null;
+
+				if (currentPending) {
+					return currentPending.fileId;
+				}
+
+				if (pendingQuoteAttachment) {
+					discardPendingQuoteAttachment(pendingQuoteAttachment);
+				}
+
+				const nextPending = await createPendingSupplierDocumentUpload(
+					{ organizationId },
+					value.pdfFile,
+				);
+				const nextState = {
+					file: value.pdfFile,
+					fileId: nextPending.fileId,
+				};
+				setPendingQuoteAttachment(nextState);
+				return nextState.fileId;
+			}
+
+			if (pendingQuoteAttachment) {
+				discardPendingQuoteAttachment(pendingQuoteAttachment);
+				setPendingQuoteAttachment(null);
+			}
+
+			return value.removeExistingPdf ? null : undefined;
+		},
+		[discardPendingQuoteAttachment, organizationId, pendingQuoteAttachment]
+	);
+
 	const handleCreate = async (value: QuoteWriteInput): Promise<void> => {
-		await createQuote(value);
+		const attachmentId = await resolveQuoteAttachmentId(value);
+		await createQuote(buildCreateQuotePayload(value, attachmentId));
+		setPendingQuoteAttachment(null);
 	};
 
 	const handleUpdate = async (value: QuoteWriteInput): Promise<void> => {
@@ -195,7 +261,12 @@ const QuotesPage = (): JSX.Element => {
 			return;
 		}
 
-		await updateQuote({ id: editingQuote.id, input: value });
+		const attachmentId = await resolveQuoteAttachmentId(value);
+		await updateQuote({
+			id: editingQuote.id,
+			input: buildUpdateQuotePayload(value, attachmentId),
+		});
+		setPendingQuoteAttachment(null);
 	};
 
 	const handleDelete = async (
@@ -278,7 +349,10 @@ const QuotesPage = (): JSX.Element => {
 	): Promise<void> => {
 		await updateQuote({
 			id: quote.id,
-			input: { ...quoteToWriteInput(quote), status },
+			input: buildUpdateQuotePayload(
+				{ ...quoteToWriteInput(quote), status },
+				undefined,
+			),
 		});
 	};
 
@@ -396,7 +470,15 @@ const QuotesPage = (): JSX.Element => {
 				loading={isCreating}
 				mode="create"
 				open={createOpen}
-				onOpenChange={setCreateOpen}
+				onOpenChange={(open): void => {
+					setCreateOpen(open);
+					if (!open) {
+						setPendingQuoteAttachment((current) => {
+							discardPendingQuoteAttachment(current);
+							return null;
+						});
+					}
+				}}
 				onSubmit={handleCreate}
 			/>
 
@@ -408,6 +490,10 @@ const QuotesPage = (): JSX.Element => {
 				onSubmit={handleUpdate}
 				onOpenChange={(open): void => {
 					if (!open) {
+						setPendingQuoteAttachment((current) => {
+							discardPendingQuoteAttachment(current);
+							return null;
+						});
 						setEditingQuote(null);
 					}
 				}}
