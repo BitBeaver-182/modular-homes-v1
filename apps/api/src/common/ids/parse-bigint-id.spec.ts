@@ -13,4 +13,36 @@ describe('parseBigIntId', () => {
     expect(() => parseBigIntId('0')).toThrow(BadRequestException);
     expect(() => parseBigIntId(undefined)).toThrow(BadRequestException);
   });
+
+  it('preserves field path and translation key for invalid ids', () => {
+    try {
+      parseBigIntId('abc', 'supplierId');
+    } catch (error) {
+      expect(error).toBeInstanceOf(BadRequestException);
+      const response = (error as BadRequestException).getResponse() as {
+        message: string;
+        errors: Array<{
+          path: string[];
+          message: string;
+          name: string;
+          key: string;
+        }>;
+      };
+
+      expect(response).toEqual({
+        message: 'supplierId must be a positive integer',
+        errors: [
+          {
+            path: ['supplierId'],
+            message: 'supplierId must be a positive integer',
+            name: 'ValidationError',
+            key: 'validation.positiveInteger',
+          },
+        ],
+      });
+      return;
+    }
+
+    throw new Error('Expected parseBigIntId to throw');
+  });
 });

@@ -355,6 +355,7 @@
 			"string": "This field must be a string",
 			"number": "This field must be a number",
 			"integer": "This field must be a whole number",
+			"positiveInteger": "This field must be a positive whole number",
 			"enum": "Please select a valid option",
 			"date": "Please enter a valid date",
 			"min": "Must be at least {{min}}",

@@ -9,6 +9,7 @@ export const API_ERROR_KEYS = [
   'validation.string',
   'validation.number',
   'validation.integer',
+  'validation.positiveInteger',
   'validation.enum',
   'validation.date',
   'validation.url',
