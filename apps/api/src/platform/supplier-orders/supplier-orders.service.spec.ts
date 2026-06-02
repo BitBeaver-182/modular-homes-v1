@@ -63,7 +63,10 @@ describe('SupplierOrdersService', () => {
     prisma.supplierOrderLine.create.mockResolvedValue({ id: 1n });
     prisma.supplierOrderLine.update.mockResolvedValue({ id: 1n });
     prisma.supplierOrderLine.deleteMany.mockResolvedValue({ count: 0 });
-    service = new SupplierOrdersService(prisma as never, storageService as never);
+    service = new SupplierOrdersService(
+      prisma as never,
+      storageService as never,
+    );
   });
 
   it('creates a draft supplier order from an accepted quote', async () => {

@@ -30,8 +30,8 @@ import {
 	type InvoiceFormValues,
 } from "./invoice-form-dialog";
 import { InvoiceItemCard } from "./invoice-item-card";
-import type { PendingInvoiceAttachment } from "./types";
 
+import type { PendingInvoiceAttachment } from "./types";
 import type { SupplierOrderDetailInvoiceResponse } from "@moduflow/types";
 
 interface OrderInvoicesCardProps {

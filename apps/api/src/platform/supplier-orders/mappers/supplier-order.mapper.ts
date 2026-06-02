@@ -161,7 +161,9 @@ function toSupplierOrderDetailLineResponse(
 }
 
 export async function toSupplierOrderDetailInvoiceResponse(
-  invoice: SupplierOrderWithRelations['invoices'][number] | SupplierOrderInvoiceRecord,
+  invoice:
+    | SupplierOrderWithRelations['invoices'][number]
+    | SupplierOrderInvoiceRecord,
   storageService: IStorageService,
 ): Promise<SupplierOrderDetailInvoiceResponse> {
   return {

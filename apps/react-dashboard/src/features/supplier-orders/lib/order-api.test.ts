@@ -2,10 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
 
-const { moduflowRequestMock } = vi.hoisted(() => ({
-	moduflowRequestMock: vi.fn(),
-}));
-
 import {
 	createSupplierOrderInvoice,
 	deleteSupplierOrderInvoice,
@@ -15,6 +11,10 @@ import {
 	toSupplierOrderQueryString,
 	updateSupplierOrder,
 } from "./order-api";
+
+const { moduflowRequestMock } = vi.hoisted(() => ({
+	moduflowRequestMock: vi.fn(),
+}));
 
 vi.mock("@/lib/moduflow/client", () => ({
 	moduflowRequest: moduflowRequestMock,

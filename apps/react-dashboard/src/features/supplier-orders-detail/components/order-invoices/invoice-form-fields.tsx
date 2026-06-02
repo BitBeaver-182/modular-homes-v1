@@ -1,3 +1,8 @@
+import {
+	SUPPLIER_ORDER_INVOICE_STATUSES,
+	SUPPLIER_ORDER_INVOICE_TYPES,
+	type SupplierOrderDetailInvoiceResponse,
+} from "@moduflow/types";
 import { type JSX } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -11,10 +16,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
-	QUOTE_MAX_ATTACHMENT_BYTES,
-	QUOTE_MAX_ATTACHMENT_FILES,
-} from "@/features/quotes/lib/quote-attachments";
-import {
 	Select,
 	SelectContent,
 	SelectItem,
@@ -22,13 +23,12 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	QUOTE_MAX_ATTACHMENT_BYTES,
+	QUOTE_MAX_ATTACHMENT_FILES,
+} from "@/features/quotes/lib/quote-attachments";
 
 import type { InvoiceFormValues } from "./invoice-form-dialog";
-import {
-	SUPPLIER_ORDER_INVOICE_STATUSES,
-	SUPPLIER_ORDER_INVOICE_TYPES,
-	type SupplierOrderDetailInvoiceResponse,
-} from "@moduflow/types";
 
 const humanize = (value: string): string =>
 	value

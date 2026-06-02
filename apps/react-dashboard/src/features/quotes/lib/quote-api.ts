@@ -1,12 +1,13 @@
 import { moduflowRequest } from "@/lib/moduflow/client";
 import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._admin._operations.quotes";
+
+import type { QuoteFilterStatus, QuoteWriteInput } from "../types";
 import type {
 	CreateSupplierQuoteRequest,
 	SupplierQuoteResponse,
 	SupplierQuoteListResponse,
 	UpdateSupplierQuoteRequest,
 } from "@moduflow/types";
-import type { QuoteFilterStatus, QuoteWriteInput } from "../types";
 
 
 export interface QuoteApiContext {
@@ -145,7 +146,7 @@ export const buildUpdateQuotePayload = (
 	input: QuoteWriteInput,
 	attachmentId: string | null | undefined,
 ): UpdateSupplierQuoteRequest =>
-	toQuoteWritePayload(input, attachmentId) as UpdateSupplierQuoteRequest;
+	toQuoteWritePayload(input, attachmentId);
 
 export const getQuotes = async (
 	context: QuoteApiContext,

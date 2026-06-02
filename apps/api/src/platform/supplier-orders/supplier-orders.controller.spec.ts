@@ -145,7 +145,10 @@ describe('SupplierOrdersController', () => {
 
     const response = await controller.findOne(2n, '101');
 
-    expect(supplierOrdersService.findOneResponse).toHaveBeenCalledWith(2n, '101');
+    expect(supplierOrdersService.findOneResponse).toHaveBeenCalledWith(
+      2n,
+      '101',
+    );
     expect(response).toEqual(
       expect.objectContaining({
         id: '101',
@@ -247,16 +250,20 @@ describe('SupplierOrdersController', () => {
       notes: 'Awaiting remainder',
     });
 
-    expect(supplierOrdersService.createInvoiceResponse).toHaveBeenCalledWith(2n, '101', {
-      invoiceNumber: 'INV-2026-001',
-      invoiceType: 'supplier_goods',
-      status: 'issued',
-      issueDate: '2026-06-03',
-      dueDate: '2026-06-30',
-      subtotalAmount: 1000,
-      taxAmount: 150,
-      notes: 'Awaiting remainder',
-    });
+    expect(supplierOrdersService.createInvoiceResponse).toHaveBeenCalledWith(
+      2n,
+      '101',
+      {
+        invoiceNumber: 'INV-2026-001',
+        invoiceType: 'supplier_goods',
+        status: 'issued',
+        issueDate: '2026-06-03',
+        dueDate: '2026-06-30',
+        subtotalAmount: 1000,
+        taxAmount: 150,
+        notes: 'Awaiting remainder',
+      },
+    );
     expect(response).toEqual(
       expect.objectContaining({
         id: '77',

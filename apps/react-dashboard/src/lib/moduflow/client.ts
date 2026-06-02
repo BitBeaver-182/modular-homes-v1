@@ -3,6 +3,7 @@ import {
 	StrapiRequestError,
 	isStrapiErrorResponse,
 } from "@/lib/strapi/error";
+
 import type { ApiErrorDetail } from "@moduflow/types";
 
 type ModuflowRequestOptions = Omit<RequestInit, "body"> & {

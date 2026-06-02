@@ -2,8 +2,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { OrderProductsCard } from "./order-products-card";
 import { ModuflowRequestError } from "@/lib/moduflow/client";
+
+import { OrderProductsCard } from "./order-products-card";
 
 import type { SupplierOrderDetailLineResponse } from "@moduflow/types";
 

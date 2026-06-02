@@ -464,10 +464,9 @@ export class SupplierOrdersService {
       });
 
       if (previousAttachmentId && previousAttachmentId !== nextAttachmentId) {
-        void this.deleteStoredObject(
-          organizationId,
-          previousAttachment,
-        ).catch(() => undefined);
+        void this.deleteStoredObject(organizationId, previousAttachment).catch(
+          () => undefined,
+        );
       }
 
       return updatedInvoice;
