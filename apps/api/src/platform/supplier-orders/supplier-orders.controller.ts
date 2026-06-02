@@ -1,7 +1,9 @@
 import {
+  Delete,
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   Patch,
   Post,
@@ -10,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -24,15 +27,19 @@ import { PlatformMembershipGuard } from '../platform-membership.guard';
 import { PlatformOrganizationContextGuard } from '../platform-organization-context.guard';
 import { ApiOrganizationHeader } from '../platform-swagger.decorator';
 import { CreateSupplierOrderDto } from './dto/create-supplier-order.dto';
+import {
+  CreateSupplierOrderInvoiceDto,
+  UpdateSupplierOrderInvoiceDto,
+} from './dto/supplier-order-invoice.dto';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
 import {
+  SupplierOrderDetailInvoiceResponse,
   SupplierOrderDetailResponse,
   SupplierOrderListItemResponse,
   SupplierOrderListResponse,
 } from './dto/supplier-order-response.dto';
 import { UpdateSupplierOrderDto } from './dto/update-supplier-order.dto';
 import {
-  toSupplierOrderDetailResponse,
   toSupplierOrderListItemResponse,
   toSupplierOrderListResponse,
 } from './mappers/supplier-order.mapper';
@@ -100,9 +107,7 @@ export class SupplierOrdersController {
   ): Promise<SupplierOrderDetailResponse> {
     return plainToInstance(
       SupplierOrderDetailResponse,
-      toSupplierOrderDetailResponse(
-        await this.supplierOrdersService.findOne(organizationId, id),
-      ),
+      await this.supplierOrdersService.findOneResponse(organizationId, id),
       { excludeExtraneousValues: true },
     );
   }
@@ -119,12 +124,80 @@ export class SupplierOrdersController {
     @Param('id') id: string,
     @Body() dto: UpdateSupplierOrderDto,
   ): Promise<SupplierOrderDetailResponse> {
+    await this.supplierOrdersService.update(organizationId, id, dto);
+
     return plainToInstance(
       SupplierOrderDetailResponse,
-      toSupplierOrderDetailResponse(
-        await this.supplierOrdersService.update(organizationId, id, dto),
+      await this.supplierOrdersService.findOneResponse(organizationId, id),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Post(':id/invoices')
+  @ApiOperation({
+    summary: 'Create Supplier Order Invoice',
+    description:
+      'Create an invoice for a supplier order in the active organization.',
+  })
+  @ApiCreatedResponse({ type: SupplierOrderDetailInvoiceResponse })
+  async createInvoice(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Body() dto: CreateSupplierOrderInvoiceDto,
+  ): Promise<SupplierOrderDetailInvoiceResponse> {
+    return plainToInstance(
+      SupplierOrderDetailInvoiceResponse,
+      await this.supplierOrdersService.createInvoiceResponse(
+        organizationId,
+        id,
+        dto,
       ),
       { excludeExtraneousValues: true },
+    );
+  }
+
+  @Patch(':id/invoices/:invoiceId')
+  @ApiOperation({
+    summary: 'Update Supplier Order Invoice',
+    description:
+      'Update an invoice for a supplier order in the active organization.',
+  })
+  @ApiOkResponse({ type: SupplierOrderDetailInvoiceResponse })
+  async updateInvoice(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() dto: UpdateSupplierOrderInvoiceDto,
+  ): Promise<SupplierOrderDetailInvoiceResponse> {
+    return plainToInstance(
+      SupplierOrderDetailInvoiceResponse,
+      await this.supplierOrdersService.updateInvoiceResponse(
+        organizationId,
+        id,
+        invoiceId,
+        dto,
+      ),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Delete(':id/invoices/:invoiceId')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Delete Supplier Order Invoice',
+    description:
+      'Delete an invoice for a supplier order in the active organization.',
+  })
+  @ApiNoContentResponse()
+  async deleteInvoice(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+  ): Promise<void> {
+    await this.supplierOrdersService.deleteInvoice(
+      organizationId,
+      id,
+      invoiceId,
     );
   }
 }

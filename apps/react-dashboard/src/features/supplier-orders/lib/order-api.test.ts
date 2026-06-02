@@ -3,8 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
 
 import {
+	createSupplierOrderInvoice,
+	deleteSupplierOrderInvoice,
 	getSupplierOrderDetail,
-		getSupplierOrders,
+	getSupplierOrders,
+	updateSupplierOrderInvoice,
 	toSupplierOrderQueryString,
 	updateSupplierOrder,
 } from "./order-api";
@@ -104,6 +107,146 @@ describe("supplier order Moduflow API", () => {
 				},
 				headers: { "x-organization-id": "42" },
 				method: "PATCH",
+			}
+		);
+	});
+
+	it("creates a supplier-order invoice through the platform API", async () => {
+		await createSupplierOrderInvoice(context, "101", {
+			invoiceNumber: "INV-2026-001",
+			invoiceType: "supplier_goods",
+			status: "issued",
+			issueDate: "2026-06-03",
+			dueDate: "2026-06-30",
+			notes: "Awaiting remainder",
+			subtotalAmount: 1000,
+			taxAmount: 150,
+		});
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices",
+			{
+				body: {
+					invoiceNumber: "INV-2026-001",
+					invoiceType: "supplier_goods",
+					status: "issued",
+					issueDate: "2026-06-03",
+					dueDate: "2026-06-30",
+					subtotalAmount: 1000,
+					taxAmount: 150,
+					notes: "Awaiting remainder",
+				},
+				headers: { "x-organization-id": "42" },
+				method: "POST",
+			}
+		);
+	});
+
+	it("updates a supplier-order invoice through the platform API", async () => {
+		await updateSupplierOrderInvoice(context, "101", "77", {
+			invoiceNumber: "INV-2026-001",
+			invoiceType: "supplier_goods",
+			status: "partially_paid",
+			issueDate: "2026-06-03",
+			dueDate: "2026-06-30",
+			notes: "Revised",
+			subtotalAmount: 900,
+			taxAmount: 135,
+		});
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices/77",
+			{
+				body: {
+					invoiceNumber: "INV-2026-001",
+					invoiceType: "supplier_goods",
+					status: "partially_paid",
+					issueDate: "2026-06-03",
+					dueDate: "2026-06-30",
+					subtotalAmount: 900,
+					taxAmount: 135,
+					notes: "Revised",
+				},
+				headers: { "x-organization-id": "42" },
+				method: "PATCH",
+			}
+		);
+	});
+
+	it("passes a pending attachment id when creating an invoice", async () => {
+		await createSupplierOrderInvoice(context, "101", {
+			attachmentId: "file_123",
+			dueDate: "2026-06-30",
+			invoiceNumber: "INV-2026-004",
+			invoiceType: "supplier_goods",
+			issueDate: "2026-06-03",
+			notes: null,
+			status: "issued",
+			subtotalAmount: 1000,
+			taxAmount: 150,
+		});
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices",
+			{
+				body: {
+					attachmentId: "file_123",
+					dueDate: "2026-06-30",
+					invoiceNumber: "INV-2026-004",
+					invoiceType: "supplier_goods",
+					issueDate: "2026-06-03",
+					notes: null,
+					status: "issued",
+					subtotalAmount: 1000,
+					taxAmount: 150,
+				},
+				headers: { "x-organization-id": "42" },
+				method: "POST",
+			},
+		);
+	});
+
+	it("clears the existing attachment when updating an invoice", async () => {
+		await updateSupplierOrderInvoice(context, "101", "77", {
+			dueDate: "2026-06-30",
+			invoiceNumber: "INV-2026-001",
+			invoiceType: "supplier_goods",
+			issueDate: "2026-06-03",
+			notes: "Revised",
+			attachmentId: null,
+			status: "partially_paid",
+			subtotalAmount: 900,
+			taxAmount: 135,
+		});
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices/77",
+			{
+				body: {
+					attachmentId: null,
+					dueDate: "2026-06-30",
+					invoiceNumber: "INV-2026-001",
+					invoiceType: "supplier_goods",
+					issueDate: "2026-06-03",
+					notes: "Revised",
+					status: "partially_paid",
+					subtotalAmount: 900,
+					taxAmount: 135,
+				},
+				headers: { "x-organization-id": "42" },
+				method: "PATCH",
+			},
+		);
+	});
+
+	it("deletes a supplier-order invoice through the platform API", async () => {
+		await deleteSupplierOrderInvoice(context, "101", "77");
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices/77",
+			{
+				headers: { "x-organization-id": "42" },
+				method: "DELETE",
 			}
 		);
 	});

@@ -93,7 +93,12 @@ function getValidationErrorKey(constraint: string): ApiErrorKey {
     isISO31661Alpha2: 'validation.countryCode',
     isNotEmpty: 'validation.required',
     isString: 'validation.string',
+    isNumber: 'validation.number',
+    isInt: 'validation.integer',
+    isEnum: 'validation.enum',
+    isDateString: 'validation.date',
     isUrl: 'validation.url',
+    min: 'validation.min',
     maxLength: 'validation.maxLength',
     minLength: 'validation.minLength',
   };
@@ -112,6 +117,10 @@ function getValidationErrorParams(
   }
 
   if (constraint === 'minLength' && numericValue !== undefined) {
+    return { min: numericValue };
+  }
+
+  if (constraint === 'min' && numericValue !== undefined) {
     return { min: numericValue };
   }
 

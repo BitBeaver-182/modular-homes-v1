@@ -1978,6 +1978,162 @@
         ]
       }
     },
+    "/api/supplier-orders/{id}/invoices": {
+      "post": {
+        "description": "Create an invoice for a supplier order in the active organization.",
+        "operationId": "SupplierOrdersController_createInvoice",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupplierOrderInvoiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierOrderDetailInvoiceResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create Supplier Order Invoice",
+        "tags": [
+          "Supplier Orders"
+        ]
+      }
+    },
+    "/api/supplier-orders/{id}/invoices/{invoiceId}": {
+      "patch": {
+        "description": "Update an invoice for a supplier order in the active organization.",
+        "operationId": "SupplierOrdersController_updateInvoice",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSupplierOrderInvoiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierOrderDetailInvoiceResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update Supplier Order Invoice",
+        "tags": [
+          "Supplier Orders"
+        ]
+      },
+      "delete": {
+        "description": "Delete an invoice for a supplier order in the active organization.",
+        "operationId": "SupplierOrdersController_deleteInvoice",
+        "parameters": [
+          {
+            "name": "x-organization-id",
+            "in": "header",
+            "description": "Active organization identifier for platform-scoped routes.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "{{organizationId}}",
+              "example": "{{organizationId}}"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Delete Supplier Order Invoice",
+        "tags": [
+          "Supplier Orders"
+        ]
+      }
+    },
     "/api/supplier-quotes": {
       "post": {
         "description": "Create a supplier quote in the active organization.",
@@ -3946,12 +4102,72 @@
           "createdAt"
         ]
       },
+      "FileUploadPresenter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckvxo0n1a000001l46me8xz6u"
+          },
+          "filename": {
+            "type": "string",
+            "example": "floor-plan.pdf"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://example.supabase.co/storage/v1/object/..."
+          },
+          "context": {
+            "type": "string",
+            "enum": [
+              "AVATAR",
+              "ORGANIZATION_LOGO",
+              "SUPPLIER_DOCUMENT"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "ORPHANED",
+              "DELETED"
+            ]
+          },
+          "uploadedAt": {
+            "type": "string",
+            "example": "2026-05-30T08:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "mimeType",
+          "url",
+          "context",
+          "status",
+          "uploadedAt"
+        ]
+      },
       "SupplierOrderDetailInvoiceResponse": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
             "example": "77"
+          },
+          "attachment": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FileUploadPresenter"
+              }
+            ]
           },
           "invoiceNumber": {
             "type": "string",
@@ -4253,6 +4469,150 @@
           }
         }
       },
+      "CreateSupplierOrderInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "attachmentId": {
+            "type": "object",
+            "example": "file_123",
+            "nullable": true
+          },
+          "invoiceNumber": {
+            "type": "string",
+            "example": "INV-2026-001"
+          },
+          "invoiceType": {
+            "type": "string",
+            "enum": [
+              "supplier_goods",
+              "customer_sale",
+              "logistics",
+              "customs",
+              "storage",
+              "delay_fee",
+              "insurance",
+              "tax",
+              "credit_note",
+              "other"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "issued",
+              "partially_paid",
+              "paid",
+              "overdue",
+              "disputed",
+              "cancelled",
+              "void"
+            ]
+          },
+          "issueDate": {
+            "type": "string",
+            "example": "2026-06-03"
+          },
+          "dueDate": {
+            "type": "string",
+            "example": "2026-06-30"
+          },
+          "subtotalAmount": {
+            "type": "number",
+            "example": 1000
+          },
+          "taxAmount": {
+            "type": "number",
+            "example": 150
+          },
+          "notes": {
+            "type": "object",
+            "example": "Awaiting remainder",
+            "nullable": true
+          }
+        },
+        "required": [
+          "invoiceNumber",
+          "invoiceType",
+          "status",
+          "issueDate",
+          "dueDate",
+          "subtotalAmount",
+          "taxAmount"
+        ]
+      },
+      "UpdateSupplierOrderInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "attachmentId": {
+            "type": "object",
+            "example": "file_123",
+            "nullable": true
+          },
+          "invoiceNumber": {
+            "type": "string",
+            "example": "INV-2026-001"
+          },
+          "invoiceType": {
+            "type": "string",
+            "enum": [
+              "supplier_goods",
+              "customer_sale",
+              "logistics",
+              "customs",
+              "storage",
+              "delay_fee",
+              "insurance",
+              "tax",
+              "credit_note",
+              "other"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "issued",
+              "partially_paid",
+              "paid",
+              "overdue",
+              "disputed",
+              "cancelled",
+              "void"
+            ]
+          },
+          "issueDate": {
+            "type": "string",
+            "example": "2026-06-03"
+          },
+          "dueDate": {
+            "type": "string",
+            "example": "2026-06-30"
+          },
+          "subtotalAmount": {
+            "type": "number",
+            "example": 1000
+          },
+          "taxAmount": {
+            "type": "number",
+            "example": 150
+          },
+          "notes": {
+            "type": "object",
+            "example": "Awaiting remainder",
+            "nullable": true
+          }
+        },
+        "required": [
+          "invoiceNumber",
+          "invoiceType",
+          "status",
+          "issueDate",
+          "dueDate",
+          "subtotalAmount",
+          "taxAmount"
+        ]
+      },
       "SupplierQuoteLineDto": {
         "type": "object",
         "properties": {
@@ -4361,57 +4721,6 @@
         },
         "required": [
           "id"
-        ]
-      },
-      "FileUploadPresenter": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "ckvxo0n1a000001l46me8xz6u"
-          },
-          "filename": {
-            "type": "string",
-            "example": "floor-plan.pdf"
-          },
-          "mimeType": {
-            "type": "string",
-            "example": "application/pdf"
-          },
-          "url": {
-            "type": "string",
-            "example": "https://example.supabase.co/storage/v1/object/..."
-          },
-          "context": {
-            "type": "string",
-            "enum": [
-              "AVATAR",
-              "ORGANIZATION_LOGO",
-              "SUPPLIER_DOCUMENT"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "CONFIRMED",
-              "ORPHANED",
-              "DELETED"
-            ]
-          },
-          "uploadedAt": {
-            "type": "string",
-            "example": "2026-05-30T08:00:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "filename",
-          "mimeType",
-          "url",
-          "context",
-          "status",
-          "uploadedAt"
         ]
       },
       "SupplierQuoteLineResponse": {

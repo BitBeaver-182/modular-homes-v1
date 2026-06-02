@@ -10,10 +10,25 @@ import {
 import type { AuthenticatedActor } from '../../auth/auth.types';
 import { PrismaService } from '../../database/prisma.service';
 import { parseBigIntId } from '../../common/ids/parse-bigint-id';
+import { StorageService } from '../../storage/storage.service';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
+import {
+  CreateSupplierOrderInvoiceDto,
+  UpdateSupplierOrderInvoiceDto,
+} from './dto/supplier-order-invoice.dto';
 import { UpdateSupplierOrderDto } from './dto/update-supplier-order.dto';
-import type { SupplierOrderWithRelations } from './mappers/supplier-order.mapper';
+import {
+  toSupplierOrderDetailInvoiceResponse,
+  toSupplierOrderDetailResponse,
+  type SupplierOrderInvoiceRecord,
+  type SupplierOrderWithRelations,
+} from './mappers/supplier-order.mapper';
 import type { CreateSupplierOrderRequest } from '@moduflow/types';
+import type {
+  FileContext,
+  SupplierOrderDetailInvoiceResponse,
+  SupplierOrderDetailResponse,
+} from '@moduflow/types';
 
 type SupplierOrderListMeta = {
   pagination: {
@@ -36,6 +51,7 @@ const INCLUDE_RELATIONS = {
   },
   invoices: {
     orderBy: { id: 'asc' },
+    include: { attachment: true },
   },
 } satisfies Prisma.SupplierOrderInclude;
 
@@ -56,7 +72,10 @@ const TERMINAL_ORDER_STATUSES = new Set<PersistedSupplierOrderStatus>([
 
 @Injectable()
 export class SupplierOrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
   async create(
     actor: AuthenticatedActor,
@@ -203,6 +222,16 @@ export class SupplierOrdersService {
     return order;
   }
 
+  async findOneResponse(
+    organizationId: bigint,
+    id: string,
+  ): Promise<SupplierOrderDetailResponse> {
+    return toSupplierOrderDetailResponse(
+      await this.findOne(organizationId, id),
+      this.storageService,
+    );
+  }
+
   async update(
     organizationId: bigint,
     id: string,
@@ -346,6 +375,453 @@ export class SupplierOrdersService {
         include: INCLUDE_RELATIONS,
       });
     });
+  }
+
+  async createInvoice(
+    organizationId: bigint,
+    orderId: string,
+    dto: CreateSupplierOrderInvoiceDto,
+  ): Promise<SupplierOrderInvoiceRecord> {
+    const order = await this.findOne(organizationId, orderId);
+    await this.assertInvoiceNumberAvailable(
+      organizationId,
+      normalizeOptionalString(dto.invoiceNumber),
+    );
+    await this.assertAttachmentAvailable(organizationId, dto.attachmentId);
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const nextAttachmentId = normalizeOptionalString(dto.attachmentId);
+        await this.claimAttachment(tx, organizationId, nextAttachmentId);
+
+        return tx.invoice.create({
+          data: buildCreateInvoiceData(organizationId, order, dto),
+          include: { attachment: true },
+        });
+      });
+    } catch (error) {
+      throw translateInvoiceWriteError(error);
+    }
+  }
+
+  async createInvoiceResponse(
+    organizationId: bigint,
+    orderId: string,
+    dto: CreateSupplierOrderInvoiceDto,
+  ): Promise<SupplierOrderDetailInvoiceResponse> {
+    return toSupplierOrderDetailInvoiceResponse(
+      await this.createInvoice(organizationId, orderId, dto),
+      this.storageService,
+    );
+  }
+
+  async updateInvoice(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    dto: UpdateSupplierOrderInvoiceDto,
+  ): Promise<SupplierOrderInvoiceRecord> {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+    await this.assertInvoiceNumberAvailable(
+      organizationId,
+      normalizeOptionalString(dto.invoiceNumber),
+      invoice.id,
+    );
+    if (dto.attachmentId !== undefined) {
+      await this.assertAttachmentAvailable(
+        organizationId,
+        dto.attachmentId,
+        invoice.id,
+      );
+    }
+
+    const previousAttachmentId = invoice.attachmentId;
+    const previousAttachment = invoice.attachment;
+    const nextAttachmentId =
+      dto.attachmentId !== undefined
+        ? normalizeOptionalString(dto.attachmentId)
+        : invoice.attachmentId;
+
+    try {
+      const updatedInvoice = await this.prisma.$transaction(async (tx) => {
+        if (previousAttachmentId && previousAttachmentId !== nextAttachmentId) {
+          await this.retireAttachment(tx, organizationId, previousAttachmentId);
+        }
+        if (previousAttachmentId !== nextAttachmentId) {
+          await this.claimAttachment(tx, organizationId, nextAttachmentId);
+        }
+
+        return tx.invoice.update({
+          where: { id: invoice.id },
+          data: buildUpdateInvoiceData(order, dto, invoice.amountPaid),
+          include: { attachment: true },
+        });
+      });
+
+      if (previousAttachmentId && previousAttachmentId !== nextAttachmentId) {
+        void this.deleteStoredObject(organizationId, previousAttachment).catch(
+          () => undefined,
+        );
+      }
+
+      return updatedInvoice;
+    } catch (error) {
+      throw translateInvoiceWriteError(error);
+    }
+  }
+
+  async updateInvoiceResponse(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    dto: UpdateSupplierOrderInvoiceDto,
+  ): Promise<SupplierOrderDetailInvoiceResponse> {
+    return toSupplierOrderDetailInvoiceResponse(
+      await this.updateInvoice(organizationId, orderId, invoiceId, dto),
+      this.storageService,
+    );
+  }
+
+  async deleteInvoice(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+  ): Promise<void> {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      if (invoice.attachmentId) {
+        await this.retireAttachment(tx, organizationId, invoice.attachmentId);
+      }
+
+      await tx.invoice.delete({
+        where: { id: invoice.id },
+      });
+    });
+
+    void this.deleteStoredObject(organizationId, invoice.attachment).catch(
+      () => undefined,
+    );
+  }
+
+  private async findInvoiceForOrder(
+    organizationId: bigint,
+    supplierOrderId: bigint,
+    invoiceId: string,
+  ) {
+    const parsedInvoiceId = parseBigIntId(invoiceId, 'invoiceId');
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id: parsedInvoiceId,
+        organizationId,
+        supplierOrderId,
+      },
+      include: { attachment: true },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Supplier order invoice not found');
+    }
+
+    return invoice;
+  }
+
+  private async assertInvoiceNumberAvailable(
+    organizationId: bigint,
+    invoiceNumber: string | null,
+    currentInvoiceId?: bigint,
+  ): Promise<void> {
+    if (!invoiceNumber) {
+      return;
+    }
+
+    const existing = await this.prisma.invoice.findFirst({
+      where: {
+        organizationId,
+        invoiceNumber: { equals: invoiceNumber, mode: 'insensitive' },
+        ...(currentInvoiceId ? { id: { not: currentInvoiceId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Invoice number already exists');
+    }
+  }
+
+  private async assertAttachmentAvailable(
+    organizationId: bigint,
+    attachmentId: string | null | undefined,
+    currentInvoiceId?: bigint,
+  ): Promise<void> {
+    const normalized = normalizeOptionalString(attachmentId);
+    if (!normalized) {
+      return;
+    }
+
+    const upload = await this.prisma.fileUpload.findFirst({
+      where: {
+        id: normalized,
+        organizationId,
+        context: 'SUPPLIER_DOCUMENT',
+      },
+      select: {
+        id: true,
+        status: true,
+        expiresAt: true,
+        key: true,
+        context: true,
+      },
+    });
+
+    if (!upload) {
+      throw new BadRequestException('Attachment must be a supplier document');
+    }
+
+    if (upload.status === 'PENDING' && isExpiredUpload(upload.expiresAt)) {
+      await this.storageService.delete(upload.context, upload.key);
+      await this.prisma.fileUpload.updateMany({
+        where: {
+          id: normalized,
+          organizationId,
+          status: 'PENDING',
+        },
+        data: { status: 'ORPHANED' },
+      });
+      throw new BadRequestException('Attachment upload has expired');
+    }
+
+    if (upload.status !== 'PENDING' && upload.status !== 'CONFIRMED') {
+      throw new BadRequestException('Attachment must be a supplier document');
+    }
+
+    const objectExists = await this.storageService.exists(
+      upload.context,
+      upload.key,
+    );
+
+    if (!objectExists) {
+      throw new BadRequestException('Attachment file was not uploaded');
+    }
+
+    await assertAttachmentAvailableInQuotesOrInvoices(
+      this.prisma,
+      organizationId,
+      normalized,
+      currentInvoiceId,
+    );
+  }
+
+  private async retireAttachment(
+    tx: Prisma.TransactionClient,
+    organizationId: bigint,
+    attachmentId: string | null,
+  ): Promise<void> {
+    if (!attachmentId) {
+      return;
+    }
+
+    await tx.fileUpload.updateMany({
+      where: {
+        id: attachmentId,
+        organizationId,
+        status: { not: 'DELETED' },
+      },
+      data: {
+        status: 'DELETED',
+      },
+    });
+  }
+
+  private async claimAttachment(
+    tx: Prisma.TransactionClient,
+    organizationId: bigint,
+    attachmentId: string | null,
+  ): Promise<void> {
+    if (!attachmentId) {
+      return;
+    }
+
+    const { count } = await tx.fileUpload.updateMany({
+      where: {
+        id: attachmentId,
+        organizationId,
+        context: 'SUPPLIER_DOCUMENT',
+        status: { in: ['PENDING', 'CONFIRMED'] },
+        expiresAt: { not: null },
+      },
+      data: {
+        status: 'CONFIRMED',
+        confirmedAt: new Date(),
+        expiresAt: null,
+      },
+    });
+
+    if (count === 0) {
+      throw new BadRequestException('Attachment must be a supplier document');
+    }
+  }
+
+  private async deleteStoredObject(
+    organizationId: bigint,
+    attachment:
+      | {
+          id: string;
+          context: string;
+          key: string;
+        }
+      | null
+      | undefined,
+  ): Promise<void> {
+    if (!attachment) {
+      return;
+    }
+
+    await this.storageService.delete(
+      attachment.context as FileContext,
+      attachment.key,
+    );
+    await this.prisma.fileUpload.deleteMany({
+      where: {
+        organizationId,
+        id: attachment.id,
+      },
+    });
+  }
+}
+
+function buildCreateInvoiceData(
+  organizationId: bigint,
+  order: Pick<SupplierOrderWithRelations, 'id' | 'supplierId' | 'currencyCode'>,
+  dto: CreateSupplierOrderInvoiceDto,
+): Prisma.InvoiceUncheckedCreateInput {
+  const amountPaid = new Prisma.Decimal(0);
+  const commonFields = buildInvoiceCommonFields(order, dto, amountPaid);
+
+  return {
+    organizationId,
+    attachmentId: normalizeOptionalString(dto.attachmentId),
+    supplierId: order.supplierId,
+    supplierOrderId: order.id,
+    ...commonFields,
+  };
+}
+
+function buildUpdateInvoiceData(
+  order: Pick<SupplierOrderWithRelations, 'supplierId' | 'currencyCode'>,
+  dto: UpdateSupplierOrderInvoiceDto,
+  amountPaid: Prisma.Decimal,
+): Prisma.InvoiceUncheckedUpdateInput {
+  return {
+    ...(dto.attachmentId !== undefined
+      ? { attachmentId: normalizeOptionalString(dto.attachmentId) }
+      : {}),
+    supplierId: order.supplierId,
+    ...buildInvoiceCommonFields(order, dto, amountPaid),
+  };
+}
+
+function buildInvoiceCommonFields(
+  order: Pick<SupplierOrderWithRelations, 'currencyCode'>,
+  dto: CreateSupplierOrderInvoiceDto | UpdateSupplierOrderInvoiceDto,
+  amountPaid: Prisma.Decimal,
+): {
+  invoiceNumber: string;
+  direction: 'payable';
+  invoiceType: (typeof dto)['invoiceType'];
+  status: (typeof dto)['status'];
+  issueDate: Date | null;
+  dueDate: Date | null;
+  currencyCode: string;
+  subtotalAmount: Prisma.Decimal;
+  taxAmount: Prisma.Decimal;
+  totalAmount: Prisma.Decimal;
+  amountPaid: Prisma.Decimal;
+  balanceDue: Prisma.Decimal;
+  notes: string | null;
+} {
+  const subtotalAmount = new Prisma.Decimal(dto.subtotalAmount);
+  const taxAmount = new Prisma.Decimal(dto.taxAmount);
+  const totalAmount = subtotalAmount.add(taxAmount);
+
+  return {
+    invoiceNumber: dto.invoiceNumber,
+    direction: 'payable',
+    invoiceType: dto.invoiceType,
+    status: dto.status,
+    issueDate: dto.issueDate ? new Date(dto.issueDate) : null,
+    dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+    currencyCode: order.currencyCode,
+    subtotalAmount,
+    taxAmount,
+    totalAmount,
+    amountPaid,
+    balanceDue: totalAmount.sub(amountPaid),
+    notes: dto.notes ?? null,
+  };
+}
+
+function translateInvoiceWriteError(error: unknown): Error {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002'
+  ) {
+    return new BadRequestException('Invoice number already exists');
+  }
+
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new BadRequestException('Could not save supplier order invoice');
+}
+
+function normalizeOptionalString(
+  value: string | null | undefined,
+): string | null {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+async function assertAttachmentAvailableInQuotesOrInvoices(
+  prisma: PrismaService,
+  organizationId: bigint,
+  attachmentId: string,
+  currentInvoiceId?: bigint,
+): Promise<void> {
+  const [existingQuote, existingInvoice] = await Promise.all([
+    prisma.supplierQuote.findFirst({
+      where: {
+        attachmentId,
+        organizationId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    }),
+    prisma.invoice.findFirst({
+      where: {
+        attachmentId,
+        organizationId,
+        ...(currentInvoiceId ? { id: { not: currentInvoiceId } } : {}),
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  if (existingQuote || existingInvoice) {
+    throw new BadRequestException(
+      'Attachment is already linked to another document',
+    );
   }
 }
 
@@ -506,6 +982,10 @@ function isExpiredQuote(value: Date | null): boolean {
   }
 
   return value.getTime() < startOfUtcToday().getTime();
+}
+
+function isExpiredUpload(value: Date | null): boolean {
+  return value !== null && value.getTime() <= Date.now();
 }
 
 function startOfUtcToday(): Date {

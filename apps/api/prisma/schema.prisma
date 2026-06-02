@@ -149,6 +149,7 @@ model FileUpload {
   organization Organization  @relation(fields: [organizationId], references: [id])
   uploadedBy    User          @relation(fields: [uploadedById], references: [id])
   supplierQuote SupplierQuote?
+  invoice       Invoice?
 
   @@index([organizationId])
   @@index([uploadedById])
@@ -346,6 +347,7 @@ model SupplierOrderLine {
 model Invoice {
   id                 BigInt           @id @default(autoincrement())
   organizationId     BigInt
+  attachmentId       String?          @unique
   invoiceNumber      String
   direction          InvoiceDirection
   invoiceType        InvoiceType
@@ -366,6 +368,7 @@ model Invoice {
   updatedAt          DateTime         @updatedAt
 
   organization  Organization  @relation(fields: [organizationId], references: [id])
+  attachment    FileUpload?   @relation(fields: [attachmentId], references: [id])
   supplier      Supplier?     @relation(fields: [supplierId], references: [id])
   supplierOrder SupplierOrder? @relation(fields: [supplierOrderId], references: [id])
 

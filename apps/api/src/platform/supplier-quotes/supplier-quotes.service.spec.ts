@@ -51,6 +51,7 @@ describe('SupplierQuotesService', () => {
   };
   const storageService = {
     delete: jest.fn(),
+    exists: jest.fn(),
   };
   const actor = {
     userId: 9n,
@@ -76,6 +77,7 @@ describe('SupplierQuotesService', () => {
     prisma.fileUpload.findFirst.mockResolvedValue(null);
     prisma.fileUpload.updateMany.mockResolvedValue({ count: 1 });
     prisma.supplierQuote.findFirst.mockResolvedValue(null);
+    storageService.exists.mockResolvedValue(true);
     service = new SupplierQuotesService(
       prisma as never,
       storageService as never,
@@ -147,7 +149,7 @@ describe('SupplierQuotesService', () => {
     expect(prisma.supplierQuote.create).not.toHaveBeenCalled();
   });
 
-  it('rejects attachments outside the active organization or not confirmed', async () => {
+  it('rejects attachments outside the active organization', async () => {
     prisma.fileUpload.findFirst.mockResolvedValue(null);
 
     await expect(
@@ -162,11 +164,53 @@ describe('SupplierQuotesService', () => {
         id: 'file_123',
         organizationId: 4n,
         context: 'SUPPLIER_DOCUMENT',
-        status: 'CONFIRMED',
       },
-      select: { id: true },
+      select: {
+        id: true,
+        status: true,
+        expiresAt: true,
+        key: true,
+        context: true,
+      },
     });
     expect(prisma.supplierQuote.create).not.toHaveBeenCalled();
+  });
+
+  it('claims a pending attachment when creating a quote', async () => {
+    prisma.fileUpload.findFirst.mockResolvedValue({
+      id: 'file_123',
+      status: 'PENDING',
+      expiresAt: new Date('2099-06-30T00:00:00.000Z'),
+      key: '4/SUPPLIER_DOCUMENT/file_123',
+      context: 'SUPPLIER_DOCUMENT',
+    });
+    prisma.supplierQuote.create.mockResolvedValue({ id: 1n });
+
+    await service.create(actor, {
+      supplierId: '8',
+      attachmentId: 'file_123',
+      currencyCode: 'EUR',
+      subtotalAmount: 1000,
+    });
+
+    expect(storageService.exists).toHaveBeenCalledWith(
+      'SUPPLIER_DOCUMENT',
+      '4/SUPPLIER_DOCUMENT/file_123',
+    );
+    expect(prisma.fileUpload.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'file_123',
+        organizationId: 4n,
+        context: 'SUPPLIER_DOCUMENT',
+        status: { in: ['PENDING', 'CONFIRMED'] },
+        expiresAt: { not: null },
+      },
+      data: {
+        status: 'CONFIRMED',
+        confirmedAt: expect.any(Date),
+        expiresAt: null,
+      },
+    });
   });
 
   it('lists quotes with organization scope, filters, and safe sorting', async () => {
@@ -416,7 +460,13 @@ describe('SupplierQuotesService', () => {
         lines: [],
       })
       .mockResolvedValueOnce(null);
-    prisma.fileUpload.findFirst.mockResolvedValueOnce({ id: 'new_file' });
+    prisma.fileUpload.findFirst.mockResolvedValueOnce({
+      id: 'new_file',
+      status: 'CONFIRMED',
+      expiresAt: new Date('2099-06-30T00:00:00.000Z'),
+      key: '4/SUPPLIER_DOCUMENT/new_file',
+      context: 'SUPPLIER_DOCUMENT',
+    });
     prisma.supplierQuote.update.mockResolvedValue({
       id: 1n,
       attachmentId: 'new_file',

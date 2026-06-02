@@ -1,20 +1,41 @@
-import { BadRequestException } from '@nestjs/common';
+import {
+  createApiErrorDetail,
+  createBadRequestException,
+} from '../errors/api-error';
 
 type BigIntIdInput = bigint | number | string | null | undefined;
+
+function toFieldPath(fieldName: string): string[] {
+  return fieldName
+    .split('.')
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
+}
+
+function throwInvalidBigIntId(fieldName: string): never {
+  throw createBadRequestException(`${fieldName} must be a positive integer`, [
+    createApiErrorDetail({
+      path: toFieldPath(fieldName),
+      message: `${fieldName} must be a positive integer`,
+      name: 'ValidationError',
+      key: 'validation.positiveInteger',
+    }),
+  ]);
+}
 
 export function parseBigIntId(value: BigIntIdInput, fieldName = 'id'): bigint {
   if (typeof value === 'bigint') {
     if (value > 0n) {
       return value;
     }
-    throw new BadRequestException(`${fieldName} must be a positive integer`);
+    throwInvalidBigIntId(fieldName);
   }
 
   if (typeof value === 'number') {
     if (Number.isSafeInteger(value) && value > 0) {
       return BigInt(value);
     }
-    throw new BadRequestException(`${fieldName} must be a positive integer`);
+    throwInvalidBigIntId(fieldName);
   }
 
   if (typeof value === 'string') {
@@ -24,5 +45,5 @@ export function parseBigIntId(value: BigIntIdInput, fieldName = 'id'): bigint {
     }
   }
 
-  throw new BadRequestException(`${fieldName} must be a positive integer`);
+  throwInvalidBigIntId(fieldName);
 }

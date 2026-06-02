@@ -1,8 +1,6 @@
 import { moduflowRequest } from "@/lib/moduflow/client";
 import type { QuotesQueryParams } from "@/routes/$locale.o.$organizationSlug._admin._operations.quotes";
 
-import { uploadSupplierDocument } from "./upload-api";
-
 import type { QuoteFilterStatus, QuoteWriteInput } from "../types";
 import type {
 	CreateSupplierQuoteRequest,
@@ -113,7 +111,7 @@ const numberOrUndefined = (value: string): number | undefined => {
 	return Number.isFinite(parsed) ? parsed : undefined;
 };
 
-const buildWritePayload = (
+const toQuoteWritePayload = (
 	input: QuoteWriteInput,
 	attachmentId: string | null | undefined
 ): CreateSupplierQuoteRequest | UpdateSupplierQuoteRequest => {
@@ -138,14 +136,17 @@ const buildWritePayload = (
 	return payload;
 };
 
-const deleteUploadedSupplierDocument = async (
-	context: QuoteApiContext,
-	fileId: string
-): Promise<void> =>
-	moduflowRequest<void>(`/uploads/${encodeURIComponent(fileId)}`, {
-		headers: organizationHeaders(context),
-		method: "DELETE",
-	});
+export const buildCreateQuotePayload = (
+	input: QuoteWriteInput,
+	attachmentId: string | null | undefined,
+): CreateSupplierQuoteRequest =>
+	toQuoteWritePayload(input, attachmentId) as CreateSupplierQuoteRequest;
+
+export const buildUpdateQuotePayload = (
+	input: QuoteWriteInput,
+	attachmentId: string | null | undefined,
+): UpdateSupplierQuoteRequest =>
+	toQuoteWritePayload(input, attachmentId);
 
 export const getQuotes = async (
 	context: QuoteApiContext,
@@ -173,55 +174,27 @@ export const getQuote = async (
 
 export const createQuote = async (
 	context: QuoteApiContext,
-	input: QuoteWriteInput
-): Promise<SupplierQuoteResponse> => {
-	const attachment = input.pdfFile
-		? await uploadSupplierDocument(context, input.pdfFile)
-		: null;
-	try {
-		return await moduflowRequest<SupplierQuoteResponse>("/supplier-quotes", {
-			body: buildWritePayload(input, attachment?.id),
-			headers: organizationHeaders(context),
-			method: "POST",
-		});
-	} catch (error) {
-		if (attachment?.id) {
-			void deleteUploadedSupplierDocument(context, attachment.id).catch(() => undefined);
-		}
-		throw error;
-	}
-};
+	input: CreateSupplierQuoteRequest
+): Promise<SupplierQuoteResponse> =>
+	moduflowRequest<SupplierQuoteResponse>("/supplier-quotes", {
+		body: input,
+		headers: organizationHeaders(context),
+		method: "POST",
+	});
 
 export const updateQuote = async (
 	context: QuoteApiContext,
 	id: string,
-	input: QuoteWriteInput
-): Promise<SupplierQuoteResponse> => {
-	const attachment = input.pdfFile
-		? await uploadSupplierDocument(context, input.pdfFile)
-		: null;
-	const attachmentId = input.pdfFile
-		? attachment?.id
-		: input.removeExistingPdf
-			? null
-			: undefined;
-
-	try {
-		return await moduflowRequest<SupplierQuoteResponse>(
-			`/supplier-quotes/${encodeURIComponent(id)}`,
-			{
-				body: buildWritePayload(input, attachmentId),
-				headers: organizationHeaders(context),
-				method: "PATCH",
-			}
-		);
-	} catch (error) {
-		if (attachment?.id) {
-			void deleteUploadedSupplierDocument(context, attachment.id).catch(() => undefined);
+	input: UpdateSupplierQuoteRequest
+): Promise<SupplierQuoteResponse> =>
+	moduflowRequest<SupplierQuoteResponse>(
+		`/supplier-quotes/${encodeURIComponent(id)}`,
+		{
+			body: input,
+			headers: organizationHeaders(context),
+			method: "PATCH",
 		}
-		throw error;
-	}
-};
+	);
 
 export const deleteQuote = async (
 	context: QuoteApiContext,

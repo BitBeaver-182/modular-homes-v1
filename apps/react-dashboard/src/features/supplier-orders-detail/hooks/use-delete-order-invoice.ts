@@ -4,12 +4,14 @@ import {
 	type UseMutationResult,
 } from "@tanstack/react-query";
 
+import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
+
 import { orderKeys } from "../../supplier-orders/hooks/order-keys";
-import { deleteSupplierInvoice } from "../lib/order-api";
+import { deleteSupplierOrderInvoice } from "../../supplier-orders/lib/order-api";
 
 export interface DeleteOrderInvoiceVariables {
-	orderDocumentId: string;
-	invoiceDocumentId: string;
+	orderId: string;
+	invoiceId: string;
 }
 
 export const useDeleteOrderInvoice = (): UseMutationResult<
@@ -18,15 +20,17 @@ export const useDeleteOrderInvoice = (): UseMutationResult<
 	DeleteOrderInvoiceVariables
 > => {
 	const queryClient = useQueryClient();
+	const { activeMembership } = AdminRoute.useRouteContext();
+	const organizationId = activeMembership.organization.id;
 
 	return useMutation({
-		mutationFn: ({ invoiceDocumentId }: DeleteOrderInvoiceVariables) =>
-			deleteSupplierInvoice(invoiceDocumentId),
+		mutationFn: ({ orderId, invoiceId }: DeleteOrderInvoiceVariables) =>
+			deleteSupplierOrderInvoice({ organizationId }, orderId, invoiceId),
 		onSuccess: async (_data, variables): Promise<void> => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: orderKeys.lists() }),
 				queryClient.invalidateQueries({
-					queryKey: orderKeys.detail(variables.orderDocumentId),
+					queryKey: orderKeys.detail(variables.orderId),
 				}),
 			]);
 		},

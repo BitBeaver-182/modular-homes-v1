@@ -17,15 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
 	Table,
 	TableBody,
 	TableCell,
@@ -36,20 +27,16 @@ import {
 import { useCurrency } from "@/hooks/use-currency";
 import { getCoreRowModel, useReactTable } from "@/lib/tanstack-react-table";
 
+import {
+	ProductFormDialog,
+	type EditableOrderLine,
+	type ProductFormValues,
+} from "./product-form-dialog";
+
 import type {
 	SupplierOrderDetailLineResponse,
 	SupplierOrderLineWriteInput,
 } from "@moduflow/types";
-
-interface ProductFormState {
-	description: string;
-	unitCost: string;
-	quantity: string;
-}
-
-interface EditableOrderLine extends SupplierOrderDetailLineResponse {
-	__tempId?: string;
-}
 
 interface OrderProductsCardProps {
 	currency: string;
@@ -58,12 +45,6 @@ interface OrderProductsCardProps {
 	orderLines: Array<SupplierOrderDetailLineResponse>;
 	onSaveOrderLines: (lines: Array<SupplierOrderLineWriteInput>) => Promise<void>;
 }
-
-const EMPTY_FORM: ProductFormState = {
-	description: "",
-	unitCost: "",
-	quantity: "",
-};
 
 const renderReference = (value: string | null): string => value ?? "—";
 
@@ -89,12 +70,6 @@ const normalizeLine = (
 	};
 };
 
-const toFormState = (line: EditableOrderLine): ProductFormState => ({
-	description: line.description ?? "",
-	unitCost: String(line.unitCost.amount),
-	quantity: String(line.quantity),
-});
-
 const toWriteInput = (line: EditableOrderLine): SupplierOrderLineWriteInput => ({
 	...(line.id ? { id: line.id } : {}),
 	supplierQuoteLineId: line.supplierQuoteLineId,
@@ -118,7 +93,6 @@ export const OrderProductsCard = ({
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [editingIndex, setEditingIndex] = useState<number | null>(null);
 	const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
-	const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
 
 	const normalizedLines = useMemo(
 		(): Array<EditableOrderLine> =>
@@ -132,24 +106,19 @@ export const OrderProductsCard = ({
 		[normalizedLines],
 	);
 
-	const resetDialog = (): void => {
+	const resetDialogState = (): void => {
 		setEditingIndex(null);
-		setForm(EMPTY_FORM);
 	};
 
 	const openAddDialog = (): void => {
-		resetDialog();
+		resetDialogState();
 		setIsDialogOpen(true);
 	};
 
-	const openEditDialog = useCallback(
-		(index: number): void => {
-			setEditingIndex(index);
-			setForm(toFormState(normalizedLines[index]!));
-			setIsDialogOpen(true);
-		},
-		[normalizedLines],
-	);
+	const openEditDialog = useCallback((index: number): void => {
+		setEditingIndex(index);
+		setIsDialogOpen(true);
+	}, []);
 
 	const persistLines = async (
 		nextLines: Array<EditableOrderLine>,
@@ -159,38 +128,20 @@ export const OrderProductsCard = ({
 		toast.success(successMessage);
 	};
 
-	const upsertLine = async (): Promise<void> => {
-		const description = form.description.trim();
-		const normalizedQuantity = form.quantity.trim();
-		const unitCost = Number.parseFloat(form.unitCost);
-		const quantity = Number.parseInt(normalizedQuantity, 10);
-
-		if (!description || !Number.isFinite(unitCost) || !normalizedQuantity) {
-			toast.error(t("orders.productsToastCompleteFields"));
-			return;
-		}
-		if (!/^\d+$/.test(normalizedQuantity) || !Number.isFinite(quantity)) {
-			toast.error(
-				t("orders.productsToastQuantityWholeNumber", {
-					defaultValue: "Quantity must be a whole number.",
-				}),
-			);
-			return;
-		}
-		if (unitCost <= 0 || quantity <= 0) {
-			toast.error(t("orders.productsToastPriceQtyPositive"));
-			return;
-		}
-
+	const handleSaveLine = async (values: ProductFormValues): Promise<void> => {
 		const baseLine =
 			editingIndex !== null ? normalizedLines[editingIndex] : undefined;
+		const quantity =
+			values.quantity.trim() === "" ? 0 : Number(values.quantity);
+		const unitCost =
+			values.unitCost.trim() === "" ? 0 : Number(values.unitCost);
 		const nextLine: EditableOrderLine = {
 			id: baseLine?.id ?? "",
 			__tempId: baseLine?.__tempId ?? crypto.randomUUID(),
 			supplierQuoteLineId: baseLine?.supplierQuoteLineId ?? null,
 			houseModelId: baseLine?.houseModelId ?? null,
 			productConfigurationId: baseLine?.productConfigurationId ?? null,
-			description,
+			description: values.description.trim() || null,
 			quantity,
 			unitCost: {
 				amount: unitCost,
@@ -213,7 +164,7 @@ export const OrderProductsCard = ({
 		}
 
 		setIsDialogOpen(false);
-		resetDialog();
+		resetDialogState();
 	};
 
 	const deleteLine = async (): Promise<void> => {
@@ -409,83 +360,23 @@ export const OrderProductsCard = ({
 				</div>
 			</CardContent>
 
-			<Dialog
+			<ProductFormDialog
+				currency={currency}
+				editingIndex={editingIndex}
+				initialLine={
+					editingIndex !== null ? normalizedLines[editingIndex] ?? null : null
+				}
+				lineCount={normalizedLines.length}
+				loading={mutating}
 				open={isDialogOpen}
 				onOpenChange={(open) => {
 					setIsDialogOpen(open);
 					if (!open) {
-						resetDialog();
+						resetDialogState();
 					}
 				}}
-			>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>
-							{editingIndex !== null
-								? t("orders.productsEditLineTitle")
-								: t("orders.productsAddToOrderTitle")}
-						</DialogTitle>
-						<DialogDescription>
-							{t("orders.productsDialogDescription", {
-								defaultValue: "Update the operational order line details.",
-							})}
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-3">
-						<Input
-							disabled={mutating}
-							placeholder={t("orders.productsFieldProduct")}
-							value={form.description}
-							onChange={(event) => {
-								setForm((previous) => ({
-									...previous,
-									description: event.target.value,
-								}));
-							}}
-						/>
-						<Input
-							disabled={mutating}
-							inputMode="numeric"
-							placeholder={t("orders.productsFieldQuantity")}
-							value={form.quantity}
-							onChange={(event) => {
-								setForm((previous) => ({
-									...previous,
-									quantity: event.target.value,
-								}));
-							}}
-						/>
-						<Input
-							disabled={mutating}
-							inputMode="decimal"
-							placeholder={t("orders.productsFieldUnitPrice", { currency })}
-							value={form.unitCost}
-							onChange={(event) => {
-								setForm((previous) => ({
-									...previous,
-									unitCost: event.target.value,
-								}));
-							}}
-						/>
-					</div>
-					<DialogFooter>
-						<Button
-							disabled={mutating}
-							type="button"
-							variant="outline"
-							onClick={() => {
-								setIsDialogOpen(false);
-								resetDialog();
-							}}
-						>
-							{t("common.cancel")}
-						</Button>
-						<Button disabled={mutating} type="button" onClick={() => void upsertLine()}>
-							{t("orders.save")}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				onSubmit={handleSaveLine}
+			/>
 
 			<AlertDialog
 				open={deletingIndex !== null}

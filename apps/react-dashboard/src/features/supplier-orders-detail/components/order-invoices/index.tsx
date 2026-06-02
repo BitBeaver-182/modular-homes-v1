@@ -1,45 +1,62 @@
-import { FileText } from "lucide-react";
-import { type JSX, useMemo } from "react";
+import { Plus } from "lucide-react";
+import { useMemo, useState, type JSX } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCurrency } from "@/hooks/use-currency";
+import {
+	createPendingSupplierDocumentUpload,
+	deleteSupplierDocumentUpload,
+} from "@/features/quotes/lib/upload-api";
+import { useCreateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-create-order-invoice";
+import { useDeleteOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-delete-order-invoice";
+import { useUpdateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-update-order-invoice";
+import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
 
+import {
+	InvoiceFormDialog,
+	normalizeInvoiceInput,
+	type InvoiceFormValues,
+} from "./invoice-form-dialog";
+import { InvoiceItemCard } from "./invoice-item-card";
+
+import type { PendingInvoiceAttachment } from "./types";
 import type { SupplierOrderDetailInvoiceResponse } from "@moduflow/types";
 
 interface OrderInvoicesCardProps {
+	currency: string;
 	invoices: Array<SupplierOrderDetailInvoiceResponse>;
+	orderId: string;
 }
 
-const INVOICE_STATUS_VARIANT: Record<
-	SupplierOrderDetailInvoiceResponse["status"],
-	"default" | "secondary" | "outline" | "destructive"
-> = {
-	draft: "secondary",
-	issued: "outline",
-	partially_paid: "outline",
-	paid: "default",
-	overdue: "destructive",
-	disputed: "destructive",
-	cancelled: "secondary",
-	void: "secondary",
-};
-
-const humanize = (value: string): string =>
-	value
-		.split("_")
-		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-		.join(" ");
-
-const formatOptionalDate = (value: string | null): string =>
-	value ? new Date(value).toLocaleDateString() : "—";
-
 export const OrderInvoicesCard = ({
+	currency,
 	invoices,
+	orderId,
 }: OrderInvoicesCardProps): JSX.Element => {
 	const { t } = useTranslation();
-	const { formatAmount } = useCurrency();
+	const { activeMembership } = AdminRoute.useRouteContext();
+	const organizationId = activeMembership.organization.id;
+	const createInvoice = useCreateOrderInvoice();
+	const updateInvoice = useUpdateOrderInvoice();
+	const deleteInvoice = useDeleteOrderInvoice();
+
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+	const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
+	const [pendingAttachment, setPendingAttachment] =
+		useState<PendingInvoiceAttachment | null>(null);
 
 	const invoicesSorted = useMemo(
 		(): Array<SupplierOrderDetailInvoiceResponse> =>
@@ -54,70 +71,188 @@ export const OrderInvoicesCard = ({
 		[invoices],
 	);
 
+	const editingInvoice =
+		editingInvoiceId === null
+			? null
+			: invoicesSorted.find((invoice) => invoice.id === editingInvoiceId) ?? null;
+	const mutating =
+		createInvoice.isPending || updateInvoice.isPending || deleteInvoice.isPending;
+
+	const discardPendingAttachment = (attachment: PendingInvoiceAttachment | null): void => {
+		if (!attachment) {
+			return;
+		}
+
+		void deleteSupplierDocumentUpload(
+			{ organizationId },
+			attachment.fileId,
+		).catch(() => undefined);
+	};
+
+	const resetDialogState = (options?: { discardPending?: boolean }): void => {
+		setEditingInvoiceId(null);
+		if (options?.discardPending) {
+			setPendingAttachment((current) => {
+				discardPendingAttachment(current);
+				return null;
+			});
+		}
+	};
+
+	const openCreateDialog = (): void => {
+		resetDialogState({ discardPending: true });
+		setIsDialogOpen(true);
+	};
+
+	const openEditDialog = (invoice: SupplierOrderDetailInvoiceResponse): void => {
+		setEditingInvoiceId(invoice.id);
+		setIsDialogOpen(true);
+	};
+
+	const handleSaveInvoice = async (values: InvoiceFormValues): Promise<void> => {
+		let attachmentId: string | null | undefined =
+			values.removeExistingAttachment ? null : undefined;
+
+		if (values.attachmentFile) {
+			const currentPending =
+				pendingAttachment?.file === values.attachmentFile
+					? pendingAttachment
+					: null;
+
+			if (currentPending) {
+				attachmentId = currentPending.fileId;
+			} else {
+				if (pendingAttachment) {
+					discardPendingAttachment(pendingAttachment);
+				}
+
+				const nextPendingAttachment = await createPendingSupplierDocumentUpload(
+					{ organizationId },
+					values.attachmentFile,
+				);
+
+				const nextPendingState = {
+					file: values.attachmentFile,
+					fileId: nextPendingAttachment.fileId,
+				} satisfies PendingInvoiceAttachment;
+				setPendingAttachment(nextPendingState);
+				attachmentId = nextPendingState.fileId;
+			}
+		} else if (pendingAttachment) {
+			discardPendingAttachment(pendingAttachment);
+			setPendingAttachment(null);
+		}
+
+		const input = normalizeInvoiceInput(values, attachmentId);
+
+		if (editingInvoice) {
+			await updateInvoice.mutateAsync({
+				orderId,
+				invoiceId: editingInvoice.id,
+				input,
+			});
+			toast.success(t("orders.invoiceUpdated"));
+		} else {
+			await createInvoice.mutateAsync({
+				orderId,
+				input,
+			});
+			toast.success(t("orders.invoiceCreated"));
+		}
+
+		setPendingAttachment(null);
+		setIsDialogOpen(false);
+		resetDialogState();
+	};
+
+	const confirmDeleteInvoice = async (): Promise<void> => {
+		if (deletingInvoiceId === null) {
+			return;
+		}
+
+		try {
+			await deleteInvoice.mutateAsync({
+				orderId,
+				invoiceId: deletingInvoiceId,
+			});
+			toast.success(t("orders.invoiceDeleted"));
+			setDeletingInvoiceId(null);
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : t("orders.invoiceDeleteFailed"),
+			);
+		}
+	};
+
 	return (
 		<Card className="gap-0">
-			<CardHeader>
+			<CardHeader className="flex flex-row items-center justify-between">
 				<CardTitle>{t("orders.invoicesTitle")}</CardTitle>
+				<Button disabled={mutating} size="sm" type="button" onClick={openCreateDialog}>
+					<Plus className="mr-2 size-4" />
+					{t("orders.invoiceCreateAction")}
+				</Button>
 			</CardHeader>
-			<CardContent className="space-y-4">
+			<CardContent className="space-y-4 mt-4">
 				{invoicesSorted.length === 0 ? (
 					<p className="py-8 text-center text-muted-foreground">{t("orders.noInvoices")}</p>
 				) : (
 					invoicesSorted.map((invoice) => (
-						<div
+						<InvoiceItemCard
 							key={invoice.id}
-							className="rounded-xl border bg-card p-4 shadow-sm"
-						>
-							<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-								<div className="space-y-2">
-									<div className="flex items-center gap-2">
-										<FileText className="size-4 text-muted-foreground" />
-										<p className="font-semibold">{invoice.invoiceNumber}</p>
-										<Badge variant={INVOICE_STATUS_VARIANT[invoice.status]}>
-											{humanize(invoice.status)}
-										</Badge>
-									</div>
-									<p className="text-sm text-muted-foreground">
-										{humanize(invoice.invoiceType)} • {humanize(invoice.direction)}
-									</p>
-									<p className="text-sm text-muted-foreground">
-										{t("orders.detailInvoiceDates", {
-											defaultValue: "Issued {{issueDate}} • Due {{dueDate}}",
-											dueDate: formatOptionalDate(invoice.dueDate),
-											issueDate: formatOptionalDate(invoice.issueDate),
-										})}
-									</p>
-								</div>
-								<div className="grid min-w-[220px] grid-cols-3 gap-4 text-right text-sm">
-									<div>
-										<p className="text-muted-foreground">{t("orders.invoiceTotal")}</p>
-										<p className="font-medium">
-											{formatAmount(invoice.totalAmount.amount, invoice.currencyCode)}
-										</p>
-									</div>
-									<div>
-										<p className="text-muted-foreground">{t("orders.invoicePaid")}</p>
-										<p className="font-medium">
-											{formatAmount(invoice.amountPaid.amount, invoice.currencyCode)}
-										</p>
-									</div>
-									<div>
-										<p className="text-muted-foreground">{t("orders.invoiceRemaining")}</p>
-										<p className="font-medium">
-											{formatAmount(invoice.balanceDue.amount, invoice.currencyCode)}
-										</p>
-									</div>
-								</div>
-							</div>
-							{invoice.notes ? (
-								<p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">
-									{invoice.notes}
-								</p>
-							) : null}
-						</div>
+							invoice={invoice}
+							mutating={mutating}
+							onDelete={setDeletingInvoiceId}
+							onEdit={openEditDialog}
+						/>
 					))
 				)}
 			</CardContent>
+
+			<InvoiceFormDialog
+				currency={currency}
+				initialInvoice={editingInvoice}
+				loading={mutating}
+				open={isDialogOpen}
+				onOpenChange={(open) => {
+					setIsDialogOpen(open);
+					if (!open) {
+						resetDialogState({ discardPending: true });
+					}
+				}}
+				onSubmit={handleSaveInvoice}
+			/>
+
+			<AlertDialog
+				open={deletingInvoiceId !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeletingInvoiceId(null);
+					}
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>{t("orders.invoiceDeleteTitle")}</AlertDialogTitle>
+						<AlertDialogDescription>
+							{t("orders.deleteCannotUndo")}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={mutating}>
+							{t("common.cancel")}
+						</AlertDialogCancel>
+						<AlertDialogAction
+							disabled={mutating}
+							onClick={() => void confirmDeleteInvoice()}
+						>
+							{t("orders.invoiceDeleteConfirmAction", {
+								defaultValue: "Confirm delete invoice",
+							})}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</Card>
 	);
 };
