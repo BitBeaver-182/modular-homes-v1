@@ -65,6 +65,40 @@ export const SUPPLIER_ORDER_INVOICE_TYPES = [
 export type SupplierOrderInvoiceType =
   (typeof SUPPLIER_ORDER_INVOICE_TYPES)[number];
 
+export const SUPPLIER_ORDER_INVOICE_INSTALLMENT_STATUSES = [
+  'scheduled',
+  'due',
+  'partially_paid',
+  'paid',
+  'overdue',
+  'cancelled',
+] as const;
+
+export type SupplierOrderInvoiceInstallmentStatus =
+  (typeof SUPPLIER_ORDER_INVOICE_INSTALLMENT_STATUSES)[number];
+
+export const SUPPLIER_ORDER_INVOICE_PAYMENT_METHODS = [
+  'bank_transfer',
+  'cash',
+  'card',
+  'online',
+  'other',
+] as const;
+
+export type SupplierOrderInvoicePaymentMethod =
+  (typeof SUPPLIER_ORDER_INVOICE_PAYMENT_METHODS)[number];
+
+export const SUPPLIER_ORDER_INVOICE_PAYMENT_STATUSES = [
+  'pending',
+  'completed',
+  'failed',
+  'reversed',
+  'refunded',
+] as const;
+
+export type SupplierOrderInvoicePaymentStatus =
+  (typeof SUPPLIER_ORDER_INVOICE_PAYMENT_STATUSES)[number];
+
 export interface SupplierOrderMoney {
   amount: number;
   currencyCode: string;
@@ -134,6 +168,40 @@ export interface UpdateSupplierOrderInvoiceRequest {
   notes?: string | null;
 }
 
+export interface CreateSupplierOrderInvoiceInstallmentRequest {
+  dueDate: string;
+  amountDue: number;
+  notes?: string | null;
+}
+
+export interface UpdateSupplierOrderInvoiceInstallmentRequest {
+  dueDate: string;
+  amountDue: number;
+  notes?: string | null;
+}
+
+export interface CreateSupplierOrderInvoicePaymentRequest {
+  paymentReference?: string | null;
+  paymentMethod: SupplierOrderInvoicePaymentMethod;
+  paymentDate: string;
+  amount: number;
+  bankAccount?: string | null;
+  transactionId?: string | null;
+  notes?: string | null;
+  invoiceInstallmentId?: string | null;
+}
+
+export interface UpdateSupplierOrderInvoicePaymentRequest {
+  paymentReference?: string | null;
+  paymentMethod: SupplierOrderInvoicePaymentMethod;
+  paymentDate: string;
+  amount: number;
+  bankAccount?: string | null;
+  transactionId?: string | null;
+  notes?: string | null;
+  invoiceInstallmentId?: string | null;
+}
+
 export interface UpdateSupplierOrderRequest {
   /**
    * Full replacement semantics for order lines.
@@ -183,7 +251,38 @@ export interface SupplierOrderDetailInvoiceResponse {
   totalAmount: SupplierOrderMoney;
   amountPaid: SupplierOrderMoney;
   balanceDue: SupplierOrderMoney;
+  installments: SupplierOrderInvoiceInstallmentResponse[];
+  payments: SupplierOrderInvoicePaymentResponse[];
   notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupplierOrderInvoiceInstallmentResponse {
+  id: string;
+  installmentNumber: number;
+  status: SupplierOrderInvoiceInstallmentStatus;
+  dueDate: string;
+  amountDue: SupplierOrderMoney;
+  amountPaid: SupplierOrderMoney;
+  balanceDue: SupplierOrderMoney;
+  paidAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupplierOrderInvoicePaymentResponse {
+  id: string;
+  paymentReference: string | null;
+  status: SupplierOrderInvoicePaymentStatus;
+  paymentMethod: SupplierOrderInvoicePaymentMethod;
+  paymentDate: string | null;
+  amount: SupplierOrderMoney;
+  bankAccount: string | null;
+  transactionId: string | null;
+  notes: string | null;
+  invoiceInstallmentId: string | null;
   createdAt: string;
   updatedAt: string;
 }
