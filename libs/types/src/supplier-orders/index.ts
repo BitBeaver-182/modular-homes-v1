@@ -1,4 +1,4 @@
-import type { PaginatedListResponse } from '../common';
+import type { FileUploadResponse, PaginatedListResponse } from '../common';
 import type { SupplierResponse } from '../suppliers';
 
 export const SUPPLIER_ORDER_LIST_STATUSES = [
@@ -111,22 +111,24 @@ export interface SupplierOrderLineWriteInput {
 }
 
 export interface CreateSupplierOrderInvoiceRequest {
+  attachmentId?: string | null;
   invoiceNumber: string;
   invoiceType: SupplierOrderInvoiceType;
   status: SupplierOrderInvoiceStatus;
-  issueDate?: string | null;
-  dueDate?: string | null;
+  issueDate: string;
+  dueDate: string;
   subtotalAmount: number;
   taxAmount: number;
   notes?: string | null;
 }
 
 export interface UpdateSupplierOrderInvoiceRequest {
+  attachmentId?: string | null;
   invoiceNumber: string;
   invoiceType: SupplierOrderInvoiceType;
   status: SupplierOrderInvoiceStatus;
-  issueDate?: string | null;
-  dueDate?: string | null;
+  issueDate: string;
+  dueDate: string;
   subtotalAmount: number;
   taxAmount: number;
   notes?: string | null;
@@ -168,6 +170,7 @@ export interface SupplierOrderDetailLineResponse {
 
 export interface SupplierOrderDetailInvoiceResponse {
   id: string;
+  attachment: FileUploadResponse | null;
   invoiceNumber: string;
   direction: SupplierOrderInvoiceDirection;
   invoiceType: SupplierOrderInvoiceType;

@@ -6,6 +6,9 @@ import {
 } from './supplier-order.mapper';
 
 describe('supplier-order mapper', () => {
+  const storageService = {
+    readUrl: jest.fn().mockResolvedValue('https://files.test/doc.pdf'),
+  };
   const supplierOrderRecord: SupplierOrderWithRelations = {
     id: 101n,
     organizationId: 4n,
@@ -76,6 +79,8 @@ describe('supplier-order mapper', () => {
     ],
     invoices: [
       {
+        attachment: null,
+        attachmentId: null,
         id: 77n,
         organizationId: 4n,
         invoiceNumber: 'INV-2026-001',
@@ -140,8 +145,11 @@ describe('supplier-order mapper', () => {
     );
   });
 
-  it('maps supplier-order detail records with line and invoice summaries', () => {
-    const response = toSupplierOrderDetailResponse(supplierOrderRecord);
+  it('maps supplier-order detail records with line and invoice summaries', async () => {
+    const response = await toSupplierOrderDetailResponse(
+      supplierOrderRecord,
+      storageService as never,
+    );
 
     expect(response.id).toBe('101');
     expect(response.status).toBe('confirmed');
@@ -198,6 +206,7 @@ describe('supplier-order mapper', () => {
     ]);
     expect(response.invoices).toEqual([
       {
+        attachment: null,
         id: '77',
         invoiceNumber: 'INV-2026-001',
         direction: 'payable',

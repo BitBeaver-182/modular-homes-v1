@@ -13,11 +13,11 @@ import { Transform } from 'class-transformer';
 import {
   IsEnum,
   IsNumber,
-  IsOptional,
   IsString,
   IsDateString,
   MaxLength,
   Min,
+  IsOptional,
 } from 'class-validator';
 import {
   emptyStringToUndefined,
@@ -25,6 +25,14 @@ import {
 } from '../../../common/transforms/string.transforms';
 
 class SupplierOrderInvoiceWriteDto {
+  @ApiPropertyOptional({ example: 'file_123', nullable: true })
+  @Transform(emptyStringToUndefined)
+  @Transform(trimString)
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  attachmentId?: string | null;
+
   @ApiProperty({ example: 'INV-2026-001' })
   @Transform(trimString)
   @IsString()
@@ -39,19 +47,15 @@ class SupplierOrderInvoiceWriteDto {
   @IsEnum(SUPPLIER_ORDER_INVOICE_STATUSES)
   status!: SupplierOrderInvoiceStatus;
 
-  @ApiPropertyOptional({ example: '2026-06-03', nullable: true })
-  @Transform(emptyStringToUndefined)
+  @ApiProperty({ example: '2026-06-03' })
   @Transform(trimString)
-  @IsOptional()
   @IsDateString()
-  issueDate?: string | null;
+  issueDate!: string;
 
-  @ApiPropertyOptional({ example: '2026-06-30', nullable: true })
-  @Transform(emptyStringToUndefined)
+  @ApiProperty({ example: '2026-06-30' })
   @Transform(trimString)
-  @IsOptional()
   @IsDateString()
-  dueDate?: string | null;
+  dueDate!: string;
 
   @ApiProperty({ example: 1000 })
   @IsNumber({ maxDecimalPlaces: 2 })

@@ -40,8 +40,6 @@ import {
 } from './dto/supplier-order-response.dto';
 import { UpdateSupplierOrderDto } from './dto/update-supplier-order.dto';
 import {
-  toSupplierOrderDetailInvoiceResponse,
-  toSupplierOrderDetailResponse,
   toSupplierOrderListItemResponse,
   toSupplierOrderListResponse,
 } from './mappers/supplier-order.mapper';
@@ -109,9 +107,7 @@ export class SupplierOrdersController {
   ): Promise<SupplierOrderDetailResponse> {
     return plainToInstance(
       SupplierOrderDetailResponse,
-      toSupplierOrderDetailResponse(
-        await this.supplierOrdersService.findOne(organizationId, id),
-      ),
+      await this.supplierOrdersService.findOneResponse(organizationId, id),
       { excludeExtraneousValues: true },
     );
   }
@@ -128,11 +124,11 @@ export class SupplierOrdersController {
     @Param('id') id: string,
     @Body() dto: UpdateSupplierOrderDto,
   ): Promise<SupplierOrderDetailResponse> {
+    await this.supplierOrdersService.update(organizationId, id, dto);
+
     return plainToInstance(
       SupplierOrderDetailResponse,
-      toSupplierOrderDetailResponse(
-        await this.supplierOrdersService.update(organizationId, id, dto),
-      ),
+      await this.supplierOrdersService.findOneResponse(organizationId, id),
       { excludeExtraneousValues: true },
     );
   }
@@ -151,8 +147,10 @@ export class SupplierOrdersController {
   ): Promise<SupplierOrderDetailInvoiceResponse> {
     return plainToInstance(
       SupplierOrderDetailInvoiceResponse,
-      toSupplierOrderDetailInvoiceResponse(
-        await this.supplierOrdersService.createInvoice(organizationId, id, dto),
+      await this.supplierOrdersService.createInvoiceResponse(
+        organizationId,
+        id,
+        dto,
       ),
       { excludeExtraneousValues: true },
     );
@@ -173,13 +171,11 @@ export class SupplierOrdersController {
   ): Promise<SupplierOrderDetailInvoiceResponse> {
     return plainToInstance(
       SupplierOrderDetailInvoiceResponse,
-      toSupplierOrderDetailInvoiceResponse(
-        await this.supplierOrdersService.updateInvoice(
-          organizationId,
-          id,
-          invoiceId,
-          dto,
-        ),
+      await this.supplierOrdersService.updateInvoiceResponse(
+        organizationId,
+        id,
+        invoiceId,
+        dto,
       ),
       { excludeExtraneousValues: true },
     );

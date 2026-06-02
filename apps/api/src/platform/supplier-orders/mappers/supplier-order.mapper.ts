@@ -15,6 +15,8 @@ import {
   toApiId,
   toIsoDateString,
 } from '../../../common/mappers/transport';
+import { FileUploadMapper } from '../../../uploads/mappers/file-upload.mapper';
+import type { IStorageService } from '../../../storage/storage.service.interface';
 import { toSupplierResponse } from '../../suppliers/mappers/supplier.mapper';
 
 export type SupplierOrderWithRelations = Prisma.SupplierOrderGetPayload<{
@@ -30,10 +32,13 @@ export type SupplierOrderWithRelations = Prisma.SupplierOrderGetPayload<{
     };
     invoices: {
       orderBy: { id: 'asc' };
+      include: { attachment: true };
     };
   };
 }>;
-export type SupplierOrderInvoiceRecord = Prisma.InvoiceGetPayload<{}>;
+export type SupplierOrderInvoiceRecord = Prisma.InvoiceGetPayload<{
+  include: { attachment: true };
+}>;
 
 type SupplierOrderListMeta = SupplierOrderListResponse['meta'];
 type SupplierOrderDetailMoney = SupplierOrderDetailResponse['totalAmount'];
@@ -155,11 +160,15 @@ function toSupplierOrderDetailLineResponse(
   };
 }
 
-export function toSupplierOrderDetailInvoiceResponse(
+export async function toSupplierOrderDetailInvoiceResponse(
   invoice: SupplierOrderWithRelations['invoices'][number] | SupplierOrderInvoiceRecord,
-): SupplierOrderDetailInvoiceResponse {
+  storageService: IStorageService,
+): Promise<SupplierOrderDetailInvoiceResponse> {
   return {
     id: toApiId(invoice.id),
+    attachment: invoice.attachment
+      ? await FileUploadMapper.toResponse(invoice.attachment, storageService)
+      : null,
     invoiceNumber: invoice.invoiceNumber,
     direction: invoice.direction,
     invoiceType: invoice.invoiceType,
@@ -181,9 +190,10 @@ export function toSupplierOrderDetailInvoiceResponse(
   };
 }
 
-export function toSupplierOrderDetailResponse(
+export async function toSupplierOrderDetailResponse(
   order: SupplierOrderWithRelations,
-): SupplierOrderDetailResponse {
+  storageService: IStorageService,
+): Promise<SupplierOrderDetailResponse> {
   return {
     id: toApiId(order.id),
     orderNumber: order.orderNumber,
@@ -226,6 +236,10 @@ export function toSupplierOrderDetailResponse(
     orderLines: order.lines.map((line) =>
       toSupplierOrderDetailLineResponse(line, order.currencyCode),
     ),
-    invoices: order.invoices.map(toSupplierOrderDetailInvoiceResponse),
+    invoices: await Promise.all(
+      order.invoices.map((invoice) =>
+        toSupplierOrderDetailInvoiceResponse(invoice, storageService),
+      ),
+    ),
   };
 }

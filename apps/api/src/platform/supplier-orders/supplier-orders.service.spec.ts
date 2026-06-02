@@ -4,8 +4,17 @@ import { Prisma } from '@prisma/client';
 import { SupplierOrdersService } from './supplier-orders.service';
 
 describe('SupplierOrdersService', () => {
+  const storageService = {
+    delete: jest.fn(),
+    readUrl: jest.fn(),
+  };
   const prisma = {
     $transaction: jest.fn(),
+    fileUpload: {
+      deleteMany: jest.fn(),
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+    },
     invoice: {
       create: jest.fn(),
       delete: jest.fn(),
@@ -44,10 +53,15 @@ describe('SupplierOrdersService', () => {
     prisma.invoice.update.mockResolvedValue({ id: 1n });
     prisma.invoice.delete.mockResolvedValue({ id: 1n });
     prisma.invoice.findFirst.mockResolvedValue(null);
+    prisma.fileUpload.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.fileUpload.findFirst.mockResolvedValue(null);
+    prisma.fileUpload.updateMany.mockResolvedValue({ count: 1 });
+    storageService.delete.mockResolvedValue(undefined);
+    storageService.readUrl.mockResolvedValue('https://files.test/doc.pdf');
     prisma.supplierOrderLine.create.mockResolvedValue({ id: 1n });
     prisma.supplierOrderLine.update.mockResolvedValue({ id: 1n });
     prisma.supplierOrderLine.deleteMany.mockResolvedValue({ count: 0 });
-    service = new SupplierOrdersService(prisma as never);
+    service = new SupplierOrdersService(prisma as never, storageService as never);
   });
 
   it('creates a draft supplier order from an accepted quote', async () => {
@@ -678,6 +692,7 @@ describe('SupplierOrdersService', () => {
       updatedAt: new Date('2026-06-02T00:00:00.000Z'),
     });
     prisma.invoice.create.mockResolvedValue({
+      attachment: null,
       id: 77n,
       organizationId: 4n,
       invoiceNumber: 'INV-2026-001',
@@ -713,6 +728,7 @@ describe('SupplierOrdersService', () => {
 
     expect(prisma.invoice.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
+        attachmentId: null,
         organizationId: 4n,
         supplierId: 8n,
         supplierOrderId: 101n,
@@ -728,6 +744,7 @@ describe('SupplierOrdersService', () => {
         balanceDue: new Prisma.Decimal('1150'),
         notes: 'Awaiting remainder',
       }),
+      include: { attachment: true },
     });
   });
 
@@ -763,28 +780,32 @@ describe('SupplierOrdersService', () => {
       createdAt: new Date('2026-06-01T00:00:00.000Z'),
       updatedAt: new Date('2026-06-02T00:00:00.000Z'),
     });
-    prisma.invoice.findFirst.mockResolvedValue({
-      id: 77n,
-      organizationId: 4n,
-      invoiceNumber: 'INV-2026-001',
-      direction: 'payable',
-      invoiceType: 'supplier_goods',
-      status: 'issued',
-      supplierId: 8n,
-      supplierOrderId: 101n,
-      issueDate: null,
-      dueDate: null,
-      currencyCode: 'EUR',
-      exchangeRateToBase: null,
-      subtotalAmount: new Prisma.Decimal('1000'),
-      taxAmount: new Prisma.Decimal('150'),
-      totalAmount: new Prisma.Decimal('1150'),
-      amountPaid: new Prisma.Decimal('300'),
-      balanceDue: new Prisma.Decimal('850'),
-      notes: null,
-      createdAt: new Date('2026-06-03T00:00:00.000Z'),
-      updatedAt: new Date('2026-06-03T00:00:00.000Z'),
-    });
+    prisma.invoice.findFirst
+      .mockResolvedValueOnce({
+        id: 77n,
+        organizationId: 4n,
+        attachmentId: null,
+        attachment: null,
+        invoiceNumber: 'INV-2026-001',
+        direction: 'payable',
+        invoiceType: 'supplier_goods',
+        status: 'issued',
+        supplierId: 8n,
+        supplierOrderId: 101n,
+        issueDate: null,
+        dueDate: null,
+        currencyCode: 'EUR',
+        exchangeRateToBase: null,
+        subtotalAmount: new Prisma.Decimal('1000'),
+        taxAmount: new Prisma.Decimal('150'),
+        totalAmount: new Prisma.Decimal('1150'),
+        amountPaid: new Prisma.Decimal('300'),
+        balanceDue: new Prisma.Decimal('850'),
+        notes: null,
+        createdAt: new Date('2026-06-03T00:00:00.000Z'),
+        updatedAt: new Date('2026-06-03T00:00:00.000Z'),
+      })
+      .mockResolvedValueOnce(null);
 
     await service.updateInvoice(4n, '101', '77', {
       invoiceNumber: 'INV-2026-001',
@@ -807,6 +828,7 @@ describe('SupplierOrdersService', () => {
         balanceDue: new Prisma.Decimal('735'),
         currencyCode: 'EUR',
       }),
+      include: { attachment: true },
     });
   });
 

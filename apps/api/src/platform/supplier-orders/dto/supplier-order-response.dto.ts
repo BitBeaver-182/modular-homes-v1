@@ -24,6 +24,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { createPaginatedResponseDto } from '../../../common/dto/paginated-response.dto';
+import { FileUploadPresenter } from '../../../uploads/presenters/file-upload.presenter';
 import { SupplierResponse } from '../../suppliers/dto/supplier-response.dto';
 
 export class SupplierOrderListMoneyResponse implements SupplierOrderListMoneyContract {
@@ -233,6 +234,11 @@ export class SupplierOrderDetailInvoiceResponse implements SupplierOrderDetailIn
   @ApiProperty({ example: '77' })
   @Expose()
   id!: string;
+
+  @ApiPropertyOptional({ type: FileUploadPresenter, nullable: true })
+  @Expose()
+  @Type(() => FileUploadPresenter)
+  attachment!: FileUploadPresenter | null;
 
   @ApiProperty({ example: 'INV-2026-001' })
   @Expose()
