@@ -127,7 +127,7 @@ export const createSupplierOrderInvoice = async (
 			body: input,
 			headers: organizationHeaders(context),
 			method: "POST",
-		}
+		},
 	);
 
 export const updateSupplierOrderInvoice = async (
@@ -142,7 +142,7 @@ export const updateSupplierOrderInvoice = async (
 			body: input,
 			headers: organizationHeaders(context),
 			method: "PATCH",
-		}
+		},
 	);
 
 export const deleteSupplierOrderInvoice = async (
@@ -159,9 +159,7 @@ export const deleteSupplierOrderInvoice = async (
 	);
 
 export type {
-	CreateSupplierOrderInvoiceRequest,
 	SupplierOrderLineWriteInput,
-	UpdateSupplierOrderInvoiceRequest,
 	UpdateSupplierOrderRequest,
 };
 

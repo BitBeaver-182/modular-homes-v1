@@ -7,12 +7,12 @@ import {
 import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
 
 import { orderKeys } from "../../supplier-orders/hooks/order-keys";
-import {
-	updateSupplierOrderInvoice,
-	type UpdateSupplierOrderInvoiceRequest,
-} from "../../supplier-orders/lib/order-api";
+import { updateSupplierOrderInvoice } from "../../supplier-orders/lib/order-api";
 
-import type { SupplierOrderDetailInvoiceResponse } from "@moduflow/types";
+import type {
+	SupplierOrderDetailInvoiceResponse,
+	UpdateSupplierOrderInvoiceRequest,
+} from "@moduflow/types";
 
 export interface UpdateOrderInvoiceVariables {
 	orderId: string;

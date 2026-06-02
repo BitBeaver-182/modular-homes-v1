@@ -24,11 +24,13 @@ import type {
 } from "@moduflow/types";
 
 export interface InvoiceFormValues {
+	attachmentFile: File | null;
 	dueDate: string;
 	invoiceNumber: string;
 	invoiceType: SupplierOrderInvoiceType;
 	issueDate: string;
 	notes: string;
+	removeExistingAttachment: boolean;
 	status: SupplierOrderInvoiceStatus;
 	subtotalAmount: string;
 	taxAmount: string;
@@ -45,11 +47,13 @@ interface InvoiceFormDialogProps {
 }
 
 const EMPTY_VALUES: InvoiceFormValues = {
+	attachmentFile: null,
 	dueDate: "",
 	invoiceNumber: "",
 	invoiceType: "supplier_goods",
 	issueDate: "",
 	notes: "",
+	removeExistingAttachment: false,
 	status: "draft",
 	subtotalAmount: "",
 	taxAmount: "0",
@@ -63,11 +67,13 @@ const toFormValues = (
 ): InvoiceFormValues =>
 	invoice
 		? {
+				attachmentFile: null,
 				dueDate: toDateInputValue(invoice.dueDate),
 				invoiceNumber: invoice.invoiceNumber,
 				invoiceType: invoice.invoiceType,
 				issueDate: toDateInputValue(invoice.issueDate),
 				notes: invoice.notes ?? "",
+				removeExistingAttachment: false,
 				status: invoice.status,
 				subtotalAmount: String(invoice.subtotalAmount.amount),
 				taxAmount: String(invoice.taxAmount.amount),
@@ -83,6 +89,8 @@ const mapInvoiceField = (key: string) => {
 		dueDate: "dueDate",
 		subtotalAmount: "subtotalAmount",
 		taxAmount: "taxAmount",
+		attachmentId: "attachmentFile",
+		attachment: "attachmentFile",
 		notes: "notes",
 		root: "root",
 		"": "root",
@@ -93,21 +101,17 @@ const mapInvoiceField = (key: string) => {
 
 export const normalizeInvoiceInput = (
 	form: InvoiceFormValues,
+	attachmentId?: string | null,
 ): CreateSupplierOrderInvoiceRequest | UpdateSupplierOrderInvoiceRequest => ({
-	dueDate: form.dueDate || null,
+	dueDate: form.dueDate,
 	invoiceNumber: form.invoiceNumber.trim(),
 	invoiceType: form.invoiceType,
-	issueDate: form.issueDate || null,
+	issueDate: form.issueDate,
 	notes: form.notes.trim() || null,
 	status: form.status,
-	subtotalAmount:
-		form.subtotalAmount.trim() === ""
-			? (undefined as unknown as number)
-			: Number(form.subtotalAmount),
-	taxAmount:
-		form.taxAmount.trim() === ""
-			? (undefined as unknown as number)
-			: Number(form.taxAmount),
+	subtotalAmount: Number(form.subtotalAmount),
+	taxAmount: Number(form.taxAmount),
+	...(attachmentId !== undefined ? { attachmentId } : {}),
 });
 
 export const InvoiceFormDialog = ({
@@ -161,7 +165,11 @@ export const InvoiceFormDialog = ({
 							</p>
 						) : null}
 
-						<InvoiceFormFields currency={currency} disabled={loading} />
+						<InvoiceFormFields
+							currency={currency}
+							disabled={loading}
+							initialInvoice={initialInvoice}
+						/>
 
 						<DialogFooter>
 							<Button

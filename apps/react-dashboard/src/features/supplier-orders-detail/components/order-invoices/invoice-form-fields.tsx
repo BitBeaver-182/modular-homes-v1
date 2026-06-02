@@ -2,6 +2,7 @@ import { type JSX } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
+import { FileUploadInput } from "@/components/forms/inputs/file-upload-input";
 import {
 	Field,
 	FieldError,
@@ -9,6 +10,10 @@ import {
 	FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+	QUOTE_MAX_ATTACHMENT_BYTES,
+	QUOTE_MAX_ATTACHMENT_FILES,
+} from "@/features/quotes/lib/quote-attachments";
 import {
 	Select,
 	SelectContent,
@@ -22,6 +27,7 @@ import type { InvoiceFormValues } from "./invoice-form-dialog";
 import {
 	SUPPLIER_ORDER_INVOICE_STATUSES,
 	SUPPLIER_ORDER_INVOICE_TYPES,
+	type SupplierOrderDetailInvoiceResponse,
 } from "@moduflow/types";
 
 const humanize = (value: string): string =>
@@ -33,20 +39,24 @@ const humanize = (value: string): string =>
 interface InvoiceFormFieldsProps {
 	currency: string;
 	disabled: boolean;
+	initialInvoice: SupplierOrderDetailInvoiceResponse | null;
 }
 
 export const InvoiceFormFields = ({
 	currency,
 	disabled,
+	initialInvoice,
 }: InvoiceFormFieldsProps): JSX.Element => {
 	const { t } = useTranslation();
 	const {
 		control,
 		register,
+		setValue,
 		formState: { errors },
 		watch,
 	} = useFormContext<InvoiceFormValues>();
 
+	const attachmentError = errors.attachmentFile?.message;
 	const invoiceNumberError = errors.invoiceNumber?.message;
 	const invoiceTypeError = errors.invoiceType?.message;
 	const statusError = errors.status?.message;
@@ -240,6 +250,45 @@ export const InvoiceFormFields = ({
 					{...register("notes")}
 				/>
 				{notesError ? <FieldError>{notesError}</FieldError> : null}
+			</Field>
+
+			<Field data-invalid={Boolean(attachmentError) || undefined}>
+				<FieldLabel>{t("quotes.supportingDoc")}</FieldLabel>
+				<Controller
+					control={control}
+					name="attachmentFile"
+					render={({ field }) => (
+						<FileUploadInput
+							accept="application/pdf,.pdf"
+							browseLabel={t("quotes.browse")}
+							clearLabel={t("quotes.clearExistingPdf")}
+							disabled={disabled}
+							emptyLabel={t("quotes.dropPdf")}
+							existingFile={
+								initialInvoice?.attachment?.url && initialInvoice.attachment.filename
+									? {
+										href: initialInvoice.attachment.url,
+										name: initialInvoice.attachment.filename,
+									}
+									: null
+							}
+							hint={t("quotes.pdfHint")}
+							key={initialInvoice?.id ?? "create"}
+							maxFiles={QUOTE_MAX_ATTACHMENT_FILES}
+							maxSize={QUOTE_MAX_ATTACHMENT_BYTES}
+							name="invoiceAttachment"
+							onExistingClear={() => {
+								field.onChange(null);
+								setValue("removeExistingAttachment", true, { shouldDirty: true });
+							}}
+							onFilesChange={(files) => {
+								field.onChange(files[0] ?? null);
+								setValue("removeExistingAttachment", false, { shouldDirty: true });
+							}}
+						/>
+					)}
+				/>
+				{attachmentError ? <FieldError>{attachmentError}</FieldError> : null}
 			</Field>
 		</FieldGroup>
 	);

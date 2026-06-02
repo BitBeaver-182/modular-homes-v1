@@ -6,6 +6,7 @@ import { SupplierOrdersService } from './supplier-orders.service';
 describe('SupplierOrdersService', () => {
   const storageService = {
     delete: jest.fn(),
+    exists: jest.fn(),
     readUrl: jest.fn(),
   };
   const prisma = {
@@ -57,6 +58,7 @@ describe('SupplierOrdersService', () => {
     prisma.fileUpload.findFirst.mockResolvedValue(null);
     prisma.fileUpload.updateMany.mockResolvedValue({ count: 1 });
     storageService.delete.mockResolvedValue(undefined);
+    storageService.exists.mockResolvedValue(true);
     storageService.readUrl.mockResolvedValue('https://files.test/doc.pdf');
     prisma.supplierOrderLine.create.mockResolvedValue({ id: 1n });
     prisma.supplierOrderLine.update.mockResolvedValue({ id: 1n });
@@ -827,6 +829,84 @@ describe('SupplierOrdersService', () => {
         totalAmount: new Prisma.Decimal('1035'),
         balanceDue: new Prisma.Decimal('735'),
         currencyCode: 'EUR',
+      }),
+      include: { attachment: true },
+    });
+  });
+
+  it('claims a pending upload when creating a supplier-order invoice', async () => {
+    prisma.supplierOrder.findFirst.mockResolvedValue({
+      id: 101n,
+      organizationId: 4n,
+      supplierId: 8n,
+      supplierQuoteId: null,
+      supplier: null,
+      supplierQuote: null,
+      lines: [],
+      invoices: [],
+      status: 'confirmed',
+      orderNumber: 'SO-000101',
+      supplierPoNumber: null,
+      orderDate: null,
+      confirmedAt: null,
+      expectedReadyDate: null,
+      expectedShipDate: null,
+      expectedArrivalDate: null,
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('0'),
+      shippingAmount: new Prisma.Decimal('0'),
+      taxAmount: new Prisma.Decimal('0'),
+      totalAmount: new Prisma.Decimal('0'),
+      incoterm: null,
+      paymentTerms: null,
+      loadingPort: null,
+      destinationPort: null,
+      notes: null,
+      createdByUserId: null,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+    });
+    prisma.fileUpload.findFirst.mockResolvedValue({
+      id: 'file_123',
+      status: 'PENDING',
+      expiresAt: new Date('2099-06-30T00:00:00.000Z'),
+      key: '4/SUPPLIER_DOCUMENT/file_123',
+      context: 'SUPPLIER_DOCUMENT',
+    });
+
+    await service.createInvoice(4n, '101', {
+      attachmentId: 'file_123',
+      invoiceNumber: 'INV-2026-005',
+      invoiceType: 'supplier_goods',
+      status: 'issued',
+      issueDate: '2026-06-03',
+      dueDate: '2026-06-30',
+      subtotalAmount: 1000,
+      taxAmount: 150,
+      notes: null,
+    });
+
+    expect(storageService.exists).toHaveBeenCalledWith(
+      'SUPPLIER_DOCUMENT',
+      '4/SUPPLIER_DOCUMENT/file_123',
+    );
+    expect(prisma.fileUpload.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'file_123',
+        organizationId: 4n,
+        context: 'SUPPLIER_DOCUMENT',
+        status: { in: ['PENDING', 'CONFIRMED'] },
+        expiresAt: { not: null },
+      },
+      data: {
+        status: 'CONFIRMED',
+        confirmedAt: expect.any(Date),
+        expiresAt: null,
+      },
+    });
+    expect(prisma.invoice.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        attachmentId: 'file_123',
       }),
       include: { attachment: true },
     });

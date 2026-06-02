@@ -4102,12 +4102,72 @@
           "createdAt"
         ]
       },
+      "FileUploadPresenter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckvxo0n1a000001l46me8xz6u"
+          },
+          "filename": {
+            "type": "string",
+            "example": "floor-plan.pdf"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://example.supabase.co/storage/v1/object/..."
+          },
+          "context": {
+            "type": "string",
+            "enum": [
+              "AVATAR",
+              "ORGANIZATION_LOGO",
+              "SUPPLIER_DOCUMENT"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "ORPHANED",
+              "DELETED"
+            ]
+          },
+          "uploadedAt": {
+            "type": "string",
+            "example": "2026-05-30T08:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "mimeType",
+          "url",
+          "context",
+          "status",
+          "uploadedAt"
+        ]
+      },
       "SupplierOrderDetailInvoiceResponse": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
             "example": "77"
+          },
+          "attachment": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FileUploadPresenter"
+              }
+            ]
           },
           "invoiceNumber": {
             "type": "string",
@@ -4412,6 +4472,11 @@
       "CreateSupplierOrderInvoiceDto": {
         "type": "object",
         "properties": {
+          "attachmentId": {
+            "type": "object",
+            "example": "file_123",
+            "nullable": true
+          },
           "invoiceNumber": {
             "type": "string",
             "example": "INV-2026-001"
@@ -4445,14 +4510,12 @@
             ]
           },
           "issueDate": {
-            "type": "object",
-            "example": "2026-06-03",
-            "nullable": true
+            "type": "string",
+            "example": "2026-06-03"
           },
           "dueDate": {
-            "type": "object",
-            "example": "2026-06-30",
-            "nullable": true
+            "type": "string",
+            "example": "2026-06-30"
           },
           "subtotalAmount": {
             "type": "number",
@@ -4472,6 +4535,8 @@
           "invoiceNumber",
           "invoiceType",
           "status",
+          "issueDate",
+          "dueDate",
           "subtotalAmount",
           "taxAmount"
         ]
@@ -4479,6 +4544,11 @@
       "UpdateSupplierOrderInvoiceDto": {
         "type": "object",
         "properties": {
+          "attachmentId": {
+            "type": "object",
+            "example": "file_123",
+            "nullable": true
+          },
           "invoiceNumber": {
             "type": "string",
             "example": "INV-2026-001"
@@ -4512,14 +4582,12 @@
             ]
           },
           "issueDate": {
-            "type": "object",
-            "example": "2026-06-03",
-            "nullable": true
+            "type": "string",
+            "example": "2026-06-03"
           },
           "dueDate": {
-            "type": "object",
-            "example": "2026-06-30",
-            "nullable": true
+            "type": "string",
+            "example": "2026-06-30"
           },
           "subtotalAmount": {
             "type": "number",
@@ -4539,6 +4607,8 @@
           "invoiceNumber",
           "invoiceType",
           "status",
+          "issueDate",
+          "dueDate",
           "subtotalAmount",
           "taxAmount"
         ]
@@ -4651,57 +4721,6 @@
         },
         "required": [
           "id"
-        ]
-      },
-      "FileUploadPresenter": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "ckvxo0n1a000001l46me8xz6u"
-          },
-          "filename": {
-            "type": "string",
-            "example": "floor-plan.pdf"
-          },
-          "mimeType": {
-            "type": "string",
-            "example": "application/pdf"
-          },
-          "url": {
-            "type": "string",
-            "example": "https://example.supabase.co/storage/v1/object/..."
-          },
-          "context": {
-            "type": "string",
-            "enum": [
-              "AVATAR",
-              "ORGANIZATION_LOGO",
-              "SUPPLIER_DOCUMENT"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "CONFIRMED",
-              "ORPHANED",
-              "DELETED"
-            ]
-          },
-          "uploadedAt": {
-            "type": "string",
-            "example": "2026-05-30T08:00:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "filename",
-          "mimeType",
-          "url",
-          "context",
-          "status",
-          "uploadedAt"
         ]
       },
       "SupplierQuoteLineResponse": {

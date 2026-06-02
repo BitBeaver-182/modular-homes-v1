@@ -10,14 +10,19 @@ import type { SupplierOrderDetailInvoiceResponse } from "@moduflow/types";
 const {
 	createInvoiceMutateAsync,
 	deleteInvoiceMutateAsync,
+	createPendingSupplierDocumentUploadMock,
+	deleteSupplierDocumentUploadMock,
 	updateInvoiceMutateAsync,
 } = vi.hoisted(() => ({
 	createInvoiceMutateAsync: vi.fn(),
 	deleteInvoiceMutateAsync: vi.fn(),
+	createPendingSupplierDocumentUploadMock: vi.fn(),
+	deleteSupplierDocumentUploadMock: vi.fn(),
 	updateInvoiceMutateAsync: vi.fn(),
 }));
 
 const invoiceFixture: SupplierOrderDetailInvoiceResponse = {
+	attachment: null,
 	id: "77",
 	invoiceNumber: "INV-2026-001",
 	direction: "payable",
@@ -47,6 +52,42 @@ vi.mock("sonner", () => ({
 	toast: {
 		success: vi.fn(),
 		error: vi.fn(),
+	},
+}));
+
+vi.mock("@/components/forms/inputs/file-upload-input", () => ({
+	FileUploadInput: ({
+		name,
+		onFilesChange,
+	}: {
+		name?: string;
+		onFilesChange?: (files: File[]) => void;
+	}) => (
+		<input
+			aria-label="Supporting document"
+			name={name}
+			type="file"
+			onChange={(event) => {
+				onFilesChange?.(Array.from(event.currentTarget.files ?? []));
+			}}
+		/>
+	),
+}));
+
+vi.mock("@/features/quotes/lib/upload-api", () => ({
+	createPendingSupplierDocumentUpload: createPendingSupplierDocumentUploadMock,
+	deleteSupplierDocumentUpload: deleteSupplierDocumentUploadMock,
+}));
+
+vi.mock("@/routes/$locale.o.$organizationSlug._admin", () => ({
+	Route: {
+		useRouteContext: () => ({
+			activeMembership: {
+				organization: {
+					id: "42",
+				},
+			},
+		}),
 	},
 }));
 
@@ -103,11 +144,18 @@ vi.mock("react-i18next", () => ({
 				"orders.invoiceDeleteAction": "Delete invoice",
 				"orders.invoiceDeleteConfirmAction": "Confirm delete invoice",
 				"orders.invoiceDeleteTitle": "Delete invoice?",
+				"orders.invoiceIssueDate": "Issue date",
+				"orders.invoiceDueDate": "Due date",
 				"orders.detailInvoiceDates": "Issued {{issueDate}} • Due {{dueDate}}",
 				"orders.deleteCannotUndo": "This action cannot be undone.",
 				"orders.save": "Save",
 				"orders.create": "Create",
 				"common.cancel": "Cancel",
+				"quotes.supportingDoc": "Supporting document",
+				"quotes.browse": "Browse",
+				"quotes.clearExistingPdf": "Clear existing PDF",
+				"quotes.dropPdf": "Drop PDF",
+				"quotes.pdfHint": "PDF only",
 				"errors.validation.required": "This field is required.",
 			};
 			return translations[key] ?? options?.defaultValue ?? key;
@@ -119,6 +167,10 @@ describe("OrderInvoicesCard", () => {
 	beforeEach(() => {
 		createInvoiceMutateAsync.mockReset();
 		createInvoiceMutateAsync.mockResolvedValue(undefined);
+		createPendingSupplierDocumentUploadMock.mockReset();
+		createPendingSupplierDocumentUploadMock.mockResolvedValue({ fileId: "file_123" });
+		deleteSupplierDocumentUploadMock.mockReset();
+		deleteSupplierDocumentUploadMock.mockResolvedValue(undefined);
 		updateInvoiceMutateAsync.mockReset();
 		updateInvoiceMutateAsync.mockResolvedValue(undefined);
 		deleteInvoiceMutateAsync.mockReset();
@@ -138,6 +190,8 @@ describe("OrderInvoicesCard", () => {
 
 		await user.click(screen.getByRole("button", { name: "Create invoice" }));
 		await user.type(screen.getByPlaceholderText("Invoice number"), "INV-2026-002");
+		await user.type(screen.getByLabelText("Issue date"), "2026-06-03");
+		await user.type(screen.getByLabelText("Due date"), "2026-06-30");
 		await user.type(
 			screen.getByPlaceholderText("Subtotal amount (EUR)"),
 			"1000",
@@ -150,10 +204,10 @@ describe("OrderInvoicesCard", () => {
 			expect(createInvoiceMutateAsync).toHaveBeenCalledWith({
 				orderId: "101",
 				input: {
-					dueDate: null,
+					dueDate: "2026-06-30",
 					invoiceNumber: "INV-2026-002",
 					invoiceType: "supplier_goods",
-					issueDate: null,
+					issueDate: "2026-06-03",
 					notes: null,
 					status: "draft",
 					subtotalAmount: 1000,
@@ -241,6 +295,55 @@ describe("OrderInvoicesCard", () => {
 		const invoiceNumberInput = screen.getByLabelText("Invoice number");
 		await waitFor(() => {
 			expect(invoiceNumberInput.getAttribute("aria-invalid")).toBe("true");
+		});
+	});
+
+	it("reuses the same pending attachment across validation retries", async () => {
+		const user = userEvent.setup();
+		createInvoiceMutateAsync
+			.mockRejectedValueOnce(
+				new ModuflowRequestError("Validation failed", 400, [
+					{
+						name: "isNotEmpty",
+						message: "This field is required.",
+						path: ["invoiceNumber"],
+						key: "validation.required",
+					},
+				]),
+			)
+			.mockResolvedValueOnce(undefined);
+
+		render(
+			<OrderInvoicesCard currency="EUR" invoices={[]} orderId="101" />,
+		);
+
+		await user.click(screen.getByRole("button", { name: "Create invoice" }));
+		const file = new File(["pdf"], "invoice.pdf", { type: "application/pdf" });
+		const input = screen.getByLabelText("Supporting document");
+		await user.upload(input, file);
+		await user.type(screen.getByPlaceholderText("Invoice number"), "INV-2026-009");
+		await user.type(screen.getByLabelText("Issue date"), "2026-06-03");
+		await user.type(screen.getByLabelText("Due date"), "2026-06-30");
+		await user.type(screen.getByPlaceholderText("Subtotal amount (EUR)"), "1000");
+		await user.clear(screen.getByPlaceholderText("Tax amount (EUR)"));
+		await user.type(screen.getByPlaceholderText("Tax amount (EUR)"), "150");
+		await user.click(screen.getByRole("button", { name: "Create" }));
+		await user.click(screen.getByRole("button", { name: "Create" }));
+
+		await waitFor(() => {
+			expect(createPendingSupplierDocumentUploadMock).toHaveBeenCalledTimes(1);
+		});
+		expect(createInvoiceMutateAsync).toHaveBeenNthCalledWith(1, {
+			orderId: "101",
+			input: expect.objectContaining({
+				attachmentId: "file_123",
+			}),
+		});
+		expect(createInvoiceMutateAsync).toHaveBeenNthCalledWith(2, {
+			orderId: "101",
+			input: expect.objectContaining({
+				attachmentId: "file_123",
+			}),
 		});
 	});
 });

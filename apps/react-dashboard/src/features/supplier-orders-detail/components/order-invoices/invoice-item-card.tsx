@@ -127,6 +127,16 @@ export const InvoiceItemCard = ({
 					{invoice.notes}
 				</p>
 			) : null}
+			{invoice.attachment ? (
+				<a
+					className="mt-3 inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+					href={invoice.attachment.url}
+					rel="noreferrer"
+					target="_blank"
+				>
+					{invoice.attachment.filename}
+				</a>
+			) : null}
 		</div>
 	);
 };

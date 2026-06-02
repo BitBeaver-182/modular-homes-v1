@@ -64,6 +64,7 @@ const orderFixture: SupplierOrderDetailResponse = {
 	],
 	invoices: [
 		{
+			attachment: null,
 			id: "77",
 			invoiceNumber: "INV-2026-001",
 			direction: "payable",
@@ -154,6 +155,18 @@ vi.mock(
 		},
 	}),
 );
+
+vi.mock("@/routes/$locale.o.$organizationSlug._admin", () => ({
+	Route: {
+		useRouteContext: () => ({
+			activeMembership: {
+				organization: {
+					id: "42",
+				},
+			},
+		}),
+	},
+}));
 
 vi.mock("react-i18next", () => ({
 	useTranslation: () => ({

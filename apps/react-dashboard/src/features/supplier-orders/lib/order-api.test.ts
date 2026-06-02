@@ -2,19 +2,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SupplierOrdersSearchParameters } from "@/features/supplier-orders/search-parameters";
 
+const { moduflowRequestMock } = vi.hoisted(() => ({
+	moduflowRequestMock: vi.fn(),
+}));
+
 import {
 	createSupplierOrderInvoice,
 	deleteSupplierOrderInvoice,
 	getSupplierOrderDetail,
-		getSupplierOrders,
+	getSupplierOrders,
 	updateSupplierOrderInvoice,
 	toSupplierOrderQueryString,
 	updateSupplierOrder,
 } from "./order-api";
-
-const { moduflowRequestMock } = vi.hoisted(() => ({
-	moduflowRequestMock: vi.fn(),
-}));
 
 vi.mock("@/lib/moduflow/client", () => ({
 	moduflowRequest: moduflowRequestMock,
@@ -118,9 +118,9 @@ describe("supplier order Moduflow API", () => {
 			status: "issued",
 			issueDate: "2026-06-03",
 			dueDate: "2026-06-30",
+			notes: "Awaiting remainder",
 			subtotalAmount: 1000,
 			taxAmount: 150,
-			notes: "Awaiting remainder",
 		});
 
 		expect(moduflowRequestMock).toHaveBeenCalledWith(
@@ -149,9 +149,9 @@ describe("supplier order Moduflow API", () => {
 			status: "partially_paid",
 			issueDate: "2026-06-03",
 			dueDate: "2026-06-30",
+			notes: "Revised",
 			subtotalAmount: 900,
 			taxAmount: 135,
-			notes: "Revised",
 		});
 
 		expect(moduflowRequestMock).toHaveBeenCalledWith(
@@ -170,6 +170,72 @@ describe("supplier order Moduflow API", () => {
 				headers: { "x-organization-id": "42" },
 				method: "PATCH",
 			}
+		);
+	});
+
+	it("passes a pending attachment id when creating an invoice", async () => {
+		await createSupplierOrderInvoice(context, "101", {
+			attachmentId: "file_123",
+			dueDate: "2026-06-30",
+			invoiceNumber: "INV-2026-004",
+			invoiceType: "supplier_goods",
+			issueDate: "2026-06-03",
+			notes: null,
+			status: "issued",
+			subtotalAmount: 1000,
+			taxAmount: 150,
+		});
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices",
+			{
+				body: {
+					attachmentId: "file_123",
+					dueDate: "2026-06-30",
+					invoiceNumber: "INV-2026-004",
+					invoiceType: "supplier_goods",
+					issueDate: "2026-06-03",
+					notes: null,
+					status: "issued",
+					subtotalAmount: 1000,
+					taxAmount: 150,
+				},
+				headers: { "x-organization-id": "42" },
+				method: "POST",
+			},
+		);
+	});
+
+	it("clears the existing attachment when updating an invoice", async () => {
+		await updateSupplierOrderInvoice(context, "101", "77", {
+			dueDate: "2026-06-30",
+			invoiceNumber: "INV-2026-001",
+			invoiceType: "supplier_goods",
+			issueDate: "2026-06-03",
+			notes: "Revised",
+			attachmentId: null,
+			status: "partially_paid",
+			subtotalAmount: 900,
+			taxAmount: 135,
+		});
+
+		expect(moduflowRequestMock).toHaveBeenCalledWith(
+			"/supplier-orders/101/invoices/77",
+			{
+				body: {
+					attachmentId: null,
+					dueDate: "2026-06-30",
+					invoiceNumber: "INV-2026-001",
+					invoiceType: "supplier_goods",
+					issueDate: "2026-06-03",
+					notes: "Revised",
+					status: "partially_paid",
+					subtotalAmount: 900,
+					taxAmount: 135,
+				},
+				headers: { "x-organization-id": "42" },
+				method: "PATCH",
+			},
 		);
 	});
 
