@@ -96,14 +96,14 @@ const readErrorResponse = async (
 	try {
 		const parsed: unknown = JSON.parse(text);
 
-		if (isStrapiErrorResponse(parsed)) {
-			throw new StrapiRequestError(parsed.error);
-		}
 		if (isModuflowErrorEnvelope(parsed)) {
 			return {
 				details: parsed.error.details?.errors,
 				message: parsed.error.message || response.statusText || "Request failed",
 			};
+		}
+		if (isStrapiErrorResponse(parsed)) {
+			throw new StrapiRequestError(parsed.error);
 		}
 
 		if (typeof parsed === "object" && parsed !== null && "message" in parsed) {
