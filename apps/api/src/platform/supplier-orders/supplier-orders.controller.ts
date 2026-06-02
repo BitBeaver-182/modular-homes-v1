@@ -31,9 +31,19 @@ import {
   CreateSupplierOrderInvoiceDto,
   UpdateSupplierOrderInvoiceDto,
 } from './dto/supplier-order-invoice.dto';
+import {
+  CreateSupplierOrderInvoiceInstallmentDto,
+  UpdateSupplierOrderInvoiceInstallmentDto,
+} from './dto/supplier-order-installment.dto';
+import {
+  CreateSupplierOrderInvoicePaymentDto,
+  UpdateSupplierOrderInvoicePaymentDto,
+} from './dto/supplier-order-payment.dto';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
 import {
   SupplierOrderDetailInvoiceResponse,
+  SupplierOrderInvoiceInstallmentResponse,
+  SupplierOrderInvoicePaymentResponse,
   SupplierOrderDetailResponse,
   SupplierOrderListItemResponse,
   SupplierOrderListResponse,
@@ -198,6 +208,156 @@ export class SupplierOrdersController {
       organizationId,
       id,
       invoiceId,
+    );
+  }
+
+  @Post(':id/invoices/:invoiceId/installments')
+  @ApiOperation({
+    summary: 'Create Supplier Order Invoice Installment',
+    description:
+      'Create an installment for an invoice on a supplier order in the active organization.',
+  })
+  @ApiCreatedResponse({ type: SupplierOrderInvoiceInstallmentResponse })
+  async createInstallment(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() dto: CreateSupplierOrderInvoiceInstallmentDto,
+  ): Promise<SupplierOrderInvoiceInstallmentResponse> {
+    return plainToInstance(
+      SupplierOrderInvoiceInstallmentResponse,
+      await this.supplierOrdersService.createInstallmentResponse(
+        organizationId,
+        id,
+        invoiceId,
+        dto,
+      ),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Patch(':id/invoices/:invoiceId/installments/:installmentId')
+  @ApiOperation({
+    summary: 'Update Supplier Order Invoice Installment',
+    description:
+      'Update an installment for an invoice on a supplier order in the active organization.',
+  })
+  @ApiOkResponse({ type: SupplierOrderInvoiceInstallmentResponse })
+  async updateInstallment(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @Param('installmentId') installmentId: string,
+    @Body() dto: UpdateSupplierOrderInvoiceInstallmentDto,
+  ): Promise<SupplierOrderInvoiceInstallmentResponse> {
+    return plainToInstance(
+      SupplierOrderInvoiceInstallmentResponse,
+      await this.supplierOrdersService.updateInstallmentResponse(
+        organizationId,
+        id,
+        invoiceId,
+        installmentId,
+        dto,
+      ),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Delete(':id/invoices/:invoiceId/installments/:installmentId')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Delete Supplier Order Invoice Installment',
+    description:
+      'Delete an installment for an invoice on a supplier order in the active organization.',
+  })
+  @ApiNoContentResponse()
+  async deleteInstallment(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @Param('installmentId') installmentId: string,
+  ): Promise<void> {
+    await this.supplierOrdersService.deleteInstallment(
+      organizationId,
+      id,
+      invoiceId,
+      installmentId,
+    );
+  }
+
+  @Post(':id/invoices/:invoiceId/payments')
+  @ApiOperation({
+    summary: 'Create Supplier Order Invoice Payment',
+    description:
+      'Record a payment for an invoice on a supplier order in the active organization.',
+  })
+  @ApiCreatedResponse({ type: SupplierOrderInvoicePaymentResponse })
+  async createPayment(
+    @OrganizationId() organizationId: bigint,
+    @Actor() actor: AuthenticatedActor,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() dto: CreateSupplierOrderInvoicePaymentDto,
+  ): Promise<SupplierOrderInvoicePaymentResponse> {
+    return plainToInstance(
+      SupplierOrderInvoicePaymentResponse,
+      await this.supplierOrdersService.createPaymentResponse(
+        actor,
+        organizationId,
+        id,
+        invoiceId,
+        dto,
+      ),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Patch(':id/invoices/:invoiceId/payments/:paymentId')
+  @ApiOperation({
+    summary: 'Update Supplier Order Invoice Payment',
+    description:
+      'Update a recorded payment for an invoice on a supplier order in the active organization.',
+  })
+  @ApiOkResponse({ type: SupplierOrderInvoicePaymentResponse })
+  async updatePayment(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: UpdateSupplierOrderInvoicePaymentDto,
+  ): Promise<SupplierOrderInvoicePaymentResponse> {
+    return plainToInstance(
+      SupplierOrderInvoicePaymentResponse,
+      await this.supplierOrdersService.updatePaymentResponse(
+        organizationId,
+        id,
+        invoiceId,
+        paymentId,
+        dto,
+      ),
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  @Delete(':id/invoices/:invoiceId/payments/:paymentId')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Delete Supplier Order Invoice Payment',
+    description:
+      'Delete a recorded payment for an invoice on a supplier order in the active organization.',
+  })
+  @ApiNoContentResponse()
+  async deletePayment(
+    @OrganizationId() organizationId: bigint,
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @Param('paymentId') paymentId: string,
+  ): Promise<void> {
+    await this.supplierOrdersService.deletePayment(
+      organizationId,
+      id,
+      invoiceId,
+      paymentId,
     );
   }
 }

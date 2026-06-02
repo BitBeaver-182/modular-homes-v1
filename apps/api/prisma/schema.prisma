@@ -396,12 +396,12 @@ model Invoice {
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
-  organization  Organization         @relation(fields: [organizationId], references: [id])
-  attachment    FileUpload?          @relation(fields: [attachmentId], references: [id])
-  supplier      Supplier?            @relation(fields: [supplierId], references: [id])
-  supplierOrder SupplierOrder?       @relation(fields: [supplierOrderId], references: [id])
-  installments  InvoiceInstallment[]
-  payments      PaymentAllocation[]
+  organization       Organization         @relation(fields: [organizationId], references: [id])
+  attachment         FileUpload?          @relation(fields: [attachmentId], references: [id])
+  supplier           Supplier?            @relation(fields: [supplierId], references: [id])
+  supplierOrder      SupplierOrder?       @relation(fields: [supplierOrderId], references: [id])
+  installments       InvoiceInstallment[]
+  paymentAllocations PaymentAllocation[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, invoiceNumber])

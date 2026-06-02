@@ -1,5 +1,7 @@
 import type {
   SupplierOrderDetailInvoiceResponse,
+  SupplierOrderInvoiceInstallmentResponse,
+  SupplierOrderInvoicePaymentResponse,
   SupplierOrderDetailLineResponse,
   SupplierOrderDetailResponse,
   SupplierOrderListInvoiceResponse,
@@ -32,13 +34,33 @@ export type SupplierOrderWithRelations = Prisma.SupplierOrderGetPayload<{
     };
     invoices: {
       orderBy: { id: 'asc' };
-      include: { attachment: true };
+      include: {
+        attachment: true;
+        installments: {
+          orderBy: { installmentNumber: 'asc' };
+        };
+        paymentAllocations: {
+          orderBy: { createdAt: 'asc' };
+          include: { payment: true };
+        };
+      };
     };
   };
 }>;
 export type SupplierOrderInvoiceRecord = Prisma.InvoiceGetPayload<{
-  include: { attachment: true };
+  include: {
+    attachment: true;
+    installments: {
+      orderBy: { installmentNumber: 'asc' };
+    };
+    paymentAllocations: {
+      orderBy: { createdAt: 'asc' };
+      include: { payment: true };
+    };
+  };
 }>;
+export type SupplierOrderInvoiceInstallmentRecord = Prisma.InvoiceInstallmentGetPayload<{}>;
+export type SupplierOrderInvoicePaymentRecord = Prisma.PaymentGetPayload<{}>;
 
 type SupplierOrderListMeta = SupplierOrderListResponse['meta'];
 type SupplierOrderDetailMoney = SupplierOrderDetailResponse['totalAmount'];
@@ -186,9 +208,64 @@ export async function toSupplierOrderDetailInvoiceResponse(
     totalAmount: toRequiredMoney(invoice.totalAmount, invoice.currencyCode),
     amountPaid: toRequiredMoney(invoice.amountPaid, invoice.currencyCode),
     balanceDue: toRequiredMoney(invoice.balanceDue, invoice.currencyCode),
+    installments: invoice.installments.map((installment) =>
+      toSupplierOrderInvoiceInstallmentResponse(installment, invoice.currencyCode),
+    ),
+    payments: invoice.paymentAllocations.map(({ payment, invoiceInstallmentId }) =>
+      toSupplierOrderInvoicePaymentResponse(
+        payment,
+        invoice.currencyCode,
+        invoiceInstallmentId,
+      ),
+    ),
     notes: invoice.notes ?? null,
     createdAt: toIsoDateString(invoice.createdAt),
     updatedAt: toIsoDateString(invoice.updatedAt),
+  };
+}
+
+export function toSupplierOrderInvoiceInstallmentResponse(
+  installment: SupplierOrderInvoiceInstallmentRecord,
+  currencyCode: string,
+): SupplierOrderInvoiceInstallmentResponse {
+  return {
+    id: toApiId(installment.id),
+    installmentNumber: installment.installmentNumber,
+    status: installment.status,
+    dueDate: toIsoDateString(installment.dueDate),
+    amountDue: toRequiredMoney(installment.amountDue, currencyCode),
+    amountPaid: toRequiredMoney(installment.amountPaid, currencyCode),
+    balanceDue: toRequiredMoney(
+      installment.amountDue.sub(installment.amountPaid),
+      currencyCode,
+    ),
+    paidAt: toNullableIsoDateString(installment.paidAt),
+    notes: installment.notes ?? null,
+    createdAt: toIsoDateString(installment.createdAt),
+    updatedAt: toIsoDateString(installment.updatedAt),
+  };
+}
+
+export function toSupplierOrderInvoicePaymentResponse(
+  payment: SupplierOrderInvoicePaymentRecord,
+  currencyCode: string,
+  invoiceInstallmentId: bigint | null,
+): SupplierOrderInvoicePaymentResponse {
+  return {
+    id: toApiId(payment.id),
+    paymentReference: payment.paymentReference ?? null,
+    status: payment.status,
+    paymentMethod: payment.paymentMethod,
+    paymentDate: toNullableIsoDateString(payment.paymentDate),
+    amount: toRequiredMoney(payment.amount, currencyCode),
+    bankAccount: payment.bankAccount ?? null,
+    transactionId: payment.transactionId ?? null,
+    notes: payment.notes ?? null,
+    invoiceInstallmentId: invoiceInstallmentId
+      ? toApiId(invoiceInstallmentId)
+      : null,
+    createdAt: toIsoDateString(payment.createdAt),
+    updatedAt: toIsoDateString(payment.updatedAt),
   };
 }
 

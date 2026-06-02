@@ -1,10 +1,15 @@
 import type {
   SupplierOrderDetailInvoiceResponse as SupplierOrderDetailInvoiceContract,
+  SupplierOrderInvoiceInstallmentResponse as SupplierOrderInvoiceInstallmentContract,
+  SupplierOrderInvoicePaymentResponse as SupplierOrderInvoicePaymentContract,
   SupplierOrderDetailLineResponse as SupplierOrderDetailLineContract,
   SupplierOrderDetailQuoteResponse as SupplierOrderDetailQuoteContract,
   SupplierOrderDetailResponse as SupplierOrderDetailContract,
   SupplierOrderDetailStatus,
   SupplierOrderInvoiceDirection,
+  SupplierOrderInvoiceInstallmentStatus,
+  SupplierOrderInvoicePaymentMethod,
+  SupplierOrderInvoicePaymentStatus,
   SupplierOrderInvoiceStatus,
   SupplierOrderInvoiceType,
   SupplierOrderListInvoiceResponse as SupplierOrderListInvoiceContract,
@@ -17,6 +22,9 @@ import type {
 import {
   SUPPLIER_ORDER_DETAIL_STATUSES,
   SUPPLIER_ORDER_INVOICE_DIRECTIONS,
+  SUPPLIER_ORDER_INVOICE_INSTALLMENT_STATUSES,
+  SUPPLIER_ORDER_INVOICE_PAYMENT_METHODS,
+  SUPPLIER_ORDER_INVOICE_PAYMENT_STATUSES,
   SUPPLIER_ORDER_INVOICE_STATUSES,
   SUPPLIER_ORDER_INVOICE_TYPES,
   SUPPLIER_ORDER_LIST_STATUSES,
@@ -293,12 +301,137 @@ export class SupplierOrderDetailInvoiceResponse implements SupplierOrderDetailIn
   @Type(() => SupplierOrderListMoneyResponse)
   balanceDue!: SupplierOrderListMoneyResponse;
 
+  @ApiProperty({
+    type: () => SupplierOrderInvoiceInstallmentResponse,
+    isArray: true,
+  })
+  @Expose()
+  @Type(() => SupplierOrderInvoiceInstallmentResponse)
+  installments!: SupplierOrderInvoiceInstallmentResponse[];
+
+  @ApiProperty({ type: () => SupplierOrderInvoicePaymentResponse, isArray: true })
+  @Expose()
+  @Type(() => SupplierOrderInvoicePaymentResponse)
+  payments!: SupplierOrderInvoicePaymentResponse[];
+
   @ApiPropertyOptional({
     example: 'Awaiting customs clearance',
     nullable: true,
   })
   @Expose()
   notes!: string | null;
+
+  @ApiProperty({ example: '2026-06-01T00:00:00.000Z' })
+  @Expose()
+  createdAt!: string;
+
+  @ApiProperty({ example: '2026-06-02T00:00:00.000Z' })
+  @Expose()
+  updatedAt!: string;
+}
+
+export class SupplierOrderInvoiceInstallmentResponse
+  implements SupplierOrderInvoiceInstallmentContract
+{
+  constructor(partial: SupplierOrderInvoiceInstallmentContract) {
+    Object.assign(this, partial);
+  }
+
+  @ApiProperty({ example: '101' })
+  @Expose()
+  id!: string;
+
+  @ApiProperty({ example: 1 })
+  @Expose()
+  installmentNumber!: number;
+
+  @ApiProperty({ enum: SUPPLIER_ORDER_INVOICE_INSTALLMENT_STATUSES })
+  @Expose()
+  status!: SupplierOrderInvoiceInstallmentStatus;
+
+  @ApiProperty({ example: '2026-06-30T00:00:00.000Z' })
+  @Expose()
+  dueDate!: string;
+
+  @ApiProperty({ type: SupplierOrderListMoneyResponse })
+  @Expose()
+  @Type(() => SupplierOrderListMoneyResponse)
+  amountDue!: SupplierOrderListMoneyResponse;
+
+  @ApiProperty({ type: SupplierOrderListMoneyResponse })
+  @Expose()
+  @Type(() => SupplierOrderListMoneyResponse)
+  amountPaid!: SupplierOrderListMoneyResponse;
+
+  @ApiProperty({ type: SupplierOrderListMoneyResponse })
+  @Expose()
+  @Type(() => SupplierOrderListMoneyResponse)
+  balanceDue!: SupplierOrderListMoneyResponse;
+
+  @ApiPropertyOptional({ example: '2026-06-15T12:00:00.000Z', nullable: true })
+  @Expose()
+  paidAt!: string | null;
+
+  @ApiPropertyOptional({ example: 'Deposit due on booking', nullable: true })
+  @Expose()
+  notes!: string | null;
+
+  @ApiProperty({ example: '2026-06-01T00:00:00.000Z' })
+  @Expose()
+  createdAt!: string;
+
+  @ApiProperty({ example: '2026-06-02T00:00:00.000Z' })
+  @Expose()
+  updatedAt!: string;
+}
+
+export class SupplierOrderInvoicePaymentResponse
+  implements SupplierOrderInvoicePaymentContract
+{
+  constructor(partial: SupplierOrderInvoicePaymentContract) {
+    Object.assign(this, partial);
+  }
+
+  @ApiProperty({ example: '201' })
+  @Expose()
+  id!: string;
+
+  @ApiPropertyOptional({ example: 'PAY-2026-0001', nullable: true })
+  @Expose()
+  paymentReference!: string | null;
+
+  @ApiProperty({ enum: SUPPLIER_ORDER_INVOICE_PAYMENT_STATUSES })
+  @Expose()
+  status!: SupplierOrderInvoicePaymentStatus;
+
+  @ApiProperty({ enum: SUPPLIER_ORDER_INVOICE_PAYMENT_METHODS })
+  @Expose()
+  paymentMethod!: SupplierOrderInvoicePaymentMethod;
+
+  @ApiPropertyOptional({ example: '2026-06-15T00:00:00.000Z', nullable: true })
+  @Expose()
+  paymentDate!: string | null;
+
+  @ApiProperty({ type: SupplierOrderListMoneyResponse })
+  @Expose()
+  @Type(() => SupplierOrderListMoneyResponse)
+  amount!: SupplierOrderListMoneyResponse;
+
+  @ApiPropertyOptional({ example: 'NL12BANK0123456789', nullable: true })
+  @Expose()
+  bankAccount!: string | null;
+
+  @ApiPropertyOptional({ example: 'TRX-123456', nullable: true })
+  @Expose()
+  transactionId!: string | null;
+
+  @ApiPropertyOptional({ example: 'Paid before customs release', nullable: true })
+  @Expose()
+  notes!: string | null;
+
+  @ApiPropertyOptional({ example: '19', nullable: true })
+  @Expose()
+  invoiceInstallmentId!: string | null;
 
   @ApiProperty({ example: '2026-06-01T00:00:00.000Z' })
   @Expose()

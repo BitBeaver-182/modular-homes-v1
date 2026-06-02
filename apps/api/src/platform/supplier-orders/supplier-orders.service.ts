@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import {
   Prisma,
+  type InstallmentStatus as PersistedInstallmentStatus,
+  type InvoiceStatus as PersistedInvoiceStatus,
   type SupplierOrderStatus as PersistedSupplierOrderStatus,
 } from '@prisma/client';
 import type { AuthenticatedActor } from '../../auth/auth.types';
@@ -16,10 +18,21 @@ import {
   CreateSupplierOrderInvoiceDto,
   UpdateSupplierOrderInvoiceDto,
 } from './dto/supplier-order-invoice.dto';
+import {
+  CreateSupplierOrderInvoiceInstallmentDto,
+  UpdateSupplierOrderInvoiceInstallmentDto,
+} from './dto/supplier-order-installment.dto';
+import {
+  CreateSupplierOrderInvoicePaymentDto,
+  UpdateSupplierOrderInvoicePaymentDto,
+} from './dto/supplier-order-payment.dto';
 import { UpdateSupplierOrderDto } from './dto/update-supplier-order.dto';
 import {
   toSupplierOrderDetailInvoiceResponse,
+  toSupplierOrderInvoiceInstallmentResponse,
+  toSupplierOrderInvoicePaymentResponse,
   toSupplierOrderDetailResponse,
+  type SupplierOrderInvoiceInstallmentRecord,
   type SupplierOrderInvoiceRecord,
   type SupplierOrderWithRelations,
 } from './mappers/supplier-order.mapper';
@@ -27,6 +40,8 @@ import type { CreateSupplierOrderRequest } from '@moduflow/types';
 import type {
   FileContext,
   SupplierOrderDetailInvoiceResponse,
+  SupplierOrderInvoiceInstallmentResponse,
+  SupplierOrderInvoicePaymentResponse,
   SupplierOrderDetailResponse,
 } from '@moduflow/types';
 
@@ -51,9 +66,29 @@ const INCLUDE_RELATIONS = {
   },
   invoices: {
     orderBy: { id: 'asc' },
-    include: { attachment: true },
+    include: {
+      attachment: true,
+      installments: {
+        orderBy: { installmentNumber: 'asc' },
+      },
+      paymentAllocations: {
+        orderBy: { createdAt: 'asc' },
+        include: { payment: true },
+      },
+    },
   },
 } satisfies Prisma.SupplierOrderInclude;
+
+const INVOICE_DETAIL_INCLUDE = {
+  attachment: true,
+  installments: {
+    orderBy: { installmentNumber: 'asc' },
+  },
+  paymentAllocations: {
+    orderBy: { createdAt: 'asc' },
+    include: { payment: true },
+  },
+} satisfies Prisma.InvoiceInclude;
 
 const STATUS_MAP = {
   draft: ['draft'],
@@ -69,6 +104,10 @@ const TERMINAL_ORDER_STATUSES = new Set<PersistedSupplierOrderStatus>([
   'closed',
   'cancelled',
 ]);
+
+type PaymentWithAllocations = Prisma.PaymentGetPayload<{
+  include: { allocations: true };
+}>;
 
 @Injectable()
 export class SupplierOrdersService {
@@ -396,7 +435,7 @@ export class SupplierOrdersService {
 
         return tx.invoice.create({
           data: buildCreateInvoiceData(organizationId, order, dto),
-          include: { attachment: true },
+          include: INVOICE_DETAIL_INCLUDE,
         });
       });
     } catch (error) {
@@ -459,7 +498,7 @@ export class SupplierOrdersService {
         return tx.invoice.update({
           where: { id: invoice.id },
           data: buildUpdateInvoiceData(order, dto, invoice.amountPaid),
-          include: { attachment: true },
+          include: INVOICE_DETAIL_INCLUDE,
         });
       });
 
@@ -514,6 +553,393 @@ export class SupplierOrdersService {
     );
   }
 
+  async createInstallment(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    dto: CreateSupplierOrderInvoiceInstallmentDto,
+  ): Promise<SupplierOrderInvoiceInstallmentRecord> {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const nextInstallmentNumber = await getNextInstallmentNumber(
+        tx,
+        invoice.id,
+      );
+
+      const installment = await tx.invoiceInstallment.create({
+        data: {
+          organizationId,
+          invoiceId: invoice.id,
+          installmentNumber: nextInstallmentNumber,
+          dueDate: new Date(dto.dueDate),
+          amountDue: new Prisma.Decimal(dto.amountDue),
+          notes: normalizeOptionalString(dto.notes),
+          status: deriveInstallmentStatus({
+            amountDue: new Prisma.Decimal(dto.amountDue),
+            amountPaid: new Prisma.Decimal(0),
+            dueDate: new Date(dto.dueDate),
+            paidAt: null,
+          }),
+        },
+      });
+
+      await this.ensureInstallmentsWithinInvoiceTotal(tx, invoice.id);
+
+      return installment;
+    });
+  }
+
+  async createInstallmentResponse(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    dto: CreateSupplierOrderInvoiceInstallmentDto,
+  ): Promise<SupplierOrderInvoiceInstallmentResponse> {
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      parseBigIntId(orderId, 'id'),
+      invoiceId,
+    );
+    return toSupplierOrderInvoiceInstallmentResponse(
+      await this.createInstallment(organizationId, orderId, invoiceId, dto),
+      invoice.currencyCode,
+    );
+  }
+
+  async updateInstallment(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    installmentId: string,
+    dto: UpdateSupplierOrderInvoiceInstallmentDto,
+  ): Promise<SupplierOrderInvoiceInstallmentRecord> {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+    const installment = await this.findInstallmentForInvoice(
+      organizationId,
+      invoice.id,
+      installmentId,
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const amountDue = new Prisma.Decimal(dto.amountDue);
+      if (installment.amountPaid.gt(amountDue)) {
+        throw new BadRequestException(
+          'Installment amount cannot be lower than the amount already paid',
+        );
+      }
+
+      const dueDate = new Date(dto.dueDate);
+      const updated = await tx.invoiceInstallment.update({
+        where: { id: installment.id },
+        data: {
+          dueDate,
+          amountDue,
+          notes: normalizeOptionalString(dto.notes),
+          status: deriveInstallmentStatus({
+            amountDue,
+            amountPaid: installment.amountPaid,
+            dueDate,
+            paidAt: installment.paidAt,
+          }),
+          paidAt: amountDue.eq(installment.amountPaid)
+            ? (installment.paidAt ?? new Date())
+            : installment.paidAt,
+        },
+      });
+
+      await this.ensureInstallmentsWithinInvoiceTotal(tx, invoice.id, updated.id);
+      await recomputeInvoicePaymentState(tx, invoice.id);
+
+      return updated;
+    });
+  }
+
+  async updateInstallmentResponse(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    installmentId: string,
+    dto: UpdateSupplierOrderInvoiceInstallmentDto,
+  ): Promise<SupplierOrderInvoiceInstallmentResponse> {
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      parseBigIntId(orderId, 'id'),
+      invoiceId,
+    );
+    return toSupplierOrderInvoiceInstallmentResponse(
+      await this.updateInstallment(
+        organizationId,
+        orderId,
+        invoiceId,
+        installmentId,
+        dto,
+      ),
+      invoice.currencyCode,
+    );
+  }
+
+  async deleteInstallment(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    installmentId: string,
+  ): Promise<void> {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+    const installment = await this.findInstallmentForInvoice(
+      organizationId,
+      invoice.id,
+      installmentId,
+    );
+
+    const allocationCount = await this.prisma.paymentAllocation.count({
+      where: {
+        organizationId,
+        invoiceInstallmentId: installment.id,
+      },
+    });
+
+    if (allocationCount > 0) {
+      throw new BadRequestException(
+        'Installments with allocated payments cannot be deleted',
+      );
+    }
+
+    await this.prisma.invoiceInstallment.delete({
+      where: { id: installment.id },
+    });
+  }
+
+  async createPayment(
+    actor: AuthenticatedActor,
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    dto: CreateSupplierOrderInvoicePaymentDto,
+  ): Promise<PaymentWithAllocations> {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const installment = dto.invoiceInstallmentId
+        ? await findInstallmentForInvoiceTx(
+            tx,
+            organizationId,
+            invoice.id,
+            dto.invoiceInstallmentId,
+          )
+        : null;
+
+      const amount = new Prisma.Decimal(dto.amount);
+      assertPaymentWithinBalance(invoice.balanceDue, installment, amount);
+      await assertPaymentReferenceAvailable(
+        tx,
+        organizationId,
+        normalizeOptionalString(dto.paymentReference),
+      );
+
+      const payment = await tx.payment.create({
+        data: {
+          organizationId,
+          paymentReference: normalizeOptionalString(dto.paymentReference),
+          direction: invoice.direction,
+          status: 'completed',
+          paymentMethod: dto.paymentMethod,
+          paymentDate: new Date(dto.paymentDate),
+          currencyCode: invoice.currencyCode,
+          amount,
+          bankAccount: normalizeOptionalString(dto.bankAccount),
+          transactionId: normalizeOptionalString(dto.transactionId),
+          notes: normalizeOptionalString(dto.notes),
+          recordedByUserId: actor.userId,
+        },
+      });
+
+      await tx.paymentAllocation.create({
+        data: {
+          organizationId,
+          allocationReference: buildAllocationReference(payment.id),
+          paymentId: payment.id,
+          invoiceId: invoice.id,
+          invoiceInstallmentId: installment?.id ?? null,
+          allocatedAmount: amount,
+        },
+      });
+
+      await recomputeInvoicePaymentState(tx, invoice.id);
+
+      return tx.payment.findUniqueOrThrow({
+        where: { id: payment.id },
+        include: { allocations: true },
+      });
+    });
+  }
+
+  async createPaymentResponse(
+    actor: AuthenticatedActor,
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    dto: CreateSupplierOrderInvoicePaymentDto,
+  ): Promise<SupplierOrderInvoicePaymentResponse> {
+    const [invoice, payment] = await Promise.all([
+      this.findInvoiceForOrder(
+        organizationId,
+        parseBigIntId(orderId, 'id'),
+        invoiceId,
+      ),
+      this.createPayment(actor, organizationId, orderId, invoiceId, dto),
+    ]);
+
+    return toSupplierOrderInvoicePaymentResponse(
+      payment,
+      invoice.currencyCode,
+      payment.allocations[0]?.invoiceInstallmentId ?? null,
+    );
+  }
+
+  async updatePayment(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    paymentId: string,
+    dto: UpdateSupplierOrderInvoicePaymentDto,
+  ): Promise<PaymentWithAllocations> {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+    const payment = await this.findPaymentForInvoice(
+      organizationId,
+      invoice.id,
+      paymentId,
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const installment = dto.invoiceInstallmentId
+        ? await findInstallmentForInvoiceTx(
+            tx,
+            organizationId,
+            invoice.id,
+            dto.invoiceInstallmentId,
+          )
+        : null;
+
+      const nextAmount = new Prisma.Decimal(dto.amount);
+      await assertPaymentReferenceAvailable(
+        tx,
+        organizationId,
+        normalizeOptionalString(dto.paymentReference),
+        payment.id,
+      );
+
+      const otherAllocated = invoice.amountPaid.sub(
+        payment.allocations[0]?.allocatedAmount ?? new Prisma.Decimal(0),
+      );
+      const remainingInvoiceBalance = invoice.totalAmount.sub(otherAllocated);
+      assertPaymentWithinBalance(remainingInvoiceBalance, installment, nextAmount);
+
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          paymentReference: normalizeOptionalString(dto.paymentReference),
+          paymentMethod: dto.paymentMethod,
+          paymentDate: new Date(dto.paymentDate),
+          amount: nextAmount,
+          bankAccount: normalizeOptionalString(dto.bankAccount),
+          transactionId: normalizeOptionalString(dto.transactionId),
+          notes: normalizeOptionalString(dto.notes),
+        },
+      });
+
+      await tx.paymentAllocation.update({
+        where: { id: payment.allocations[0].id },
+        data: {
+          invoiceInstallmentId: installment?.id ?? null,
+          allocatedAmount: nextAmount,
+        },
+      });
+
+      await recomputeInvoicePaymentState(tx, invoice.id);
+
+      return tx.payment.findUniqueOrThrow({
+        where: { id: payment.id },
+        include: { allocations: true },
+      });
+    });
+  }
+
+  async updatePaymentResponse(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    paymentId: string,
+    dto: UpdateSupplierOrderInvoicePaymentDto,
+  ): Promise<SupplierOrderInvoicePaymentResponse> {
+    const [invoice, payment] = await Promise.all([
+      this.findInvoiceForOrder(
+        organizationId,
+        parseBigIntId(orderId, 'id'),
+        invoiceId,
+      ),
+      this.updatePayment(organizationId, orderId, invoiceId, paymentId, dto),
+    ]);
+
+    return toSupplierOrderInvoicePaymentResponse(
+      payment,
+      invoice.currencyCode,
+      payment.allocations[0]?.invoiceInstallmentId ?? null,
+    );
+  }
+
+  async deletePayment(
+    organizationId: bigint,
+    orderId: string,
+    invoiceId: string,
+    paymentId: string,
+  ): Promise<void> {
+    const order = await this.findOne(organizationId, orderId);
+    const invoice = await this.findInvoiceForOrder(
+      organizationId,
+      order.id,
+      invoiceId,
+    );
+    const payment = await this.findPaymentForInvoice(
+      organizationId,
+      invoice.id,
+      paymentId,
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.delete({
+        where: { id: payment.id },
+      });
+
+      await recomputeInvoicePaymentState(tx, invoice.id);
+    });
+  }
+
   private async findInvoiceForOrder(
     organizationId: bigint,
     supplierOrderId: bigint,
@@ -526,7 +952,7 @@ export class SupplierOrdersService {
         organizationId,
         supplierOrderId,
       },
-      include: { attachment: true },
+      include: INVOICE_DETAIL_INCLUDE,
     });
 
     if (!invoice) {
@@ -534,6 +960,83 @@ export class SupplierOrdersService {
     }
 
     return invoice;
+  }
+
+  private async findInstallmentForInvoice(
+    organizationId: bigint,
+    invoiceId: bigint,
+    installmentId: string,
+  ): Promise<SupplierOrderInvoiceInstallmentRecord> {
+    return findInstallmentForInvoiceTx(
+      this.prisma,
+      organizationId,
+      invoiceId,
+      installmentId,
+    );
+  }
+
+  private async findPaymentForInvoice(
+    organizationId: bigint,
+    invoiceId: bigint,
+    paymentId: string,
+  ): Promise<PaymentWithAllocations> {
+    const parsedPaymentId = parseBigIntId(paymentId, 'paymentId');
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        id: parsedPaymentId,
+        organizationId,
+        allocations: {
+          some: {
+            invoiceId,
+          },
+        },
+      },
+      include: { allocations: true },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Supplier order invoice payment not found');
+    }
+
+    if (payment.allocations.length !== 1) {
+      throw new BadRequestException(
+        'Supplier order invoice payments must have exactly one allocation',
+      );
+    }
+
+    return payment;
+  }
+
+  private async ensureInstallmentsWithinInvoiceTotal(
+    tx: Prisma.TransactionClient,
+    invoiceId: bigint,
+    currentInstallmentId?: bigint,
+  ): Promise<void> {
+    const [invoice, installments] = await Promise.all([
+      tx.invoice.findUniqueOrThrow({
+        where: { id: invoiceId },
+        select: { totalAmount: true },
+      }),
+      tx.invoiceInstallment.findMany({
+        where: { invoiceId },
+        ...(currentInstallmentId
+          ? {
+              orderBy: { installmentNumber: 'asc' },
+            }
+          : {}),
+      }),
+    ]);
+
+    const totalInstallmentAmount = installments.reduce(
+      (sum, installment) => sum.add(installment.amountDue),
+      new Prisma.Decimal(0),
+    );
+
+    if (totalInstallmentAmount.gt(invoice.totalAmount)) {
+      throw new BadRequestException(
+        'Installment amounts cannot exceed the invoice total',
+      );
+    }
   }
 
   private async assertInvoiceNumberAvailable(
@@ -892,6 +1395,189 @@ function assertReferenceMatches(
       `${fieldName} cannot be changed through supplier order line updates`,
     );
   }
+}
+
+async function findInstallmentForInvoiceTx(
+  prisma: PrismaService | Prisma.TransactionClient,
+  organizationId: bigint,
+  invoiceId: bigint,
+  installmentId: string,
+): Promise<SupplierOrderInvoiceInstallmentRecord> {
+  const parsedInstallmentId = parseBigIntId(
+    installmentId,
+    'invoiceInstallmentId',
+  );
+  const installment = await prisma.invoiceInstallment.findFirst({
+    where: {
+      id: parsedInstallmentId,
+      organizationId,
+      invoiceId,
+    },
+  });
+
+  if (!installment) {
+    throw new NotFoundException('Supplier order invoice installment not found');
+  }
+
+  return installment;
+}
+
+async function getNextInstallmentNumber(
+  tx: Prisma.TransactionClient,
+  invoiceId: bigint,
+): Promise<number> {
+  const lastInstallment = await tx.invoiceInstallment.findFirst({
+    where: { invoiceId },
+    orderBy: { installmentNumber: 'desc' },
+    select: { installmentNumber: true },
+  });
+
+  return (lastInstallment?.installmentNumber ?? 0) + 1;
+}
+
+function deriveInstallmentStatus(input: {
+  amountDue: Prisma.Decimal;
+  amountPaid: Prisma.Decimal;
+  dueDate: Date;
+  paidAt: Date | null;
+}): PersistedInstallmentStatus {
+  if (input.amountPaid.gte(input.amountDue)) {
+    return 'paid';
+  }
+  if (input.amountPaid.gt(0)) {
+    return input.dueDate.getTime() < Date.now() ? 'overdue' : 'partially_paid';
+  }
+  return input.dueDate.getTime() < Date.now() ? 'due' : 'scheduled';
+}
+
+async function assertPaymentReferenceAvailable(
+  tx: Prisma.TransactionClient,
+  organizationId: bigint,
+  paymentReference: string | null,
+  currentPaymentId?: bigint,
+): Promise<void> {
+  if (!paymentReference) {
+    return;
+  }
+
+  const existing = await tx.payment.findFirst({
+    where: {
+      organizationId,
+      paymentReference: { equals: paymentReference, mode: 'insensitive' },
+      ...(currentPaymentId ? { id: { not: currentPaymentId } } : {}),
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    throw new BadRequestException('Payment reference already exists');
+  }
+}
+
+function assertPaymentWithinBalance(
+  invoiceBalance: Prisma.Decimal,
+  installment:
+    | {
+        amountDue: Prisma.Decimal;
+        amountPaid: Prisma.Decimal;
+      }
+    | null,
+  amount: Prisma.Decimal,
+): void {
+  if (amount.gt(invoiceBalance)) {
+    throw new BadRequestException(
+      'Payment amount cannot exceed the invoice balance due',
+    );
+  }
+
+  if (!installment) {
+    return;
+  }
+
+  const installmentBalance = installment.amountDue.sub(installment.amountPaid);
+  if (amount.gt(installmentBalance)) {
+    throw new BadRequestException(
+      'Payment amount cannot exceed the selected installment balance due',
+    );
+  }
+}
+
+async function recomputeInvoicePaymentState(
+  tx: Prisma.TransactionClient,
+  invoiceId: bigint,
+): Promise<void> {
+  const invoice = await tx.invoice.findUniqueOrThrow({
+    where: { id: invoiceId },
+    include: {
+      installments: {
+        orderBy: { installmentNumber: 'asc' },
+      },
+      paymentAllocations: true,
+    },
+  });
+
+  const totalPaid = invoice.paymentAllocations.reduce(
+    (sum, allocation) => sum.add(allocation.allocatedAmount),
+    new Prisma.Decimal(0),
+  );
+
+  await tx.invoice.update({
+    where: { id: invoice.id },
+    data: {
+      amountPaid: totalPaid,
+      balanceDue: invoice.totalAmount.sub(totalPaid),
+      status: deriveInvoiceStatus(invoice.status, invoice.totalAmount, totalPaid),
+    },
+  });
+
+  for (const installment of invoice.installments) {
+    const installmentPaid = invoice.paymentAllocations
+      .filter((allocation) => allocation.invoiceInstallmentId === installment.id)
+      .reduce(
+        (sum, allocation) => sum.add(allocation.allocatedAmount),
+        new Prisma.Decimal(0),
+      );
+
+    const status = deriveInstallmentStatus({
+      amountDue: installment.amountDue,
+      amountPaid: installmentPaid,
+      dueDate: installment.dueDate,
+      paidAt: installment.paidAt,
+    });
+
+    await tx.invoiceInstallment.update({
+      where: { id: installment.id },
+      data: {
+        amountPaid: installmentPaid,
+        status,
+        paidAt:
+          status === 'paid'
+            ? (installment.paidAt ?? new Date())
+            : null,
+      },
+    });
+  }
+}
+
+function deriveInvoiceStatus(
+  currentStatus: PersistedInvoiceStatus,
+  totalAmount: Prisma.Decimal,
+  amountPaid: Prisma.Decimal,
+): PersistedInvoiceStatus {
+  if (currentStatus === 'cancelled' || currentStatus === 'void') {
+    return currentStatus;
+  }
+  if (amountPaid.lte(0)) {
+    return currentStatus === 'draft' ? currentStatus : 'issued';
+  }
+  if (amountPaid.gte(totalAmount)) {
+    return 'paid';
+  }
+  return 'partially_paid';
+}
+
+function buildAllocationReference(paymentId: bigint): string {
+  return `ALLOC-${paymentId.toString().padStart(6, '0')}`;
 }
 
 function buildSupplierOrderWhere(
