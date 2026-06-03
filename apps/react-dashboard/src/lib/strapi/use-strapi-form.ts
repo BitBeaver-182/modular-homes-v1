@@ -60,23 +60,25 @@ export const useStrapiForm = <TFieldValues extends FieldValues>(
 
 	const submit = useCallback<StrapiSubmitHandler<TFieldValues>>(
 		(onValid) =>
-			handleSubmit(async (values): Promise<void> => {
+			async (event?: React.BaseSyntheticEvent): Promise<void> => {
 				clearErrors();
-				try {
-					await onValid(values);
-				} catch (error) {
-					applyStrapiErrorToForm(error, setError, t, {
-						normalize,
-						mapField,
-						fallbackMessage: t(fallbackMessageKey, {
-							message:
-								error instanceof Error ? error.message : String(error),
-							defaultValue:
-								error instanceof Error ? error.message : String(error),
-						}),
-					});
-				}
-			}),
+				await handleSubmit(async (values): Promise<void> => {
+					try {
+						await onValid(values);
+					} catch (error) {
+						applyStrapiErrorToForm(error, setError, t, {
+							normalize,
+							mapField,
+							fallbackMessage: t(fallbackMessageKey, {
+								message:
+									error instanceof Error ? error.message : String(error),
+								defaultValue:
+									error instanceof Error ? error.message : String(error),
+							}),
+						});
+					}
+				})(event);
+			},
 		[handleSubmit, clearErrors, setError, t, normalize, mapField, fallbackMessageKey],
 	);
 

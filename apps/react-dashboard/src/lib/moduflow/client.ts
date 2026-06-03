@@ -23,6 +23,17 @@ export class ModuflowRequestError extends Error {
 	}
 }
 
+export const isModuflowRequestError = (
+	error: unknown
+): error is ModuflowRequestError =>
+	error instanceof ModuflowRequestError ||
+	(typeof error === "object" &&
+		error !== null &&
+		"name" in error &&
+		(error as { name?: unknown }).name === "ModuflowRequestError" &&
+		"status" in error &&
+		typeof (error as { status?: unknown }).status === "number");
+
 interface ModuflowErrorEnvelope {
 	error: {
 		status?: number;

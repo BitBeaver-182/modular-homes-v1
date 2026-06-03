@@ -9,17 +9,29 @@ import { OrderInvoicesCard } from "./index";
 import type { SupplierOrderDetailInvoiceResponse } from "@moduflow/types";
 
 const {
+	createInstallmentMutateAsync,
 	createInvoiceMutateAsync,
+	createPaymentMutateAsync,
+	deleteInstallmentMutateAsync,
 	deleteInvoiceMutateAsync,
+	deletePaymentMutateAsync,
 	createPendingSupplierDocumentUploadMock,
 	deleteSupplierDocumentUploadMock,
+	updateInstallmentMutateAsync,
 	updateInvoiceMutateAsync,
+	updatePaymentMutateAsync,
 } = vi.hoisted(() => ({
+	createInstallmentMutateAsync: vi.fn(),
 	createInvoiceMutateAsync: vi.fn(),
+	createPaymentMutateAsync: vi.fn(),
+	deleteInstallmentMutateAsync: vi.fn(),
 	deleteInvoiceMutateAsync: vi.fn(),
+	deletePaymentMutateAsync: vi.fn(),
 	createPendingSupplierDocumentUploadMock: vi.fn(),
 	deleteSupplierDocumentUploadMock: vi.fn(),
+	updateInstallmentMutateAsync: vi.fn(),
 	updateInvoiceMutateAsync: vi.fn(),
+	updatePaymentMutateAsync: vi.fn(),
 }));
 
 const invoiceFixture: SupplierOrderDetailInvoiceResponse = {
@@ -37,6 +49,8 @@ const invoiceFixture: SupplierOrderDetailInvoiceResponse = {
 	totalAmount: { amount: 1150, currencyCode: "EUR" },
 	amountPaid: { amount: 300, currencyCode: "EUR" },
 	balanceDue: { amount: 850, currencyCode: "EUR" },
+	installments: [],
+	payments: [],
 	notes: "Awaiting remainder",
 	createdAt: "2026-06-03T00:00:00.000Z",
 	updatedAt: "2026-06-04T00:00:00.000Z",
@@ -113,6 +127,48 @@ vi.mock("@/features/supplier-orders-detail/hooks/use-delete-order-invoice", () =
 	}),
 }));
 
+vi.mock("@/features/supplier-orders-detail/hooks/use-create-invoice-installment", () => ({
+	useCreateInvoiceInstallment: () => ({
+		isPending: false,
+		mutateAsync: createInstallmentMutateAsync,
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-update-invoice-installment", () => ({
+	useUpdateInvoiceInstallment: () => ({
+		isPending: false,
+		mutateAsync: updateInstallmentMutateAsync,
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-delete-invoice-installment", () => ({
+	useDeleteInvoiceInstallment: () => ({
+		isPending: false,
+		mutateAsync: deleteInstallmentMutateAsync,
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-create-invoice-payment", () => ({
+	useCreateInvoicePayment: () => ({
+		isPending: false,
+		mutateAsync: createPaymentMutateAsync,
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-update-invoice-payment", () => ({
+	useUpdateInvoicePayment: () => ({
+		isPending: false,
+		mutateAsync: updatePaymentMutateAsync,
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-delete-invoice-payment", () => ({
+	useDeleteInvoicePayment: () => ({
+		isPending: false,
+		mutateAsync: deletePaymentMutateAsync,
+	}),
+}));
+
 vi.mock("react-i18next", () => ({
 	useTranslation: () => ({
 		t: (key: string, options?: { currency?: string; defaultValue?: string }) => {
@@ -168,14 +224,26 @@ describe("OrderInvoicesCard", () => {
 	beforeEach(() => {
 		createInvoiceMutateAsync.mockReset();
 		createInvoiceMutateAsync.mockResolvedValue(undefined);
+		createInstallmentMutateAsync.mockReset();
+		createInstallmentMutateAsync.mockResolvedValue(undefined);
+		createPaymentMutateAsync.mockReset();
+		createPaymentMutateAsync.mockResolvedValue(undefined);
 		createPendingSupplierDocumentUploadMock.mockReset();
 		createPendingSupplierDocumentUploadMock.mockResolvedValue({ fileId: "file_123" });
 		deleteSupplierDocumentUploadMock.mockReset();
 		deleteSupplierDocumentUploadMock.mockResolvedValue(undefined);
 		updateInvoiceMutateAsync.mockReset();
 		updateInvoiceMutateAsync.mockResolvedValue(undefined);
+		updateInstallmentMutateAsync.mockReset();
+		updateInstallmentMutateAsync.mockResolvedValue(undefined);
+		updatePaymentMutateAsync.mockReset();
+		updatePaymentMutateAsync.mockResolvedValue(undefined);
 		deleteInvoiceMutateAsync.mockReset();
 		deleteInvoiceMutateAsync.mockResolvedValue(undefined);
+		deleteInstallmentMutateAsync.mockReset();
+		deleteInstallmentMutateAsync.mockResolvedValue(undefined);
+		deletePaymentMutateAsync.mockReset();
+		deletePaymentMutateAsync.mockResolvedValue(undefined);
 	});
 
 	it("creates, updates, and deletes supplier-order invoices through the provided hooks", async () => {

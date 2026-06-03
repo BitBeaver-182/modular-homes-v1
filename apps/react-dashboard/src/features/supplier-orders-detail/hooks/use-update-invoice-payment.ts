@@ -4,33 +4,51 @@ import {
 	type UseMutationResult,
 } from "@tanstack/react-query";
 
+import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
+
 import { orderKeys } from "../../supplier-orders/hooks/order-keys";
-import {
-	updateSupplierInvoicePayment,
-	type SupplierInvoicePaymentUpdateInput,
-} from "../lib/order-api";
+import { updateSupplierOrderInvoicePayment } from "../../supplier-orders/lib/order-api";
+
+import type {
+	SupplierOrderInvoicePaymentResponse,
+	UpdateSupplierOrderInvoicePaymentRequest,
+} from "@moduflow/types";
 
 export interface UpdateInvoicePaymentVariables {
-	orderDocumentId: string;
-	paymentDocumentId: string;
-	input: SupplierInvoicePaymentUpdateInput;
+	orderId: string;
+	invoiceId: string;
+	paymentId: string;
+	input: UpdateSupplierOrderInvoicePaymentRequest;
 }
 
 export const useUpdateInvoicePayment = (): UseMutationResult<
-	void,
+	SupplierOrderInvoicePaymentResponse,
 	Error,
 	UpdateInvoicePaymentVariables
 > => {
 	const queryClient = useQueryClient();
+	const { activeMembership } = AdminRoute.useRouteContext();
+	const organizationId = activeMembership.organization.id;
 
 	return useMutation({
-		mutationFn: ({ paymentDocumentId, input }: UpdateInvoicePaymentVariables) =>
-			updateSupplierInvoicePayment(paymentDocumentId, input),
+		mutationFn: ({
+			orderId,
+			invoiceId,
+			paymentId,
+			input,
+		}: UpdateInvoicePaymentVariables) =>
+			updateSupplierOrderInvoicePayment(
+				{ organizationId },
+				orderId,
+				invoiceId,
+				paymentId,
+				input,
+			),
 		onSuccess: async (_data, variables): Promise<void> => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: orderKeys.lists() }),
 				queryClient.invalidateQueries({
-					queryKey: orderKeys.detail(variables.orderDocumentId),
+					queryKey: orderKeys.detail(variables.orderId),
 				}),
 			]);
 		},

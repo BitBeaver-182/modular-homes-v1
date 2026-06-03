@@ -1,4 +1,4 @@
-import { ModuflowRequestError } from "./client";
+import { isModuflowRequestError } from "./client";
 
 import type { ApiErrorDetail } from "@moduflow/types";
 import type { TFunction } from "i18next";
@@ -54,7 +54,7 @@ export const applyModuflowErrorToForm = <TFieldValues extends FieldValues>(
 ): void => {
 	const { normalize, mapField, fallbackMessage } = options;
 
-	if (error instanceof ModuflowRequestError) {
+	if (isModuflowRequestError(error)) {
 		const raw = toFlatErrorMap(error.details);
 		const flat = normalize ? normalize(raw) : raw;
 

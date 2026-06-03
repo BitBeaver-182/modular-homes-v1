@@ -331,6 +331,7 @@
 			"string": "A mezonek szovegnek kell lennie",
 			"email": "Adjon meg ervenyes e-mail cimet",
 			"minLength": "Legalabb {{min}} karakter szukseges",
+			"max": "Legfeljebb {{max}} lehet",
 			"maxLength": "Legfeljebb {{max}} karakter lehet",
 			"url": "Adjon meg ervenyes URL-t",
 			"phone": "Adjon meg ervenyes telefonszamot",

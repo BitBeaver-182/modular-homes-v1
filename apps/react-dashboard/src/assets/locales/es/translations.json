@@ -331,6 +331,7 @@
 			"string": "Este campo debe ser una cadena",
 			"email": "Introduzca un correo valido",
 			"minLength": "Debe tener al menos {{min}} caracteres",
+			"max": "Debe ser como maximo {{max}}",
 			"maxLength": "Debe tener como maximo {{max}} caracteres",
 			"url": "Introduzca una URL valida",
 			"phone": "Introduzca un numero de telefono valido",

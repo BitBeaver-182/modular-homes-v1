@@ -193,13 +193,9 @@ describe('SupplierOrdersService', () => {
           ],
         },
       }),
-      select: { id: true },
-    });
-    expect(prisma.supplierOrder.update).toHaveBeenCalledWith({
-      where: { id: 101n },
-      data: { orderNumber: 'SO-000101' },
       include: expect.any(Object),
     });
+    expect(prisma.supplierOrder.update).not.toHaveBeenCalled();
   });
 
   it('lists supplier orders with safe filters and sorting', async () => {
@@ -1351,6 +1347,100 @@ describe('SupplierOrdersService', () => {
         allocatedAmount: new Prisma.Decimal('200'),
       }),
     });
+  });
+
+  it('rejects invoice overpayments with an amount field validation path', async () => {
+    prisma.supplierOrder.findFirst.mockResolvedValue({
+      id: 101n,
+      organizationId: 4n,
+      supplierId: 8n,
+      supplierQuoteId: null,
+      supplier: null,
+      supplierQuote: null,
+      lines: [],
+      invoices: [],
+      status: 'confirmed',
+      orderNumber: 'SO-000101',
+      supplierPoNumber: null,
+      orderDate: null,
+      confirmedAt: null,
+      expectedReadyDate: null,
+      expectedShipDate: null,
+      expectedArrivalDate: null,
+      currencyCode: 'EUR',
+      subtotalAmount: new Prisma.Decimal('0'),
+      shippingAmount: new Prisma.Decimal('0'),
+      taxAmount: new Prisma.Decimal('0'),
+      totalAmount: new Prisma.Decimal('0'),
+      incoterm: null,
+      paymentTerms: null,
+      loadingPort: null,
+      destinationPort: null,
+      notes: null,
+      createdByUserId: null,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-02T00:00:00.000Z'),
+    });
+    prisma.invoice.findFirst.mockResolvedValue({
+      id: 77n,
+      organizationId: 4n,
+      attachmentId: null,
+      attachment: null,
+      installments: [],
+      paymentAllocations: [],
+      invoiceNumber: 'INV-2026-001',
+      direction: 'payable',
+      invoiceType: 'supplier_goods',
+      status: 'issued',
+      supplierId: 8n,
+      supplierOrderId: 101n,
+      issueDate: null,
+      dueDate: null,
+      currencyCode: 'EUR',
+      exchangeRateToBase: null,
+      subtotalAmount: new Prisma.Decimal('1000'),
+      taxAmount: new Prisma.Decimal('150'),
+      totalAmount: new Prisma.Decimal('1150'),
+      amountPaid: new Prisma.Decimal('1000'),
+      balanceDue: new Prisma.Decimal('150'),
+      notes: null,
+      createdAt: new Date('2026-06-03T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-03T00:00:00.000Z'),
+    });
+
+    await expect(
+      service.createPayment(
+        {
+          userId: 9n,
+          email: 'buyer@example.com',
+          organizationId: 4n,
+          governanceRole: 'member',
+        },
+        4n,
+        '101',
+        '77',
+        {
+          paymentReference: null,
+          paymentMethod: 'bank_transfer',
+          paymentDate: '2026-06-05',
+          amount: 200,
+          notes: null,
+          invoiceInstallmentId: null,
+        },
+      ),
+    ).rejects.toMatchObject({
+      response: {
+        message: 'Payment amount cannot exceed the invoice balance due',
+        errors: [
+          expect.objectContaining({
+            path: ['amount'],
+            key: 'validation.max',
+          }),
+        ],
+      },
+    });
+
+    expect(prisma.payment.create).not.toHaveBeenCalled();
   });
 
   it('deletes a supplier-order invoice scoped to the parent order', async () => {

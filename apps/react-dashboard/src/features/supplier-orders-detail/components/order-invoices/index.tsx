@@ -19,26 +19,50 @@ import {
 	createPendingSupplierDocumentUpload,
 	deleteSupplierDocumentUpload,
 } from "@/features/quotes/lib/upload-api";
+import { useCreateInvoiceInstallment } from "@/features/supplier-orders-detail/hooks/use-create-invoice-installment";
+import { useCreateInvoicePayment } from "@/features/supplier-orders-detail/hooks/use-create-invoice-payment";
 import { useCreateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-create-order-invoice";
+import { useDeleteInvoiceInstallment } from "@/features/supplier-orders-detail/hooks/use-delete-invoice-installment";
+import { useDeleteInvoicePayment } from "@/features/supplier-orders-detail/hooks/use-delete-invoice-payment";
 import { useDeleteOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-delete-order-invoice";
+import { useUpdateInvoiceInstallment } from "@/features/supplier-orders-detail/hooks/use-update-invoice-installment";
+import { useUpdateInvoicePayment } from "@/features/supplier-orders-detail/hooks/use-update-invoice-payment";
 import { useUpdateOrderInvoice } from "@/features/supplier-orders-detail/hooks/use-update-order-invoice";
 import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
 
+import {
+	InstallmentFormDialog,
+	normalizeInstallmentInput,
+	type InstallmentFormValues,
+} from "./installment-form-dialog";
+import { InvoiceCard } from "./invoice-card";
 import {
 	InvoiceFormDialog,
 	normalizeInvoiceInput,
 	type InvoiceFormValues,
 } from "./invoice-form-dialog";
-import { InvoiceItemCard } from "./invoice-item-card";
+import {
+	normalizePaymentInput,
+	PaymentFormDialog,
+	type PaymentFormValues,
+} from "./payment-form-dialog";
 
 import type { PendingInvoiceAttachment } from "./types";
-import type { SupplierOrderDetailInvoiceResponse } from "@moduflow/types";
+import type {
+	SupplierOrderDetailInvoiceResponse,
+	SupplierOrderInvoicePaymentResponse,
+} from "@moduflow/types";
 
 interface OrderInvoicesCardProps {
 	currency: string;
 	invoices: Array<SupplierOrderDetailInvoiceResponse>;
 	orderId: string;
 }
+
+type DeleteState =
+	| { type: "installment"; invoiceId: string; installmentId: string }
+	| { type: "payment"; invoiceId: string; paymentId: string }
+	| null;
 
 export const OrderInvoicesCard = ({
 	currency,
@@ -51,10 +75,21 @@ export const OrderInvoicesCard = ({
 	const createInvoice = useCreateOrderInvoice();
 	const updateInvoice = useUpdateOrderInvoice();
 	const deleteInvoice = useDeleteOrderInvoice();
+	const createInstallment = useCreateInvoiceInstallment();
+	const updateInstallment = useUpdateInvoiceInstallment();
+	const deleteInstallment = useDeleteInvoiceInstallment();
+	const createPayment = useCreateInvoicePayment();
+	const updatePayment = useUpdateInvoicePayment();
+	const deletePayment = useDeleteInvoicePayment();
 
-	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+	const [isInstallmentDialogOpen, setIsInstallmentDialogOpen] = useState(false);
+	const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 	const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
-	const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
+	const [activeInvoiceId, setActiveInvoiceId] = useState<string | null>(null);
+	const [editingInstallmentId, setEditingInstallmentId] = useState<string | null>(null);
+	const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+	const [deleting, setDeleting] = useState<DeleteState>(null);
 	const [pendingAttachment, setPendingAttachment] =
 		useState<PendingInvoiceAttachment | null>(null);
 
@@ -70,13 +105,36 @@ export const OrderInvoicesCard = ({
 			}),
 		[invoices],
 	);
+	const supplierName = t("orders.unknownSupplier", { defaultValue: "Supplier" });
 
+	const activeInvoice =
+		activeInvoiceId === null
+			? null
+			: invoicesSorted.find((invoice) => invoice.id === activeInvoiceId) ?? null;
 	const editingInvoice =
 		editingInvoiceId === null
 			? null
 			: invoicesSorted.find((invoice) => invoice.id === editingInvoiceId) ?? null;
+	const editingInstallment =
+		activeInvoice && editingInstallmentId
+			? activeInvoice.installments.find((installment) => installment.id === editingInstallmentId) ??
+				null
+			: null;
+	const editingPayment =
+		activeInvoice && editingPaymentId
+			? activeInvoice.payments.find((payment) => payment.id === editingPaymentId) ?? null
+			: null;
+
 	const mutating =
-		createInvoice.isPending || updateInvoice.isPending || deleteInvoice.isPending;
+		createInvoice.isPending ||
+		updateInvoice.isPending ||
+		deleteInvoice.isPending ||
+		createInstallment.isPending ||
+		updateInstallment.isPending ||
+		deleteInstallment.isPending ||
+		createPayment.isPending ||
+		updatePayment.isPending ||
+		deletePayment.isPending;
 
 	const discardPendingAttachment = (attachment: PendingInvoiceAttachment | null): void => {
 		if (!attachment) {
@@ -89,7 +147,7 @@ export const OrderInvoicesCard = ({
 		).catch(() => undefined);
 	};
 
-	const resetDialogState = (options?: { discardPending?: boolean }): void => {
+	const resetInvoiceDialogState = (options?: { discardPending?: boolean }): void => {
 		setEditingInvoiceId(null);
 		if (options?.discardPending) {
 			setPendingAttachment((current) => {
@@ -99,14 +157,29 @@ export const OrderInvoicesCard = ({
 		}
 	};
 
-	const openCreateDialog = (): void => {
-		resetDialogState({ discardPending: true });
-		setIsDialogOpen(true);
+	const openCreateInvoiceDialog = (): void => {
+		resetInvoiceDialogState({ discardPending: true });
+		setIsInvoiceDialogOpen(true);
 	};
 
-	const openEditDialog = (invoice: SupplierOrderDetailInvoiceResponse): void => {
+	const openEditInvoiceDialog = (invoice: SupplierOrderDetailInvoiceResponse): void => {
 		setEditingInvoiceId(invoice.id);
-		setIsDialogOpen(true);
+		setIsInvoiceDialogOpen(true);
+	};
+
+	const openCreatePaymentDialog = (invoice: SupplierOrderDetailInvoiceResponse): void => {
+		setActiveInvoiceId(invoice.id);
+		setEditingPaymentId(null);
+		setIsPaymentDialogOpen(true);
+	};
+
+	const openEditPaymentDialog = (
+		invoice: SupplierOrderDetailInvoiceResponse,
+		payment: SupplierOrderInvoicePaymentResponse,
+	): void => {
+		setActiveInvoiceId(invoice.id);
+		setEditingPaymentId(payment.id);
+		setIsPaymentDialogOpen(true);
 	};
 
 	const handleSaveInvoice = async (values: InvoiceFormValues): Promise<void> => {
@@ -161,22 +234,81 @@ export const OrderInvoicesCard = ({
 		}
 
 		setPendingAttachment(null);
-		setIsDialogOpen(false);
-		resetDialogState();
+		setIsInvoiceDialogOpen(false);
+		resetInvoiceDialogState();
 	};
 
-	const confirmDeleteInvoice = async (): Promise<void> => {
-		if (deletingInvoiceId === null) {
+	const handleSaveInstallment = async (values: InstallmentFormValues): Promise<void> => {
+		if (!activeInvoice) {
 			return;
 		}
 
+		const input = normalizeInstallmentInput(values);
+		if (editingInstallment) {
+			await updateInstallment.mutateAsync({
+				orderId,
+				invoiceId: activeInvoice.id,
+				installmentId: editingInstallment.id,
+				input,
+			});
+			toast.success(
+				t("orders.installmentUpdated", {
+					defaultValue: "Installment updated.",
+				}),
+			);
+		} else {
+			await createInstallment.mutateAsync({
+				orderId,
+				invoiceId: activeInvoice.id,
+				input,
+			});
+			toast.success(
+				t("orders.installmentCreated", {
+					defaultValue: "Installment created.",
+				}),
+			);
+		}
+
+		setIsInstallmentDialogOpen(false);
+		setEditingInstallmentId(null);
+	};
+
+	const handleSavePayment = async (values: PaymentFormValues): Promise<void> => {
+		if (!activeInvoice) {
+			return;
+		}
+
+		const input = normalizePaymentInput(values);
+		if (editingPayment) {
+			await updatePayment.mutateAsync({
+				orderId,
+				invoiceId: activeInvoice.id,
+				paymentId: editingPayment.id,
+				input,
+			});
+			toast.success(t("orders.paymentUpdated"));
+		} else {
+			await createPayment.mutateAsync({
+				orderId,
+				invoiceId: activeInvoice.id,
+				input,
+			});
+			toast.success(t("orders.paymentRecorded"));
+		}
+
+		setIsPaymentDialogOpen(false);
+		setEditingPaymentId(null);
+	};
+
+	const handleDeleteInvoice = async (
+		invoice: SupplierOrderDetailInvoiceResponse,
+	): Promise<void> => {
 		try {
 			await deleteInvoice.mutateAsync({
 				orderId,
-				invoiceId: deletingInvoiceId,
+				invoiceId: invoice.id,
 			});
 			toast.success(t("orders.invoiceDeleted"));
-			setDeletingInvoiceId(null);
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : t("orders.invoiceDeleteFailed"),
@@ -184,26 +316,97 @@ export const OrderInvoicesCard = ({
 		}
 	};
 
+	const confirmDelete = async (): Promise<void> => {
+		if (!deleting) {
+			return;
+		}
+
+		try {
+			if (deleting.type === "installment") {
+				await deleteInstallment.mutateAsync({
+					orderId,
+					invoiceId: deleting.invoiceId,
+					installmentId: deleting.installmentId,
+				});
+				toast.success(
+					t("orders.installmentDeleted", {
+						defaultValue: "Installment deleted.",
+					}),
+				);
+			} else {
+				await deletePayment.mutateAsync({
+					orderId,
+					invoiceId: deleting.invoiceId,
+					paymentId: deleting.paymentId,
+				});
+				toast.success(t("orders.paymentDeleted"));
+			}
+			setDeleting(null);
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: deleting.type === "installment"
+							? t("orders.installmentDeleteFailed", {
+									defaultValue: "Could not delete installment.",
+								})
+							: t("orders.paymentDeleteFailed"),
+			);
+		}
+	};
+
+	const deleteTitle =
+		deleting?.type === "installment"
+			? t("orders.installmentDeleteTitle", {
+					defaultValue: "Delete installment?",
+				})
+			: t("orders.paymentDeleteTitle");
+
+	const deleteActionLabel =
+		deleting?.type === "installment"
+			? t("orders.installmentDeleteConfirmAction", {
+					defaultValue: "Confirm delete installment",
+				})
+			: t("orders.paymentDeleteConfirmAction", {
+					defaultValue: "Confirm delete payment",
+				});
+
 	return (
 		<Card className="gap-0">
 			<CardHeader className="flex flex-row items-center justify-between">
 				<CardTitle>{t("orders.invoicesTitle")}</CardTitle>
-				<Button disabled={mutating} size="sm" type="button" onClick={openCreateDialog}>
+				<Button
+					disabled={mutating}
+					size="sm"
+					type="button"
+					onClick={openCreateInvoiceDialog}
+				>
 					<Plus className="mr-2 size-4" />
 					{t("orders.invoiceCreateAction")}
 				</Button>
 			</CardHeader>
-			<CardContent className="space-y-4 mt-4">
+			<CardContent className="mt-4 space-y-4">
 				{invoicesSorted.length === 0 ? (
 					<p className="py-8 text-center text-muted-foreground">{t("orders.noInvoices")}</p>
 				) : (
 					invoicesSorted.map((invoice) => (
-						<InvoiceItemCard
+						<InvoiceCard
 							key={invoice.id}
+							currency={currency}
 							invoice={invoice}
 							mutating={mutating}
-							onDelete={setDeletingInvoiceId}
-							onEdit={openEditDialog}
+							onAddPayment={openCreatePaymentDialog}
+							onConfirmDeleteInvoice={handleDeleteInvoice}
+							onConfirmDeletePayment={(payment) => {
+								setDeleting({
+									type: "payment",
+									invoiceId: invoice.id,
+									paymentId: payment.id,
+								});
+							}}
+							onEditInvoice={openEditInvoiceDialog}
+							onEditPayment={openEditPaymentDialog}
+							supplierName={supplierName}
 						/>
 					))
 				)}
@@ -213,27 +416,57 @@ export const OrderInvoicesCard = ({
 				currency={currency}
 				initialInvoice={editingInvoice}
 				loading={mutating}
-				open={isDialogOpen}
+				open={isInvoiceDialogOpen}
 				onOpenChange={(open) => {
-					setIsDialogOpen(open);
+					setIsInvoiceDialogOpen(open);
 					if (!open) {
-						resetDialogState({ discardPending: true });
+						resetInvoiceDialogState({ discardPending: true });
 					}
 				}}
 				onSubmit={handleSaveInvoice}
 			/>
 
+			<InstallmentFormDialog
+				currency={currency}
+				initialInstallment={editingInstallment}
+				invoice={activeInvoice}
+				loading={mutating}
+				open={isInstallmentDialogOpen}
+				onOpenChange={(open) => {
+					setIsInstallmentDialogOpen(open);
+					if (!open) {
+						setEditingInstallmentId(null);
+					}
+				}}
+				onSubmit={handleSaveInstallment}
+			/>
+
+			<PaymentFormDialog
+				currency={currency}
+				initialPayment={editingPayment}
+				invoice={activeInvoice}
+				loading={mutating}
+				open={isPaymentDialogOpen}
+				onOpenChange={(open) => {
+					setIsPaymentDialogOpen(open);
+					if (!open) {
+						setEditingPaymentId(null);
+					}
+				}}
+				onSubmit={handleSavePayment}
+			/>
+
 			<AlertDialog
-				open={deletingInvoiceId !== null}
+				open={deleting !== null}
 				onOpenChange={(open) => {
 					if (!open) {
-						setDeletingInvoiceId(null);
+						setDeleting(null);
 					}
 				}}
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>{t("orders.invoiceDeleteTitle")}</AlertDialogTitle>
+						<AlertDialogTitle>{deleteTitle}</AlertDialogTitle>
 						<AlertDialogDescription>
 							{t("orders.deleteCannotUndo")}
 						</AlertDialogDescription>
@@ -242,13 +475,8 @@ export const OrderInvoicesCard = ({
 						<AlertDialogCancel disabled={mutating}>
 							{t("common.cancel")}
 						</AlertDialogCancel>
-						<AlertDialogAction
-							disabled={mutating}
-							onClick={() => void confirmDeleteInvoice()}
-						>
-							{t("orders.invoiceDeleteConfirmAction", {
-								defaultValue: "Confirm delete invoice",
-							})}
+						<AlertDialogAction disabled={mutating} onClick={() => void confirmDelete()}>
+							{deleteActionLabel}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

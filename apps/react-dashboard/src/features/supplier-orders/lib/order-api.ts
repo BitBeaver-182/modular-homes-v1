@@ -3,13 +3,19 @@ import { moduflowRequest } from "@/lib/moduflow/client";
 
 import type {
 	CreateSupplierOrderInvoiceRequest,
+	CreateSupplierOrderInvoiceInstallmentRequest,
+	CreateSupplierOrderInvoicePaymentRequest,
 	CreateSupplierOrderRequest,
 	SupplierOrderDetailInvoiceResponse,
+	SupplierOrderInvoiceInstallmentResponse,
+	SupplierOrderInvoicePaymentResponse,
 	SupplierOrderDetailResponse,
 	SupplierOrderLineWriteInput,
 	SupplierOrderListItemResponse,
 	SupplierOrderListResponse,
 	UpdateSupplierOrderInvoiceRequest,
+	UpdateSupplierOrderInvoiceInstallmentRequest,
+	UpdateSupplierOrderInvoicePaymentRequest,
 	UpdateSupplierOrderRequest,
 } from "@moduflow/types";
 
@@ -156,6 +162,96 @@ export const deleteSupplierOrderInvoice = async (
 			headers: organizationHeaders(context),
 			method: "DELETE",
 		}
+	);
+
+export const createSupplierOrderInvoiceInstallment = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	invoiceId: string,
+	input: CreateSupplierOrderInvoiceInstallmentRequest,
+): Promise<SupplierOrderInvoiceInstallmentResponse> =>
+	moduflowRequest<SupplierOrderInvoiceInstallmentResponse>(
+		`/supplier-orders/${encodeURIComponent(orderId)}/invoices/${encodeURIComponent(invoiceId)}/installments`,
+		{
+			body: input,
+			headers: organizationHeaders(context),
+			method: "POST",
+		},
+	);
+
+export const updateSupplierOrderInvoiceInstallment = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	invoiceId: string,
+	installmentId: string,
+	input: UpdateSupplierOrderInvoiceInstallmentRequest,
+): Promise<SupplierOrderInvoiceInstallmentResponse> =>
+	moduflowRequest<SupplierOrderInvoiceInstallmentResponse>(
+		`/supplier-orders/${encodeURIComponent(orderId)}/invoices/${encodeURIComponent(invoiceId)}/installments/${encodeURIComponent(installmentId)}`,
+		{
+			body: input,
+			headers: organizationHeaders(context),
+			method: "PATCH",
+		},
+	);
+
+export const deleteSupplierOrderInvoiceInstallment = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	invoiceId: string,
+	installmentId: string,
+): Promise<void> =>
+	moduflowRequest<void>(
+		`/supplier-orders/${encodeURIComponent(orderId)}/invoices/${encodeURIComponent(invoiceId)}/installments/${encodeURIComponent(installmentId)}`,
+		{
+			headers: organizationHeaders(context),
+			method: "DELETE",
+		},
+	);
+
+export const createSupplierOrderInvoicePayment = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	invoiceId: string,
+	input: CreateSupplierOrderInvoicePaymentRequest,
+): Promise<SupplierOrderInvoicePaymentResponse> =>
+	moduflowRequest<SupplierOrderInvoicePaymentResponse>(
+		`/supplier-orders/${encodeURIComponent(orderId)}/invoices/${encodeURIComponent(invoiceId)}/payments`,
+		{
+			body: input,
+			headers: organizationHeaders(context),
+			method: "POST",
+		},
+	);
+
+export const updateSupplierOrderInvoicePayment = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	invoiceId: string,
+	paymentId: string,
+	input: UpdateSupplierOrderInvoicePaymentRequest,
+): Promise<SupplierOrderInvoicePaymentResponse> =>
+	moduflowRequest<SupplierOrderInvoicePaymentResponse>(
+		`/supplier-orders/${encodeURIComponent(orderId)}/invoices/${encodeURIComponent(invoiceId)}/payments/${encodeURIComponent(paymentId)}`,
+		{
+			body: input,
+			headers: organizationHeaders(context),
+			method: "PATCH",
+		},
+	);
+
+export const deleteSupplierOrderInvoicePayment = async (
+	context: SupplierOrderApiContext,
+	orderId: string,
+	invoiceId: string,
+	paymentId: string,
+): Promise<void> =>
+	moduflowRequest<void>(
+		`/supplier-orders/${encodeURIComponent(orderId)}/invoices/${encodeURIComponent(invoiceId)}/payments/${encodeURIComponent(paymentId)}`,
+		{
+			headers: organizationHeaders(context),
+			method: "DELETE",
+		},
 	);
 
 export type {

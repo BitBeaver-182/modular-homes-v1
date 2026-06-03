@@ -78,6 +78,8 @@ const orderFixture: SupplierOrderDetailResponse = {
 			totalAmount: { amount: 1150, currencyCode: "EUR" },
 			amountPaid: { amount: 300, currencyCode: "EUR" },
 			balanceDue: { amount: 850, currencyCode: "EUR" },
+			installments: [],
+			payments: [],
 			notes: "Awaiting remainder",
 			createdAt: "2026-06-03T00:00:00.000Z",
 			updatedAt: "2026-06-04T00:00:00.000Z",
@@ -127,6 +129,48 @@ vi.mock("@/features/supplier-orders-detail/hooks/use-update-order-invoice", () =
 
 vi.mock("@/features/supplier-orders-detail/hooks/use-delete-order-invoice", () => ({
 	useDeleteOrderInvoice: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-create-invoice-installment", () => ({
+	useCreateInvoiceInstallment: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-update-invoice-installment", () => ({
+	useUpdateInvoiceInstallment: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-delete-invoice-installment", () => ({
+	useDeleteInvoiceInstallment: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-create-invoice-payment", () => ({
+	useCreateInvoicePayment: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-update-invoice-payment", () => ({
+	useUpdateInvoicePayment: () => ({
+		isPending: false,
+		mutateAsync: vi.fn(),
+	}),
+}));
+
+vi.mock("@/features/supplier-orders-detail/hooks/use-delete-invoice-payment", () => ({
+	useDeleteInvoicePayment: () => ({
 		isPending: false,
 		mutateAsync: vi.fn(),
 	}),

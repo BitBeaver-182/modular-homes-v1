@@ -14,6 +14,7 @@ export const API_ERROR_KEYS = [
   'validation.date',
   'validation.url',
   'validation.min',
+  'validation.max',
   'validation.maxLength',
   'validation.minLength',
   'validation.unknown',

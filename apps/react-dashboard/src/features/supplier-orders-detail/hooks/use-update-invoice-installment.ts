@@ -7,31 +7,43 @@ import {
 import { Route as AdminRoute } from "@/routes/$locale.o.$organizationSlug._admin";
 
 import { orderKeys } from "../../supplier-orders/hooks/order-keys";
-import { createSupplierOrderInvoicePayment } from "../../supplier-orders/lib/order-api";
+import { updateSupplierOrderInvoiceInstallment } from "../../supplier-orders/lib/order-api";
 
 import type {
-	CreateSupplierOrderInvoicePaymentRequest,
-	SupplierOrderInvoicePaymentResponse,
+	SupplierOrderInvoiceInstallmentResponse,
+	UpdateSupplierOrderInvoiceInstallmentRequest,
 } from "@moduflow/types";
 
-export interface CreateInvoicePaymentVariables {
+export interface UpdateInvoiceInstallmentVariables {
 	orderId: string;
 	invoiceId: string;
-	input: CreateSupplierOrderInvoicePaymentRequest;
+	installmentId: string;
+	input: UpdateSupplierOrderInvoiceInstallmentRequest;
 }
 
-export const useCreateInvoicePayment = (): UseMutationResult<
-	SupplierOrderInvoicePaymentResponse,
+export const useUpdateInvoiceInstallment = (): UseMutationResult<
+	SupplierOrderInvoiceInstallmentResponse,
 	Error,
-	CreateInvoicePaymentVariables
+	UpdateInvoiceInstallmentVariables
 > => {
 	const queryClient = useQueryClient();
 	const { activeMembership } = AdminRoute.useRouteContext();
 	const organizationId = activeMembership.organization.id;
 
 	return useMutation({
-		mutationFn: ({ orderId, invoiceId, input }: CreateInvoicePaymentVariables) =>
-			createSupplierOrderInvoicePayment({ organizationId }, orderId, invoiceId, input),
+		mutationFn: ({
+			orderId,
+			invoiceId,
+			installmentId,
+			input,
+		}: UpdateInvoiceInstallmentVariables) =>
+			updateSupplierOrderInvoiceInstallment(
+				{ organizationId },
+				orderId,
+				invoiceId,
+				installmentId,
+				input,
+			),
 		onSuccess: async (_data, variables): Promise<void> => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: orderKeys.lists() }),

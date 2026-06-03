@@ -10,8 +10,9 @@ import {
   type SupplierOrderStatus as PersistedSupplierOrderStatus,
 } from '@prisma/client';
 import type { AuthenticatedActor } from '../../auth/auth.types';
-import { PrismaService } from '../../database/prisma.service';
+import { createBadRequestException } from '../../common/errors/api-error';
 import { parseBigIntId } from '../../common/ids/parse-bigint-id';
+import { PrismaService } from '../../database/prisma.service';
 import { StorageService } from '../../storage/storage.service';
 import { SupplierOrderFilterDto } from './dto/supplier-order-filter.dto';
 import {
@@ -163,8 +164,8 @@ export class SupplierOrdersService {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const createdOrder = await tx.supplierOrder.create({
+    return this.prisma.$transaction((tx) =>
+      tx.supplierOrder.create({
         data: {
           organizationId: actor.organizationId,
           supplierId: quote.supplierId,
@@ -191,17 +192,9 @@ export class SupplierOrdersService {
             })),
           },
         },
-        select: { id: true },
-      });
-
-      return tx.supplierOrder.update({
-        where: { id: createdOrder.id },
-        data: {
-          orderNumber: formatOrderNumber(createdOrder.id),
-        },
         include: INCLUDE_RELATIONS,
-      });
-    });
+      }),
+    );
   }
 
   async findAll(
@@ -658,7 +651,11 @@ export class SupplierOrdersService {
         },
       });
 
-      await this.ensureInstallmentsWithinInvoiceTotal(tx, invoice.id, updated.id);
+      await this.ensureInstallmentsWithinInvoiceTotal(
+        tx,
+        invoice.id,
+        updated.id,
+      );
       await recomputeInvoicePaymentState(tx, invoice.id);
 
       return updated;
@@ -858,7 +855,11 @@ export class SupplierOrdersService {
         payment.allocations[0]?.allocatedAmount ?? new Prisma.Decimal(0),
       );
       const remainingInvoiceBalance = invoice.totalAmount.sub(otherAllocated);
-      assertPaymentWithinBalance(remainingInvoiceBalance, installment, nextAmount);
+      assertPaymentWithinBalance(
+        remainingInvoiceBalance,
+        installment,
+        nextAmount,
+      );
 
       await tx.payment.update({
         where: { id: payment.id },
@@ -1476,17 +1477,24 @@ async function assertPaymentReferenceAvailable(
 
 function assertPaymentWithinBalance(
   invoiceBalance: Prisma.Decimal,
-  installment:
-    | {
-        amountDue: Prisma.Decimal;
-        amountPaid: Prisma.Decimal;
-      }
-    | null,
+  installment: {
+    amountDue: Prisma.Decimal;
+    amountPaid: Prisma.Decimal;
+  } | null,
   amount: Prisma.Decimal,
 ): void {
   if (amount.gt(invoiceBalance)) {
-    throw new BadRequestException(
+    throw createBadRequestException(
       'Payment amount cannot exceed the invoice balance due',
+      [
+        {
+          path: ['amount'],
+          message: 'Payment amount cannot exceed the invoice balance due',
+          name: 'ValidationError',
+          key: 'validation.max',
+          params: { max: invoiceBalance.toNumber() },
+        },
+      ],
     );
   }
 
@@ -1496,8 +1504,18 @@ function assertPaymentWithinBalance(
 
   const installmentBalance = installment.amountDue.sub(installment.amountPaid);
   if (amount.gt(installmentBalance)) {
-    throw new BadRequestException(
+    throw createBadRequestException(
       'Payment amount cannot exceed the selected installment balance due',
+      [
+        {
+          path: ['amount'],
+          message:
+            'Payment amount cannot exceed the selected installment balance due',
+          name: 'ValidationError',
+          key: 'validation.max',
+          params: { max: installmentBalance.toNumber() },
+        },
+      ],
     );
   }
 }
@@ -1526,13 +1544,19 @@ async function recomputeInvoicePaymentState(
     data: {
       amountPaid: totalPaid,
       balanceDue: invoice.totalAmount.sub(totalPaid),
-      status: deriveInvoiceStatus(invoice.status, invoice.totalAmount, totalPaid),
+      status: deriveInvoiceStatus(
+        invoice.status,
+        invoice.totalAmount,
+        totalPaid,
+      ),
     },
   });
 
   for (const installment of invoice.installments) {
     const installmentPaid = invoice.paymentAllocations
-      .filter((allocation) => allocation.invoiceInstallmentId === installment.id)
+      .filter(
+        (allocation) => allocation.invoiceInstallmentId === installment.id,
+      )
       .reduce(
         (sum, allocation) => sum.add(allocation.allocatedAmount),
         new Prisma.Decimal(0),
@@ -1550,10 +1574,7 @@ async function recomputeInvoicePaymentState(
       data: {
         amountPaid: installmentPaid,
         status,
-        paidAt:
-          status === 'paid'
-            ? (installment.paidAt ?? new Date())
-            : null,
+        paidAt: status === 'paid' ? (installment.paidAt ?? new Date()) : null,
       },
     });
   }
@@ -1656,10 +1677,6 @@ function startOfUtcDay(value: string): Date {
 
 function endOfUtcDay(value: string): Date {
   return new Date(`${value}T23:59:59.999Z`);
-}
-
-function formatOrderNumber(value: bigint): string {
-  return `SO-${value.toString().padStart(6, '0')}`;
 }
 
 function isExpiredQuote(value: Date | null): boolean {

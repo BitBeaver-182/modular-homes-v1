@@ -44,7 +44,13 @@ const mapQuoteField = (
 		return "root";
 	}
 
-	if (key === "total" || key.startsWith("total.amount") || key === "amount") {
+	if (
+		key === "total" ||
+		key.startsWith("total.amount") ||
+		key === "amount" ||
+		key === "subtotalAmount" ||
+		key === "totalAmount"
+	) {
 		return "amount";
 	}
 

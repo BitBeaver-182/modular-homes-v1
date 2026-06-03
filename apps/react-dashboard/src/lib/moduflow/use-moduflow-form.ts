@@ -52,23 +52,25 @@ export const useModuflowForm = <TFieldValues extends FieldValues>(
 
 	const submit = useCallback<ModuflowSubmitHandler<TFieldValues>>(
 		(onValid) =>
-			handleSubmit(async (values): Promise<void> => {
+			async (event?: React.BaseSyntheticEvent): Promise<void> => {
 				clearErrors();
-				try {
-					await onValid(values);
-				} catch (error) {
-					applyModuflowErrorToForm(error, setError, t, {
-						normalize,
-						mapField,
-						fallbackMessage: t(fallbackMessageKey, {
-							message:
-								error instanceof Error ? error.message : String(error),
-							defaultValue:
-								error instanceof Error ? error.message : String(error),
-						}),
-					});
-				}
-			}),
+				await handleSubmit(async (values): Promise<void> => {
+					try {
+						await onValid(values);
+					} catch (error) {
+						applyModuflowErrorToForm(error, setError, t, {
+							normalize,
+							mapField,
+							fallbackMessage: t(fallbackMessageKey, {
+								message:
+									error instanceof Error ? error.message : String(error),
+								defaultValue:
+									error instanceof Error ? error.message : String(error),
+							}),
+						});
+					}
+				})(event);
+			},
 		[clearErrors, fallbackMessageKey, handleSubmit, mapField, normalize, setError, t],
 	);
 

@@ -331,6 +331,7 @@
 			"string": "Toto pole musi byt text",
 			"email": "Zadajte platny e-mail",
 			"minLength": "Musi mat aspon {{min}} znakov",
+			"max": "Musi byt najviac {{max}}",
 			"maxLength": "Musi mat najviac {{max}} znakov",
 			"url": "Zadajte platnu URL",
 			"phone": "Zadajte platne telefonne cislo",

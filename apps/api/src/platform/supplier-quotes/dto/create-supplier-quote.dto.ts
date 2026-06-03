@@ -8,7 +8,9 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsDateString,
+  IsDefined,
   IsIn,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -28,6 +30,7 @@ export class CreateSupplierQuoteDto implements CreateSupplierQuoteRequest {
   @ApiProperty({ example: '1' })
   @Transform(trimString)
   @IsString()
+  @IsNotEmpty()
   @MaxLength(40)
   supplierId!: string;
 
@@ -61,11 +64,11 @@ export class CreateSupplierQuoteDto implements CreateSupplierQuoteRequest {
   @IsDateString()
   quoteDate?: string | null;
 
-  @ApiPropertyOptional({ example: '2026-06-30', nullable: true })
+  @ApiProperty({ example: '2026-06-30' })
   @Transform(emptyStringToUndefined)
-  @IsOptional()
+  @IsDefined()
   @IsDateString()
-  validUntil?: string | null;
+  validUntil!: string;
 
   @ApiPropertyOptional({ example: 'USD', default: 'USD' })
   @Transform(trimUppercaseString)
@@ -75,10 +78,10 @@ export class CreateSupplierQuoteDto implements CreateSupplierQuoteRequest {
   currencyCode?: string;
 
   @Type(() => Number)
-  @IsOptional()
+  @IsDefined()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  subtotalAmount?: number;
+  subtotalAmount!: number;
 
   @Type(() => Number)
   @IsOptional()
