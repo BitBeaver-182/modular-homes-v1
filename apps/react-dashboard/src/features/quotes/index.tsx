@@ -350,10 +350,7 @@ const QuotesPage = (): JSX.Element => {
 	): Promise<void> => {
 		await updateQuote({
 			id: quote.id,
-			input: buildUpdateQuotePayload(
-				{ ...quoteToWriteInput(quote), status },
-				undefined,
-			),
+			input: { status },
 		});
 	};
 
