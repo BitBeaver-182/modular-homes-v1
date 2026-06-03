@@ -40,6 +40,7 @@ const EMPTY_VALUES: QuoteFormValues = {
 const mapQuoteField = (
 	key: string,
 ): FieldPath<QuoteFormValues> | undefined => {
+	console.log("mapQuoteField", { key });
 	if (key === "root") {
 		return "root";
 	}
@@ -58,7 +59,7 @@ const mapQuoteField = (
 		return "currencyCode";
 	}
 
-	if (key === "supplier" || key === "supplier_id") {
+	if (key === "supplier" || key === "supplier_id" || key === "supplierId") {
 		return "supplierId";
 	}
 

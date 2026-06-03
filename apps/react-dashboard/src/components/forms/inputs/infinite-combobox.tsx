@@ -253,7 +253,6 @@ export const InfiniteCombobox = <T, M extends boolean = false>({
 		<>
 			{renderHiddenInputs()}
 			<Combobox
-				aria-invalid={invalid}
 				disabled={disabled}
 				filter={(): boolean => true}
 				id={id}
@@ -301,6 +300,7 @@ export const InfiniteCombobox = <T, M extends boolean = false>({
 					</ComboboxChips>
 				) : (
 					<ComboboxInput
+						aria-invalid={invalid}
 						placeholder={searchPlaceholder}
 						showClear={clearable}
 					/>
